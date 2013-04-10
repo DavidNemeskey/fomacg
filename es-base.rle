@@ -1,3 +1,5 @@
+# Copyright (c) Måns Huldén and Jerid Francom
+
 DELIMITERS = "<.>" "<!>" "<?>" ;
 
 SETS
