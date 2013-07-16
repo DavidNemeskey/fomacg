@@ -61,62 +61,66 @@
 
 #define VACUOUS_STATECOUNT 7
 
-    int g_debug = 1;
-    int lineno_begin_rule;
+  int g_debug = 1;
+  int lineno_begin_rule;
 
-    int total_rules = 0 ;
-    int total_states = 0;
-    int total_arcs = 0;
+  int total_rules = 0 ;
+  int total_states = 0;
+  int total_arcs = 0;
 
-    int rule_operation;
-    int curr_op;
-    
-    char *current_error;
-    int current_error_line;
-    char *first_error_sym;
-    char *cg_list_name = NULL;   /* Name of current list */
+  int rule_operation;
+  int curr_op;
 
-    struct fsm *CG_DEF_NODEL, *CG_DEF_ConstrainS, *CG_DEF_ConstrainR, *CG_DEF_Rollback, *CG_DEF_Cleanup, *CG_DEF_InitialFilter, *CG_DEF_MWFPROLOG, *CG_DEF_MWFEPILOG, *CG_DEF_ANYCOHORT, *CG_DEF_MATCHCOHORT1, *CG_DEF_MATCHCOHORT2, *CG_DEF_DEAD, *CG_DEF_ALIVE, *CG_DEF_DEL;
+  char *current_error;
+  int current_error_line;
+  char *first_error_sym;
+  char *cg_list_name = NULL;   /* Name of current list */
 
-    struct fsm *cg_list_currelement = NULL;
-    struct fsm *cg_list_currcelement = NULL;
+  struct fsm *CG_DEF_NODEL, *CG_DEF_ConstrainS, *CG_DEF_ConstrainR,
+             *CG_DEF_Rollback, *CG_DEF_Cleanup, *CG_DEF_InitialFilter,
+             *CG_DEF_MWFPROLOG, *CG_DEF_MWFEPILOG, *CG_DEF_ANYCOHORT,
+             *CG_DEF_MATCHCOHORT1, *CG_DEF_MATCHCOHORT2, *CG_DEF_DEAD,
+             *CG_DEF_ALIVE, *CG_DEF_DEL;
 
-    struct cg_sets {
-        char *name;
-        struct fsm *net;
-        struct cg_sets *next;
-    } *cg_sets = NULL;
+  struct fsm *cg_list_currelement = NULL;
+  struct fsm *cg_list_currcelement = NULL;
 
-    /* Each rule is stored as it is built into the cg_rule_complex struct */
+  struct cg_sets {
+    char *name;
+    struct fsm *net;
+    struct cg_sets *next;
+  } *cg_sets = NULL;
 
-    /* What do these fields mean? */
-    struct cg_rule_complex {
-	struct fsm *wordform  ;
-	struct fsm *target    ;
-	struct fsm *condition ;
-	struct fsm *barrier   ;
-	int rule_not ;
-	int scope_mode ;
-	int scope_num  ;
-	int num_links  ;                /* Number of LINKed conditions */
-	struct cg_rule_complex *link;   /* Linked conditions   */
-	struct cg_rule_complex *next;   /* multiple conditions */
-    } *cg_rule_complex, *cg_rule_complex_current, *cg_rule_complex_current_head;
+  /* Each rule is stored as it is built into the cg_rule_complex struct */
 
-    /* We store each rule as a fsm + lineno combo */
-    struct cg_rules {
-	int lineno;
-	struct fsm *rule;
-	struct cg_rules *next;
-    } *cg_rules = NULL;
+  /* What do these fields mean? */
+  struct cg_rule_complex {
+    struct fsm *wordform  ;
+    struct fsm *target    ;
+    struct fsm *condition ;
+    struct fsm *barrier   ;
+    int rule_not ;
+    int scope_mode ;
+    int scope_num  ;
+    int num_links  ;                /* Number of LINKed conditions */
+    struct cg_rule_complex *link;   /* Linked conditions   */
+    struct cg_rule_complex *next;   /* multiple conditions */
+  } *cg_rule_complex, *cg_rule_complex_current, *cg_rule_complex_current_head;
+
+  /* We store each rule as a fsm + lineno combo */
+  struct cg_rules {
+    int lineno;
+    struct fsm *rule;
+    struct cg_rules *next;
+  } *cg_rules = NULL;
 
 void dprint(const char* format, ...) {
-    va_list args;
-    if (g_debug == 1) {
-	va_start(args, format);       	
-	vfprintf(stdout, format, args);
-	va_end(args);
-    }
+  va_list args;
+  if (g_debug == 1) {
+    va_start(args, format);       	
+    vfprintf(stdout, format, args);
+    va_end(args);
+  }
 }
 
 /**
@@ -124,85 +128,86 @@ void dprint(const char* format, ...) {
  * accordingly.
  */
 void cg_parse_scope(char *string, struct cg_rule_complex *cgr) {
-    size_t skipnum;
-    if (strncmp(string,"**",2)==0) {
-	cgr->scope_mode = MODE_TWOSTAR;
-    } else if  (strncmp(string,"*",1)==0) {
-	cgr->scope_mode = MODE_STAR;
-    }
-    if (strchr(string,'@') != NULL) {
-	cgr->scope_mode = cgr->scope_mode + MODE_ABSOLUTE;
-    }
-    if (strchr(string,'C') != NULL) {
-	cgr->scope_mode = cgr->scope_mode + MODE_CAREFUL;
-    }
-    skipnum = strcspn(string, "-0123456789");
-    cgr->scope_num = (int) strtol(string+skipnum, NULL, 10);
+  size_t skipnum;
+  if (strncmp(string,"**",2)==0) {
+    cgr->scope_mode = MODE_TWOSTAR;
+  } else if  (strncmp(string,"*",1)==0) {
+    cgr->scope_mode = MODE_STAR;
+  }
+  if (strchr(string,'@') != NULL) {
+    cgr->scope_mode = cgr->scope_mode + MODE_ABSOLUTE;
+  }
+  if (strchr(string,'C') != NULL) {
+    cgr->scope_mode = cgr->scope_mode + MODE_CAREFUL;
+  }
+  skipnum = strcspn(string, "-0123456789");
+  cgr->scope_num = (int) strtol(string+skipnum, NULL, 10);
 
-    /* Sanity check */
-    if (cgr->scope_num == 0 && (cgr->scope_mode & MODE_ABSOLUTE)) {
-	printf("Error: position @0 is not possible in scope on line %i.\n",yylineno);
-	exit(0);
-    }
+  /* Sanity check */
+  if (cgr->scope_num == 0 && (cgr->scope_mode & MODE_ABSOLUTE)) {
+    printf("Error: position @0 is not possible in scope on line %i.\n",yylineno);
+    exit(0);
+  }
 }
 
 void cg_init(void) {
-    printf("Loading auxiliary networks...\n");
-    /* Consumes everything. */
-    CG_DEF_NODEL = fsm_read_binary_file("cg_NODEL.foma");
-    CG_DEF_ConstrainS = fsm_read_binary_file("cg_ConstrainS.foma");
-    CG_DEF_ConstrainR = fsm_read_binary_file("cg_ConstrainR.foma");
-    CG_DEF_Rollback = fsm_read_binary_file("cg_Rollback.foma");  // = invCR
-    CG_DEF_Cleanup = fsm_read_binary_file("cg_Cleanup2.foma");
-    CG_DEF_InitialFilter = fsm_read_binary_file("cg_InitialFilter.foma");
-    CG_DEF_MWFPROLOG = fsm_read_binary_file("cg_MWFPROLOG.foma");
-    CG_DEF_MWFEPILOG = fsm_read_binary_file("cg_MWFEPILOG.foma");
-    CG_DEF_ANYCOHORT = fsm_read_binary_file("cg_ANYCOHORT.foma");
-    CG_DEF_MATCHCOHORT1 = fsm_read_binary_file("cg_MATCHCOHORT1.foma");
-    CG_DEF_MATCHCOHORT2 = fsm_read_binary_file("cg_MATCHCOHORT2.foma");
-    CG_DEF_DEAD = fsm_read_binary_file("cg_DEAD.foma");
-    CG_DEF_ALIVE = fsm_read_binary_file("cg_ALIVE.foma");
-    CG_DEF_DEL = fsm_read_binary_file("cg_DEL.foma");
-    cg_rule_complex = cg_rule_complex_current = cg_rule_complex_current_head = calloc(1,sizeof(struct cg_rule_complex));
+  printf("Loading auxiliary networks...\n");
+  /* Consumes everything. */
+  CG_DEF_NODEL = fsm_read_binary_file("cg_NODEL.foma");
+  CG_DEF_ConstrainS = fsm_read_binary_file("cg_ConstrainS.foma");
+  CG_DEF_ConstrainR = fsm_read_binary_file("cg_ConstrainR.foma");
+  CG_DEF_Rollback = fsm_read_binary_file("cg_Rollback.foma");  // = invCR
+  CG_DEF_Cleanup = fsm_read_binary_file("cg_Cleanup2.foma");
+  CG_DEF_InitialFilter = fsm_read_binary_file("cg_InitialFilter.foma");
+  CG_DEF_MWFPROLOG = fsm_read_binary_file("cg_MWFPROLOG.foma");
+  CG_DEF_MWFEPILOG = fsm_read_binary_file("cg_MWFEPILOG.foma");
+  CG_DEF_ANYCOHORT = fsm_read_binary_file("cg_ANYCOHORT.foma");
+  CG_DEF_MATCHCOHORT1 = fsm_read_binary_file("cg_MATCHCOHORT1.foma");
+  CG_DEF_MATCHCOHORT2 = fsm_read_binary_file("cg_MATCHCOHORT2.foma");
+  CG_DEF_DEAD = fsm_read_binary_file("cg_DEAD.foma");
+  CG_DEF_ALIVE = fsm_read_binary_file("cg_ALIVE.foma");
+  CG_DEF_DEL = fsm_read_binary_file("cg_DEL.foma");
+  cg_rule_complex =
+  cg_rule_complex_current =
+  cg_rule_complex_current_head = calloc(1,sizeof(struct cg_rule_complex));
 }
 
 void cg_print_rule_info(struct fsm *net) {
-    printf("%i: %i states, %i arcs.\n",lineno_begin_rule,net->statecount, net->arccount);
-    if (net->statecount == VACUOUS_STATECOUNT) {
-	printf("WARNING: rule is vacuous!\n");
-    }
+  printf("%i: %i states, %i arcs.\n",lineno_begin_rule,net->statecount, net->arccount);
+  if (net->statecount == VACUOUS_STATECOUNT) {
+    printf("WARNING: rule is vacuous!\n");
+  }
 }
 
 struct fsm *cg_coerce_rules(struct fsm *rawrules) {
-    /* rawrules .o. ~[rawrules .o. Rollback].l .o. Cleanup */
+  /* rawrules .o. ~[rawrules .o. Rollback].l .o. Cleanup */
 
-    struct fsm *result;
-    result = fsm_minimize(fsm_compose(fsm_copy(rawrules), fsm_compose(fsm_complement(fsm_lower(fsm_compose(fsm_copy(rawrules),fsm_copy(CG_DEF_Rollback)))), fsm_copy(CG_DEF_Cleanup))));
-    return(result);
+  struct fsm *result;
+  result = fsm_minimize(fsm_compose(fsm_copy(rawrules), fsm_compose(fsm_complement(fsm_lower(fsm_compose(fsm_copy(rawrules),fsm_copy(CG_DEF_Rollback)))), fsm_copy(CG_DEF_Cleanup))));
+  return(result);
 }
 
 struct fsm *cg_mark_form_target(struct fsm *wordform, struct fsm *target) {
+  struct fsm *result, *constrain1, *constrain2;
 
-    struct fsm *result, *constrain1, *constrain2;
+  /* prolog .o. constrain .o. epilog */
 
-    /* prolog .o. constrain .o. epilog */
+  /* prolog =~$["$00$"|"#00#"|"$1$ "] .o. "$0$ " -> ["$1$ "|"$00$"] , "#0# " -> ["#1# "|"#00#"]        */
+  /* constrain = ~[?* ["$1$ " ~[WORDFORM ?*]|"#1# " ~[TARGET ?*]]] & ~$["$00$" WORDFORM|"#00#" TARGET] */
+  /* epilog = "$00$" -> "$0$ " , "#00#" -> "#0# "                                                      */
 
-    /* prolog =~$["$00$"|"#00#"|"$1$ "] .o. "$0$ " -> ["$1$ "|"$00$"] , "#0# " -> ["#1# "|"#00#"]        */
-    /* constrain = ~[?* ["$1$ " ~[WORDFORM ?*]|"#1# " ~[TARGET ?*]]] & ~$["$00$" WORDFORM|"#00#" TARGET] */
-    /* epilog = "$00$" -> "$0$ " , "#00#" -> "#0# "                                                      */
+  if (wordform == NULL) {
+    wordform = fsm_universal();
+  }
+  /* remove auxiliaries for speed, i.e. target & ~$["#1# "|"#00#"] */
+  target = fsm_intersect(target,fsm_complement(fsm_contains(fsm_union(fsm_symbol("#1# "),fsm_symbol("#00#")))));
 
-    if (wordform == NULL) {
-	wordform = fsm_universal();
-    }
-    /* remove auxiliaries for speed, i.e. target & ~$["#1# "|"#00#"] */
-    target = fsm_intersect(target,fsm_complement(fsm_contains(fsm_union(fsm_symbol("#1# "),fsm_symbol("#00#")))));
+  constrain1 = fsm_minimize(fsm_complement(fsm_concat(fsm_universal(), fsm_union(fsm_concat(fsm_symbol("$1$ "),fsm_complement(fsm_concat(fsm_copy(wordform), fsm_universal()))), fsm_concat(fsm_symbol("#1# "),fsm_complement(fsm_concat(fsm_copy(target), fsm_universal())))))));
 
-    constrain1 = fsm_minimize(fsm_complement(fsm_concat(fsm_universal(), fsm_union(fsm_concat(fsm_symbol("$1$ "),fsm_complement(fsm_concat(fsm_copy(wordform), fsm_universal()))), fsm_concat(fsm_symbol("#1# "),fsm_complement(fsm_concat(fsm_copy(target), fsm_universal())))))));
-    
-    constrain2 = fsm_complement(fsm_contains(fsm_union(fsm_concat(fsm_symbol("$00$"),fsm_copy(wordform)),fsm_concat(fsm_symbol("#00#"),fsm_copy(target)))));
-    
-    result = fsm_minimize(fsm_compose(fsm_compose(fsm_copy(CG_DEF_MWFPROLOG), fsm_intersect(constrain1,constrain2)),fsm_copy(CG_DEF_MWFEPILOG)));
-    return(result);
+  constrain2 = fsm_complement(fsm_contains(fsm_union(fsm_concat(fsm_symbol("$00$"),fsm_copy(wordform)),fsm_concat(fsm_symbol("#00#"),fsm_copy(target)))));
+
+  result = fsm_minimize(fsm_compose(fsm_compose(fsm_copy(CG_DEF_MWFPROLOG), fsm_intersect(constrain1,constrain2)),fsm_copy(CG_DEF_MWFEPILOG)));
+  return(result);
 }
 
 /**
@@ -210,356 +215,355 @@ struct fsm *cg_mark_form_target(struct fsm *wordform, struct fsm *target) {
  * name is defined.
  */
 struct fsm *cg_set_find(char *string) {
-    struct cg_sets *cgs;
-    for (cgs = cg_sets; cgs != NULL; cgs = cgs->next) {
-	if (strcmp(string,cgs->name) == 0) {
-	    return(cgs->net);
-	}
+  struct cg_sets *cgs;
+  for (cgs = cg_sets; cgs != NULL; cgs = cgs->next) {
+    if (strcmp(string,cgs->name) == 0) {
+      return(cgs->net);
     }
-    return NULL;
+  }
+  return NULL;
 }
 
 /** What CompileRule(X) does in the paper. */
 struct fsm *cg_rule_wrapup(struct fsm *rawrule) {
-    /* [Rawrule .o. ~[Rawrule .o. Rollback].l .o. Cleanup]; */
+  /* [Rawrule .o. ~[Rawrule .o. Rollback].l .o. Cleanup]; */
 
-    struct fsm *result;
-    result = fsm_minimize(fsm_compose(fsm_compose(fsm_copy(rawrule), fsm_complement(fsm_lower(fsm_compose(fsm_copy(rawrule), fsm_copy(CG_DEF_Rollback))))), fsm_copy(CG_DEF_Cleanup)));
-    return(result);
+  struct fsm *result;
+  result = fsm_minimize(fsm_compose(fsm_compose(fsm_copy(rawrule), fsm_complement(fsm_lower(fsm_compose(fsm_copy(rawrule), fsm_copy(CG_DEF_Rollback))))), fsm_copy(CG_DEF_Cleanup)));
+  return(result);
 }
 
- void cg_add_rule_to_chain(struct fsm *rule) {
-    struct cg_rules *newrule;
-    char rulename[10];
-    sprintf(rulename, "R%i", lineno_begin_rule);
-    strcpy(rule->name, rulename);
+void cg_add_rule_to_chain(struct fsm *rule) {
+  struct cg_rules *newrule;
+  char rulename[10];
+  sprintf(rulename, "R%i", lineno_begin_rule);
+  strcpy(rule->name, rulename);
 
-    newrule = malloc(sizeof(struct cg_rules));
-    if (cg_rules == NULL) {
-	cg_rules = newrule;
-	cg_rules->next = NULL;
-    } else {
-	newrule->next = cg_rules;
-	cg_rules = newrule;
-    }
-    cg_rules->rule = rule;
-    cg_rules->lineno = lineno_begin_rule;
-    total_states += rule->statecount;
-    total_arcs += rule->arccount;
-    total_rules++;
+  newrule = malloc(sizeof(struct cg_rules));
+  if (cg_rules == NULL) {
+    cg_rules = newrule;
+    cg_rules->next = NULL;
+  } else {
+    newrule->next = cg_rules;
+    cg_rules = newrule;
+  }
+  cg_rules->rule = rule;
+  cg_rules->lineno = lineno_begin_rule;
+  total_states += rule->statecount;
+  total_arcs += rule->arccount;
+  total_rules++;
 }
 
 struct fsm *cg_match_cohort(struct fsm *net) {
-    /* [\"#BOC# "* "#BOC# " \"#EOC# "* DEL ALIVE \DEL* X \"#EOC# "* "#EOC# " ~$"#BOC# "] */
-    return(fsm_minimize(fsm_concat(fsm_copy(CG_DEF_MATCHCOHORT1), fsm_concat(net, fsm_copy(CG_DEF_MATCHCOHORT2)))));
+  /* [\"#BOC# "* "#BOC# " \"#EOC# "* DEL ALIVE \DEL* X \"#EOC# "* "#EOC# " ~$"#BOC# "] */
+  return(fsm_minimize(fsm_concat(fsm_copy(CG_DEF_MATCHCOHORT1), fsm_concat(net, fsm_copy(CG_DEF_MATCHCOHORT2)))));
 }
 
 struct fsm *cg_match_cohort_careful(struct fsm *net) {
-    struct fsm *A,*B,*Center,*Pre,*Post,*result;
-    /* ~$"#BOC# " "#BOC# " [[DEL DEAD \DEL*]* [DEL ALIVE \DEL* "DET " \DEL*] [DEL DEAD \DEL*]*]+ DEL "#EOC# " ~$"#BOC# " */
-    /* Pre                   A                            B                      A                    Post */
-    /* Pre [A B A]+ Post */
+  struct fsm *A,*B,*Center,*Pre,*Post,*result;
+  /* ~$"#BOC# " "#BOC# " [[DEL DEAD \DEL*]* [DEL ALIVE \DEL* "DET " \DEL*] [DEL DEAD \DEL*]*]+ DEL "#EOC# " ~$"#BOC# " */
+  /* Pre                   A                            B                      A                    Post */
+  /* Pre [A B A]+ Post */
 
-    Pre = fsm_concat(fsm_complement(fsm_contains(fsm_symbol("#BOC# "))),fsm_symbol("#BOC# "));
-    Post = fsm_concat(fsm_symbol("| "),fsm_concat(fsm_symbol("#EOC# "),fsm_complement(fsm_contains(fsm_symbol("#BOC# ")))));
-    A = fsm_kleene_star(fsm_concat(fsm_copy(CG_DEF_DEL),fsm_concat(fsm_copy(CG_DEF_DEAD),fsm_copy(CG_DEF_NODEL))));
-    B = fsm_concat(fsm_copy(CG_DEF_DEL), fsm_concat(fsm_copy(CG_DEF_ALIVE), fsm_concat(fsm_copy(CG_DEF_NODEL), fsm_concat(net, fsm_copy(CG_DEF_NODEL)))));
-    Center = fsm_kleene_plus(fsm_concat(fsm_copy(A), fsm_concat(fsm_copy(B), fsm_copy(A))));
-    result = fsm_minimize(fsm_concat(Pre, fsm_concat(Center, Post)));
-    fsm_destroy(A);
-    fsm_destroy(B);
-    return(result);
+  Pre = fsm_concat(fsm_complement(fsm_contains(fsm_symbol("#BOC# "))),fsm_symbol("#BOC# "));
+  Post = fsm_concat(fsm_symbol("| "),fsm_concat(fsm_symbol("#EOC# "),fsm_complement(fsm_contains(fsm_symbol("#BOC# ")))));
+  A = fsm_kleene_star(fsm_concat(fsm_copy(CG_DEF_DEL),fsm_concat(fsm_copy(CG_DEF_DEAD),fsm_copy(CG_DEF_NODEL))));
+  B = fsm_concat(fsm_copy(CG_DEF_DEL), fsm_concat(fsm_copy(CG_DEF_ALIVE), fsm_concat(fsm_copy(CG_DEF_NODEL), fsm_concat(net, fsm_copy(CG_DEF_NODEL)))));
+  Center = fsm_kleene_plus(fsm_concat(fsm_copy(A), fsm_concat(fsm_copy(B), fsm_copy(A))));
+  result = fsm_minimize(fsm_concat(Pre, fsm_concat(Center, Post)));
+  fsm_destroy(A);
+  fsm_destroy(B);
+  return(result);
 }
 
 struct fsm *cg_simple_crr(struct fsm *C, struct fsm *R) {
-     /* C => _ R = ~[?* C ~[R ?*]] */
-     return(fsm_minimize(fsm_complement(fsm_concat(fsm_universal(),fsm_concat(C, fsm_complement(fsm_concat(R, fsm_universal())))))));
+  /* C => _ R = ~[?* C ~[R ?*]] */
+  return(fsm_minimize(fsm_complement(fsm_concat(fsm_universal(),fsm_concat(C, fsm_complement(fsm_concat(R, fsm_universal())))))));
 }
 
 struct fsm *cg_simple_crrnot(struct fsm *C, struct fsm *R) {
-     /* ~$[C R] */
-    return(fsm_minimize(fsm_complement(fsm_contains(fsm_concat(C,R)))));
+  /* ~$[C R] */
+  return(fsm_minimize(fsm_complement(fsm_contains(fsm_concat(C,R)))));
 }
 
 struct fsm *cg_simple_crl(struct fsm *C, struct fsm *L) {
-    /* C => L _ = ~[~[?* L] C ?*] */
-    return(fsm_minimize(fsm_complement(fsm_concat(fsm_complement(fsm_concat(fsm_universal(),L)), fsm_concat(C, fsm_universal())))));
+  /* C => L _ = ~[~[?* L] C ?*] */
+  return(fsm_minimize(fsm_complement(fsm_concat(fsm_complement(fsm_concat(fsm_universal(),L)), fsm_concat(C, fsm_universal())))));
 }
 
 struct fsm *cg_simple_crlnot(struct fsm *C, struct fsm *L) {
-     /* ~$[L C] */
-    return(fsm_minimize(fsm_complement(fsm_contains(fsm_concat(L,C)))));
+  /* ~$[L C] */
+  return(fsm_minimize(fsm_complement(fsm_contains(fsm_concat(L,C)))));
 }
 
 struct fsm *cg_insertaux(int count) {
-    char linknumstring[10];
-    int i;
-    struct fsm *L, *R1, *R2, *result;
-    /* [?-"$0$ "-"$A$ "-"$R$ "-"$1$ "-"$2$ "-...] | ["$0$ "|"$A$ "|"$R$ "] 0:[("$1$ ") ("$2$ ") ... ]]* */
-    /* L                                              R1                       R2                          */
-    L = fsm_identity();
-    for (i = 1; i <= count; i++) {
-	sprintf(linknumstring, "$%i$ ", i);
-	L = fsm_minus(L, fsm_symbol(linknumstring));	
-    }
-    R2 = fsm_empty_string();
-    for (i = 1; i <= count; i++) {
-	sprintf(linknumstring, "$%i$ ", i);
-	R2 = fsm_concat(R2, fsm_optionality(fsm_symbol(linknumstring)));
-    }
-    R1 = fsm_union(fsm_symbol("$0$ "), fsm_union(fsm_symbol("$A$ "), fsm_symbol("$R$ ")));
-    /* [L | | R1 0:R2]* */
-    result = fsm_minimize(fsm_kleene_star(fsm_union(L, fsm_concat(R1, fsm_cross_product(fsm_empty_string(), R2)))));
-    return(result);    
+  char linknumstring[10];
+  int i;
+  struct fsm *L, *R1, *R2, *result;
+  /* [?-"$0$ "-"$A$ "-"$R$ "-"$1$ "-"$2$ "-...] | ["$0$ "|"$A$ "|"$R$ "] 0:[("$1$ ") ("$2$ ") ... ]]* */
+  /* L                                              R1                       R2                          */
+  L = fsm_identity();
+  for (i = 1; i <= count; i++) {
+    sprintf(linknumstring, "$%i$ ", i);
+    L = fsm_minus(L, fsm_symbol(linknumstring));	
+  }
+  R2 = fsm_empty_string();
+  for (i = 1; i <= count; i++) {
+    sprintf(linknumstring, "$%i$ ", i);
+    R2 = fsm_concat(R2, fsm_optionality(fsm_symbol(linknumstring)));
+  }
+  R1 = fsm_union(fsm_symbol("$0$ "), fsm_union(fsm_symbol("$A$ "), fsm_symbol("$R$ ")));
+  /* [L | | R1 0:R2]* */
+  result = fsm_minimize(fsm_kleene_star(fsm_union(L, fsm_concat(R1, fsm_cross_product(fsm_empty_string(), R2)))));
+  return(result);    
 }
 
 struct fsm *cg_removeaux(int count) {
-    char linknumstring[10];
-    int i;
-    struct fsm *L, *R, *result;
-    /* [ [?-"$1$ "-"$2$ "-...] | ["$1$ "|"$2$ "|...]:0 ]* */
+  char linknumstring[10];
+  int i;
+  struct fsm *L, *R, *result;
+  /* [ [?-"$1$ "-"$2$ "-...] | ["$1$ "|"$2$ "|...]:0 ]* */
 
-    L = fsm_identity();
-    for (i = 1; i <= count; i++) {
-	sprintf(linknumstring, "$%i$ ", i);
-	L = fsm_minus(L, fsm_symbol(linknumstring));	
-    }
-    R = fsm_empty_set();
-    for (i = 1; i <= count; i++) {
-	sprintf(linknumstring, "$%i$ ", i);
-	R = fsm_union(R, fsm_symbol(linknumstring));	
-    }
-    R = fsm_cross_product(R, fsm_empty_string());
-    result = fsm_minimize(fsm_kleene_star(fsm_union(L,R)));
-    return(result);
+  L = fsm_identity();
+  for (i = 1; i <= count; i++) {
+    sprintf(linknumstring, "$%i$ ", i);
+    L = fsm_minus(L, fsm_symbol(linknumstring));	
+  }
+  R = fsm_empty_set();
+  for (i = 1; i <= count; i++) {
+    sprintf(linknumstring, "$%i$ ", i);
+    R = fsm_union(R, fsm_symbol(linknumstring));	
+  }
+  R = fsm_cross_product(R, fsm_empty_string());
+  result = fsm_minimize(fsm_kleene_star(fsm_union(L,R)));
+  return(result);
 }
 
 /** Compiles the rule. */
 /* TODO: understand this. */
 void cg_compile_rule() {
-    char linknumstring[10], headnumstring[10];  // for sprintf
-    int numskip,                      
-        linkcount;        // Counts the number of links in the inner loop
-    struct cg_rule_complex *rules,    // Running variable in the outer loop
-                           *linkrule; // The currently analysed linked rule
-    struct fsm *rawrules,
-           *constrain,    // SELECT or REMOVE (ConstrainS or ConstrainR)
-	   *tests,        // TODO: should be "test"? The test part in the rule
-	   *thisrule,
-	   *rule,
-	   *match,
-	   *skip,
-	   *scan,
-	   *thistest;
-    if (rule_operation == OP_SELECT) {
-	constrain = fsm_copy(CG_DEF_ConstrainS);
-    } else if (rule_operation == OP_REMOVE) {
-	constrain = fsm_copy(CG_DEF_ConstrainR);
+  char linknumstring[10], headnumstring[10];  // for sprintf
+  int numskip,                      
+      linkcount;        // Counts the number of links in the inner loop
+  struct cg_rule_complex *rules,    // Running variable in the outer loop
+                         *linkrule; // The currently analysed linked rule
+  struct fsm *rawrules,
+             *constrain,    // SELECT or REMOVE (ConstrainS or ConstrainR)
+             *tests,        // TODO: should be "test"? The test part in the rule
+             *thisrule,
+             *rule,
+             *match,
+             *skip,
+             *scan,
+             *thistest;
+  if (rule_operation == OP_SELECT) {
+    constrain = fsm_copy(CG_DEF_ConstrainS);
+  } else if (rule_operation == OP_REMOVE) {
+    constrain = fsm_copy(CG_DEF_ConstrainR);
+  } else {
+    constrain = fsm_copy(CG_DEF_ConstrainS);
+  }
+
+  for (rawrules = NULL, rules = cg_rule_complex; rules != NULL; rules = rules->next) {
+    /* Compile rule */
+
+    /* "$A " => _ skip^(n) scan* (linknum) match         (scope >=0)      */
+    /* "$A " => (linknum) match scan* skip^(abs(s+1)) _  (scope < 0)      */
+    /* ~$["$A " (linknum) skip^(n) scan* (linknum) match (scope >=0, NOT) */
+    /* ~$[(linknum) match scan* skip^(abs(s+1)) "$A$ "   (scope < 0, NOT) */
+
+    /* skip = ANYCOHORT                                       */
+    /* scan = ANYCOHORT - MC(barrier) - MC(match) [in *-mode] */
+    /* match = MC(condition)                                  */
+
+    for (linkcount = 1, linkrule = rules; linkrule != NULL; linkrule = linkrule->link, linkcount++) {
+      if (linkrule->condition != NULL) {
+        /* MATCH */
+
+        /* Normal / safe matching. */
+        if (linkrule->scope_mode & MODE_CAREFUL) {
+          match = cg_match_cohort_careful(fsm_copy(linkrule->condition));
+        } else {
+          match = cg_match_cohort(fsm_copy(linkrule->condition));
+        }
+        /* TODO: add $linkcount$ to the above? */
+        if (linkrule->link != NULL) {
+          sprintf(linknumstring,"$%i$ ",linkcount);
+          match = fsm_minimize(fsm_concat(fsm_symbol(linknumstring), match));
+        }
+        /* TODO: the head: $linkcount-1$ or $A$. */
+        if (linkcount > 1) {
+          sprintf(headnumstring,"$%i$ ", linkcount-1);
+        } else {
+          sprintf(headnumstring,"$A$ ");
+        }
+
+        /* SCAN */
+
+        /* Create an ANYCOHORT "train" of scope length. */
+        numskip = linkrule->scope_num >= 0 ? linkrule->scope_num : abs(linkrule->scope_num+1);
+        skip = fsm_concat_n(fsm_copy(CG_DEF_ANYCOHORT), numskip);
+
+        if (linkrule->scope_mode & (MODE_STAR | MODE_TWOSTAR)) {
+          /* Scan */
+          scan = fsm_copy(CG_DEF_ANYCOHORT);
+          if (linkrule->barrier != NULL) {
+            scan = fsm_minimize(fsm_minus(scan, cg_match_cohort(fsm_copy(linkrule->barrier))));
+          }
+          /* Only matters in the presence of LINKed contexts */
+          /* Q: what is this? Also: cg_match_cohor_careful? */
+          if ((linkrule->scope_mode & MODE_STAR) && (rules->num_links > 0)) {
+            scan = fsm_minimize(fsm_minus(scan, cg_match_cohort(fsm_copy(linkrule->condition))));
+          }
+          scan = fsm_minimize(fsm_kleene_star(scan));
+        } else {
+          scan = fsm_empty_string();
+          /* We remove the BARRIER from skip only if no scanning is used */
+          /* Q: why? Shouldn't this be done above too? */
+          if (linkrule->barrier != NULL) {
+            skip = fsm_minimize(fsm_minus(skip, cg_match_cohort(fsm_copy(linkrule->barrier))));
+          }
+        }
+        /* + or - scope. */
+        if (linkrule->scope_num >=0) {
+          scan = fsm_minimize(fsm_concat(skip,scan));
+        } else {
+          scan = fsm_minimize(fsm_concat(scan,skip));
+        }
+
+        /* TESTS: ABSOLUTE SCOPE (scope = absolute word index) */
+        if (linkrule->scope_mode & MODE_ABSOLUTE) {
+          if (linkrule->scope_num >=0) {
+            /* Look right */
+            if (linkrule->rule_not) {
+              /* Q: why the first part? [~$"$i$ " || ~[scan match ?*] ]  */
+              tests = fsm_minimize(fsm_union(fsm_complement(fsm_contains(fsm_symbol(headnumstring))), fsm_complement(fsm_concat(fsm_minimize(fsm_concat(scan, match)), fsm_universal()))));
+            } else {
+              /* [~$"$i$ " || scan match ?*] */
+              tests = fsm_minimize(fsm_union(fsm_complement(fsm_contains(fsm_symbol(headnumstring))), fsm_concat(fsm_minimize(fsm_concat(scan, match)), fsm_universal())));
+            }
+          } else {	
+            /* Look left */
+            if (linkrule->rule_not) {
+              /* [ ~$"$i$ " || ~[?* match scan] ] */
+              tests = fsm_minimize(fsm_union(fsm_complement(fsm_contains(fsm_symbol(headnumstring))), fsm_complement(fsm_concat(fsm_universal(),fsm_minimize(fsm_concat(match, scan))))));
+            } else {
+              /* [ ~$"$i$ " || ?* match scan] */
+              tests = fsm_minimize(fsm_union(fsm_complement(fsm_contains(fsm_symbol(headnumstring))), fsm_concat(fsm_universal(),fsm_minimize(fsm_concat(match, scan)))));
+            }
+          }
+          /* TESTS: RELATIVE SCOPE */
+        } else {
+          if (linkrule->scope_num >=0) {
+            /* Look right */
+            if (linkrule->rule_not) {
+              /* ~$["$i$ " [scan match]] */
+              tests = cg_simple_crrnot(fsm_symbol(headnumstring),fsm_minimize(fsm_concat(scan, match)));
+            } else {
+              /* "$i$ " => _ [scan match]] */
+              tests = cg_simple_crr(fsm_symbol(headnumstring), fsm_minimize(fsm_concat(scan, match)));
+            }
+          } else {
+            /* Look left */
+            if (linkrule->rule_not) {
+              /* ~$[ [match scan] "$i$ "] */
+              tests = cg_simple_crlnot(fsm_symbol(headnumstring),fsm_minimize(fsm_concat(match, scan)));
+            } else {
+              /* "$i$ " => [match scan] _] */
+              tests = cg_simple_crl(fsm_symbol(headnumstring), fsm_minimize(fsm_concat(match, scan)));
+            }
+          }
+        }
+      } else {
+        tests = fsm_universal();
+      }
+
+      /* InitialFilter .o. mark_form_target(wordform, target) .o. constrain .o. tests */
+      if (linkcount == 1) {
+        /* The original condition. */
+        thistest = fsm_minimize(fsm_compose(fsm_compose(fsm_copy(CG_DEF_InitialFilter),cg_mark_form_target(fsm_copy(cg_rule_complex->wordform), fsm_copy(cg_rule_complex->target))),fsm_copy(constrain)));
+        /* need to add insertaux if needed */
+        if (linkrule->num_links > 0) {
+          thistest = fsm_minimize(fsm_compose(thistest, cg_insertaux(linkrule->num_links)));
+        }
+      }
+      /* Add the linked test to the list of current tests (with .o.). */
+      thistest = fsm_minimize(fsm_compose(thistest, tests));
+    }  // end for LINKs
+
+    /* Add removeaux if needed */
+    if (rules->num_links > 0) {
+      thisrule = fsm_minimize(fsm_compose(thistest, cg_removeaux(rules->num_links)));
     } else {
-	constrain = fsm_copy(CG_DEF_ConstrainS);
+      thisrule = thistest;
     }
-    
-    for (rawrules = NULL, rules = cg_rule_complex; rules != NULL; rules = rules->next) {
-	
-	/* Compile rule */
-	
-	/* "$A " => _ skip^(n) scan* (linknum) match         (scope >=0)      */
-        /* "$A " => (linknum) match scan* skip^(abs(s+1)) _  (scope < 0)      */
-	/* ~$["$A " (linknum) skip^(n) scan* (linknum) match (scope >=0, NOT) */
-	/* ~$[(linknum) match scan* skip^(abs(s+1)) "$A$ "   (scope < 0, NOT) */
 
-	/* skip = ANYCOHORT                                       */
-	/* scan = ANYCOHORT - MC(barrier) - MC(match) [in *-mode] */
-	/* match = MC(condition)                                  */
-	
-	for (linkcount = 1, linkrule = rules; linkrule != NULL; linkrule = linkrule->link, linkcount++) {
-
-	    if (linkrule->condition != NULL) {
-
-		/* MATCH */
-
-                /* Normal / safe matching. */
-		if (linkrule->scope_mode & MODE_CAREFUL) {
-		    match = cg_match_cohort_careful(fsm_copy(linkrule->condition));
-		} else {
-		    match = cg_match_cohort(fsm_copy(linkrule->condition));
-		}
-		/* TODO: add $linkcount$ to the above? */
-		if (linkrule->link != NULL) {
-		    sprintf(linknumstring,"$%i$ ",linkcount);
-		    match = fsm_minimize(fsm_concat(fsm_symbol(linknumstring), match));
-		}
-		/* TODO: the head: $linkcount-1$ or $A$. */
-		if (linkcount > 1) {
-		    sprintf(headnumstring,"$%i$ ", linkcount-1);
-		} else {
-		    sprintf(headnumstring,"$A$ ");
-		}
-
-		/* SCAN */
-
-		/* Create an ANYCOHORT "train" of scope length. */
-		numskip = linkrule->scope_num >= 0 ? linkrule->scope_num : abs(linkrule->scope_num+1);
-		skip = fsm_concat_n(fsm_copy(CG_DEF_ANYCOHORT), numskip);
-
-		if (linkrule->scope_mode & (MODE_STAR | MODE_TWOSTAR)) {
-		    /* Scan */
-		    scan = fsm_copy(CG_DEF_ANYCOHORT);
-		    if (linkrule->barrier != NULL) {
-			scan = fsm_minimize(fsm_minus(scan, cg_match_cohort(fsm_copy(linkrule->barrier))));
-		    }
-		    /* Only matters in the presence of LINKed contexts */
-		    /* Q: what is this? Also: cg_match_cohor_careful? */
-		    if ((linkrule->scope_mode & MODE_STAR) && (rules->num_links > 0)) {
-			scan = fsm_minimize(fsm_minus(scan, cg_match_cohort(fsm_copy(linkrule->condition))));
-		    }
-		    scan = fsm_minimize(fsm_kleene_star(scan));
-		} else {
-		    scan = fsm_empty_string();
-		    /* We remove the BARRIER from skip only if no scanning is used */
-		    /* Q: why? Shouldn't this be done above too? */
-		    if (linkrule->barrier != NULL) {
-			skip = fsm_minimize(fsm_minus(skip, cg_match_cohort(fsm_copy(linkrule->barrier))));
-		    }
-		}
-		/* + or - scope. */
-		if (linkrule->scope_num >=0) {
-		    scan = fsm_minimize(fsm_concat(skip,scan));
-		} else {
-		    scan = fsm_minimize(fsm_concat(scan,skip));
-		}
-		
-		/* TESTS: ABSOLUTE SCOPE (scope = absolute word index) */
-		if (linkrule->scope_mode & MODE_ABSOLUTE) {
-		    if (linkrule->scope_num >=0) {
-			/* Look right */
-			if (linkrule->rule_not) {
-			    /* Q: why the first part? [~$"$i$ " || ~[scan match ?*] ]  */
-			    tests = fsm_minimize(fsm_union(fsm_complement(fsm_contains(fsm_symbol(headnumstring))), fsm_complement(fsm_concat(fsm_minimize(fsm_concat(scan, match)), fsm_universal()))));
-			} else {
-			    /* [~$"$i$ " || scan match ?*] */
-			    tests = fsm_minimize(fsm_union(fsm_complement(fsm_contains(fsm_symbol(headnumstring))), fsm_concat(fsm_minimize(fsm_concat(scan, match)), fsm_universal())));
-			}
-		    } else {	
-			/* Look left */
-			if (linkrule->rule_not) {
-			    /* [ ~$"$i$ " || ~[?* match scan] ] */
-			    tests = fsm_minimize(fsm_union(fsm_complement(fsm_contains(fsm_symbol(headnumstring))), fsm_complement(fsm_concat(fsm_universal(),fsm_minimize(fsm_concat(match, scan))))));
-			} else {
-			    /* [ ~$"$i$ " || ?* match scan] */
-			    tests = fsm_minimize(fsm_union(fsm_complement(fsm_contains(fsm_symbol(headnumstring))), fsm_concat(fsm_universal(),fsm_minimize(fsm_concat(match, scan)))));
-			}
-		    }
-		    /* TESTS: RELATIVE SCOPE */
-		} else {
-		    if (linkrule->scope_num >=0) {
-			/* Look right */
-			if (linkrule->rule_not) {
-			    /* ~$["$i$ " [scan match]] */
-			    tests = cg_simple_crrnot(fsm_symbol(headnumstring),fsm_minimize(fsm_concat(scan, match)));
-			} else {
-			    /* "$i$ " => _ [scan match]] */
-			    tests = cg_simple_crr(fsm_symbol(headnumstring), fsm_minimize(fsm_concat(scan, match)));
-			}
-		    } else {
-			/* Look left */
-			if (linkrule->rule_not) {
-			    /* ~$[ [match scan] "$i$ "] */
-			    tests = cg_simple_crlnot(fsm_symbol(headnumstring),fsm_minimize(fsm_concat(match, scan)));
-			} else {
-			    /* "$i$ " => [match scan] _] */
-			    tests = cg_simple_crl(fsm_symbol(headnumstring), fsm_minimize(fsm_concat(match, scan)));
-			}
-		    }
-		}
-	    } else {
-		tests = fsm_universal();
-	    }
-	    
-	    /* InitialFilter .o. mark_form_target(wordform, target) .o. constrain .o. tests */
-	    if (linkcount == 1) {
-	        /* The original condition. */
-		thistest = fsm_minimize(fsm_compose(fsm_compose(fsm_copy(CG_DEF_InitialFilter),cg_mark_form_target(fsm_copy(cg_rule_complex->wordform), fsm_copy(cg_rule_complex->target))),fsm_copy(constrain)));
-		/* need to add insertaux if needed */
-		if (linkrule->num_links > 0) {
-		    thistest = fsm_minimize(fsm_compose(thistest, cg_insertaux(linkrule->num_links)));
-		}
-	    }
-	    /* Add the linked test to the list of current tests (with .o.). */
-    	    thistest = fsm_minimize(fsm_compose(thistest, tests));
-	}  // end for LINKs
-
-	/* Add removeaux if needed */
-	if (rules->num_links > 0) {
-	    thisrule = fsm_minimize(fsm_compose(thistest, cg_removeaux(rules->num_links)));
-	} else {
-	    thisrule = thistest;
-	}
-		
-	/* Intersect all separate conditions */
-	if (rawrules == NULL) {
-	    rawrules = thisrule;
-	} else {
-	    rawrules = fsm_minimize(fsm_intersect(rawrules, thisrule));
-	}
+    /* Intersect all separate conditions */
+    if (rawrules == NULL) {
+      rawrules = thisrule;
+    } else {
+      rawrules = fsm_minimize(fsm_intersect(rawrules, thisrule));
     }
-    
-    rule = cg_rule_wrapup(rawrules);
-    rule = fsm_topsort(rule);
-    cg_print_rule_info(rule);
-    cg_add_rule_to_chain(rule);
-    cg_rule_complex = cg_rule_complex_current = cg_rule_complex_current_head = calloc(1,sizeof(struct cg_rule_complex));
-    /* Cleanup mem */
+  }
+
+  rule = cg_rule_wrapup(rawrules);
+  rule = fsm_topsort(rule);
+  cg_print_rule_info(rule);
+  cg_add_rule_to_chain(rule);
+  cg_rule_complex =
+  cg_rule_complex_current =
+  cg_rule_complex_current_head = calloc(1,sizeof(struct cg_rule_complex));
+  /* Cleanup mem */
 }
 
 /* TODO: why add a space? */
 char *cg_string_addspace(char *s) {
-     char *newstring;
-     newstring = malloc((strlen(s)+2)*sizeof(char));
-     newstring = strcpy(newstring,s);
-     newstring = strcat(newstring, " ");
-     return(newstring);
+  char *newstring;
+  newstring = malloc((strlen(s)+2)*sizeof(char));
+  newstring = strcpy(newstring,s);
+  newstring = strcat(newstring, " ");
+  return(newstring);
 }
 
 void cg_wordform_add(char *string) {
-    cg_rule_complex->wordform = fsm_symbol(string);
+  cg_rule_complex->wordform = fsm_symbol(string);
 }
 
 void cg_fsm_add(char *string, int where, int type) {
-    struct fsm *net, **combinewith;
-    if (type == TYPE_SET) {
-	if ((net = cg_set_find(string)) == NULL) {
-	    printf("Error on line %i: set %s not defined\n",lineno_begin_rule, string);
-	    exit(0);
-	}
-    } else if (type == TYPE_TAG) {
-	net = fsm_symbol(cg_string_addspace(string));
+  struct fsm *net, **combinewith;
+  if (type == TYPE_SET) {
+    if ((net = cg_set_find(string)) == NULL) {
+      printf("Error on line %i: set %s not defined\n",lineno_begin_rule, string);
+      exit(0);
     }
+  } else if (type == TYPE_TAG) {
+    net = fsm_symbol(cg_string_addspace(string));
+  }
 
-    /* @*fsm@* */
-    net = fsm_minimize(fsm_concat(fsm_copy(CG_DEF_NODEL), fsm_concat(fsm_copy(net), fsm_copy(CG_DEF_NODEL))));
+  /* @*fsm@* */
+  net = fsm_minimize(fsm_concat(fsm_copy(CG_DEF_NODEL), fsm_concat(fsm_copy(net), fsm_copy(CG_DEF_NODEL))));
 
-    if (where == WHERE_TARGET)
-	combinewith = &(cg_rule_complex_current->target);
-    if (where == WHERE_CONDITION)
-	combinewith = &(cg_rule_complex_current->condition);
-    if (where == WHERE_BARRIER)
-	combinewith = &(cg_rule_complex_current->barrier);
-    
-    if (*combinewith == NULL) {
-	*combinewith = net;
-	return;
-    }
-    
-    if (curr_op == OP_PLUS) {
-	*combinewith = fsm_minimize(fsm_concat(*combinewith, net));
-    }
-    if (curr_op == OP_OR) {
-	*combinewith = fsm_minimize(fsm_union(*combinewith, net));
-    }
-    if (curr_op == OP_MINUS) {
-	*combinewith = fsm_minimize(fsm_minus(*combinewith, net));    
-    }
+  if (where == WHERE_TARGET)
+    combinewith = &(cg_rule_complex_current->target);
+  if (where == WHERE_CONDITION)
+    combinewith = &(cg_rule_complex_current->condition);
+  if (where == WHERE_BARRIER)
+    combinewith = &(cg_rule_complex_current->barrier);
+
+  if (*combinewith == NULL) {
+    *combinewith = net;
+    return;
+  }
+
+  if (curr_op == OP_PLUS) {
+    *combinewith = fsm_minimize(fsm_concat(*combinewith, net));
+  }
+  if (curr_op == OP_OR) {
+    *combinewith = fsm_minimize(fsm_union(*combinewith, net));
+  }
+  if (curr_op == OP_MINUS) {
+    *combinewith = fsm_minimize(fsm_minus(*combinewith, net));    
+  }
 }
 
 /**
@@ -567,54 +571,54 @@ void cg_fsm_add(char *string, int where, int type) {
  * at the end of both the LIST and SET commands. 
  */
 void cg_list_add(void) {
-    struct cg_sets *cgs;
-    if (cg_list_name == NULL) {
-	printf("Something wrong. No list name\n"); exit(0);
-    }
-    cgs = malloc(sizeof(struct cg_sets));
-    cgs->name = cg_list_name;
-    cgs->net = fsm_minimize(cg_list_currelement);
-    printf("SET/LIST \"%s\": ",cg_list_name);
-    cg_print_rule_info(cg_list_currelement);
-    if (cg_sets == NULL) {
-	cg_sets = cgs;
-	cgs->next = NULL;
-    } else {
-	cgs->next = cg_sets;
-	cg_sets = cgs;
-    }
-    cg_list_name = NULL;
-    cg_list_currelement = NULL;
-    cg_list_currcelement = NULL;
+  struct cg_sets *cgs;
+  if (cg_list_name == NULL) {
+    printf("Something wrong. No list name\n"); exit(0);
+  }
+  cgs = malloc(sizeof(struct cg_sets));
+  cgs->name = cg_list_name;
+  cgs->net = fsm_minimize(cg_list_currelement);
+  printf("SET/LIST \"%s\": ",cg_list_name);
+  cg_print_rule_info(cg_list_currelement);
+  if (cg_sets == NULL) {
+    cg_sets = cgs;
+    cgs->next = NULL;
+  } else {
+    cgs->next = cg_sets;
+    cg_sets = cgs;
+  }
+  cg_list_name = NULL;
+  cg_list_currelement = NULL;
+  cg_list_currcelement = NULL;
 }
 
 void cg_set_element_add(char *name) { 
-    /** Creates the regex @*name@* */
-    struct fsm* contains_name = 
-            fsm_concat(fsm_copy(CG_DEF_NODEL),
-                       fsm_concat(fsm_symbol(cg_string_addspace(name)),
-                                  fsm_copy(CG_DEF_NODEL)));
+  /** Creates the regex @*name@* */
+  struct fsm* contains_name = 
+      fsm_concat(fsm_copy(CG_DEF_NODEL),
+                 fsm_concat(fsm_symbol(cg_string_addspace(name)),
+                            fsm_copy(CG_DEF_NODEL)));
 
-    if (cg_list_currelement == NULL) {
-        cg_list_currelement = fsm_minimize(contains_name);
-    } else {
-        /* + operator: concats @*name@* to the end of the current element. */
-        if (curr_op == OP_PLUS) {
-            cg_list_currelement = fsm_minimize(
-                    fsm_concat(cg_list_currelement, contains_name));
-        }
-        /* - operator: current element - @*name@*. Not the opposite of +! */
-        if (curr_op == OP_MINUS) {
-            cg_list_currelement = fsm_minimize(
-                    fsm_minus(cg_list_currelement, contains_name));
-        }
-        /* OR operator: union */
-        if (curr_op == OP_OR) {
-            cg_list_currelement = fsm_minimize(
-              fsm_union(cg_list_currelement, contains_name));
-        }
+  if (cg_list_currelement == NULL) {
+    cg_list_currelement = fsm_minimize(contains_name);
+  } else {
+    /* + operator: concats @*name@* to the end of the current element. */
+    if (curr_op == OP_PLUS) {
+      cg_list_currelement = fsm_minimize(
+          fsm_concat(cg_list_currelement, contains_name));
     }
-    /* TODO: else if */
+    /* - operator: current element - @*name@*. Not the opposite of +! */
+    if (curr_op == OP_MINUS) {
+      cg_list_currelement = fsm_minimize(
+          fsm_minus(cg_list_currelement, contains_name));
+    }
+    /* OR operator: union */
+    if (curr_op == OP_OR) {
+      cg_list_currelement = fsm_minimize(
+          fsm_union(cg_list_currelement, contains_name));
+    }
+  }
+  /* TODO: else if */
 }
 
 /* Set definition functions, that tackle the LIST command. The resulting FSM is
@@ -625,42 +629,42 @@ void cg_set_element_add(char *name) {
 /* */
 
 void cg_list_element_add(char *name) { 
-    if (cg_list_currelement == NULL) {
-	cg_list_currelement = fsm_symbol(cg_string_addspace(name));
-    } else {
-	cg_list_currelement = fsm_minimize(fsm_union(cg_list_currelement, fsm_symbol(cg_string_addspace(name))));
-    }
+  if (cg_list_currelement == NULL) {
+    cg_list_currelement = fsm_symbol(cg_string_addspace(name));
+  } else {
+    cg_list_currelement = fsm_minimize(fsm_union(cg_list_currelement, fsm_symbol(cg_string_addspace(name))));
+  }
 }
 
 void cg_list_celement_add(char *name) {
-    if (cg_list_currcelement == NULL) {
-	//	cg_list_currcelement = fsm_minimize(fsm_concat(fsm_copy(CG_DEF_NODEL), fsm_concat(fsm_symbol(cg_string_addspace(name)), fsm_copy(CG_DEF_NODEL))));
-	cg_list_currcelement = fsm_symbol(cg_string_addspace(name));
-    } else {
-	//	cg_list_currcelement = fsm_minimize(fsm_concat(cg_list_currcelement, fsm_minimize(fsm_concat(fsm_copy(CG_DEF_NODEL), fsm_concat(fsm_symbol(cg_string_addspace(name)), fsm_copy(CG_DEF_NODEL))))));
-	cg_list_currcelement = fsm_minimize(fsm_concat(cg_list_currcelement, fsm_symbol(cg_string_addspace(name))));
-    }
+  if (cg_list_currcelement == NULL) {
+    //	cg_list_currcelement = fsm_minimize(fsm_concat(fsm_copy(CG_DEF_NODEL), fsm_concat(fsm_symbol(cg_string_addspace(name)), fsm_copy(CG_DEF_NODEL))));
+    cg_list_currcelement = fsm_symbol(cg_string_addspace(name));
+  } else {
+    //	cg_list_currcelement = fsm_minimize(fsm_concat(cg_list_currcelement, fsm_minimize(fsm_concat(fsm_copy(CG_DEF_NODEL), fsm_concat(fsm_symbol(cg_string_addspace(name)), fsm_copy(CG_DEF_NODEL))))));
+    cg_list_currcelement = fsm_minimize(fsm_concat(cg_list_currcelement, fsm_symbol(cg_string_addspace(name))));
+  }
 }
 
 void cg_list_celement_end() { 
-    if (cg_list_currelement == NULL) {
-	cg_list_currelement = cg_list_currcelement;
-    } else {
-	cg_list_currelement = fsm_minimize(fsm_union(cg_list_currelement, cg_list_currcelement));
-    }
-    cg_list_currcelement = NULL;
+  if (cg_list_currelement == NULL) {
+    cg_list_currelement = cg_list_currcelement;
+  } else {
+    cg_list_currelement = fsm_minimize(fsm_union(cg_list_currelement, cg_list_currcelement));
+  }
+  cg_list_currcelement = NULL;
 }
 
 
 void yerror(char *s1, char *s2, int line) {
-    current_error = strdup(s1);
-    first_error_sym = strdup(s2);
-    current_error_line = line;
+  current_error = strdup(s1);
+  first_error_sym = strdup(s2);
+  current_error_line = line;
 }
 
 void yerrorprint(char *s) {
-     printf("\nSyntax error: expected %s at \"%s%s\" on line %i.\n",current_error,first_error_sym,s,current_error_line);    
-     exit(1);
+  printf("\nSyntax error: expected %s at \"%s%s\" on line %i.\n",current_error,first_error_sym,s,current_error_line);    
+  exit(1);
 }
 
 %}
@@ -854,40 +858,40 @@ RULESCOPE ("*"|"*""*")?"@"?"-"?{DIGIT}+C?
 %%
 
 int save_rules_fsm(char *filename) {
-    char prolog_name[30];
-    gzFile *outfile;
-    struct cg_rules *rules;
-    if ((outfile = gzopen(filename, "wb")) == NULL) {
-        printf("Error opening file %s for writing.\n", filename);
-        return(-1);
-    }
-    printf("Writing rules to file %s.\n", filename);
-    for (rules = cg_rules ; rules != NULL; rules = rules->next) {
-        foma_net_print(rules->rule, outfile);
-	sprintf(prolog_name,"%s.prolog",rules->rule->name);
-	write_prolog(rules->rule, prolog_name);
-    }
-    gzclose(outfile);
-    return(1);
+  char prolog_name[30];
+  gzFile *outfile;
+  struct cg_rules *rules;
+  if ((outfile = gzopen(filename, "wb")) == NULL) {
+    printf("Error opening file %s for writing.\n", filename);
+    return(-1);
+  }
+  printf("Writing rules to file %s.\n", filename);
+  for (rules = cg_rules ; rules != NULL; rules = rules->next) {
+    foma_net_print(rules->rule, outfile);
+    sprintf(prolog_name,"%s.prolog",rules->rule->name);
+    write_prolog(rules->rule, prolog_name);
+  }
+  gzclose(outfile);
+  return(1);
 }
 
 int main(int argc, char **argv) {
-    ++argv, --argc;  /* skip over program name */
-    if (argc > 0)
-	yyin = fopen(argv[0], "r");
-    else
-	yyin = stdin;
-    
-    cg_init();
-    yylex();
-    printf("Done. Rule statistics:\n");
-    printf("Number of rules compiled: %i\n",total_rules);
-    printf("Average number of states: %i\n",total_states/total_rules);
-    printf("Total number of states: %i\n",total_states);
-    printf("Average number of transitions: %i\n",total_arcs/total_rules);
-    printf("Total number of transitions: %i\n",total_arcs);
+  ++argv, --argc;  /* skip over program name */
+  if (argc > 0)
+    yyin = fopen(argv[0], "r");
+  else
+    yyin = stdin;
 
-    if (cg_rules != NULL)
+  cg_init();
+  yylex();
+  printf("Done. Rule statistics:\n");
+  printf("Number of rules compiled: %i\n",total_rules);
+  printf("Average number of states: %i\n",total_states/total_rules);
+  printf("Total number of states: %i\n",total_states);
+  printf("Average number of transitions: %i\n",total_arcs/total_rules);
+  printf("Total number of transitions: %i\n",total_arcs);
+
+  if (cg_rules != NULL)
 	save_rules_fsm("outfile");
-    return(1);
+  return(1);
 }
