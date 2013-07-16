@@ -61,7 +61,7 @@
 
 #define VACUOUS_STATECOUNT 7
 
-    int g_debug = 0;
+    int g_debug = 1;
     int lineno_begin_rule;
 
     int total_rules = 0 ;
@@ -82,13 +82,14 @@
     struct fsm *cg_list_currcelement = NULL;
 
     struct cg_sets {
-	char *name;
-	struct fsm *net;
-	struct cg_sets *next;
+        char *name;
+        struct fsm *net;
+        struct cg_sets *next;
     } *cg_sets = NULL;
 
     /* Each rule is stored as it is built into the cg_rule_complex struct */
 
+    /* What do these fields mean? */
     struct cg_rule_complex {
 	struct fsm *wordform  ;
 	struct fsm *target    ;
@@ -118,6 +119,10 @@ void dprint(const char* format, ...) {
     }
 }
 
+/**
+ * Parses the scope string and fills the scope-related fields of cg_rule_complex
+ * accordingly.
+ */
 void cg_parse_scope(char *string, struct cg_rule_complex *cgr) {
     size_t skipnum;
     if (strncmp(string,"**",2)==0) {
@@ -143,10 +148,11 @@ void cg_parse_scope(char *string, struct cg_rule_complex *cgr) {
 
 void cg_init(void) {
     printf("Loading auxiliary networks...\n");
+    /* Consumes everything. */
     CG_DEF_NODEL = fsm_read_binary_file("cg_NODEL.foma");
     CG_DEF_ConstrainS = fsm_read_binary_file("cg_ConstrainS.foma");
     CG_DEF_ConstrainR = fsm_read_binary_file("cg_ConstrainR.foma");
-    CG_DEF_Rollback = fsm_read_binary_file("cg_Rollback.foma");
+    CG_DEF_Rollback = fsm_read_binary_file("cg_Rollback.foma");  // = invCR
     CG_DEF_Cleanup = fsm_read_binary_file("cg_Cleanup2.foma");
     CG_DEF_InitialFilter = fsm_read_binary_file("cg_InitialFilter.foma");
     CG_DEF_MWFPROLOG = fsm_read_binary_file("cg_MWFPROLOG.foma");
@@ -199,6 +205,10 @@ struct fsm *cg_mark_form_target(struct fsm *wordform, struct fsm *target) {
     return(result);
 }
 
+/**
+ * Returns the FSM of the set called @p string, or @c NULL, if no set by that
+ * name is defined.
+ */
 struct fsm *cg_set_find(char *string) {
     struct cg_sets *cgs;
     for (cgs = cg_sets; cgs != NULL; cgs = cgs->next) {
@@ -209,6 +219,7 @@ struct fsm *cg_set_find(char *string) {
     return NULL;
 }
 
+/** What CompileRule(X) does in the paper. */
 struct fsm *cg_rule_wrapup(struct fsm *rawrule) {
     /* [Rawrule .o. ~[Rawrule .o. Rollback].l .o. Cleanup]; */
 
@@ -297,6 +308,7 @@ struct fsm *cg_insertaux(int count) {
 	R2 = fsm_concat(R2, fsm_optionality(fsm_symbol(linknumstring)));
     }
     R1 = fsm_union(fsm_symbol("$0$ "), fsm_union(fsm_symbol("$A$ "), fsm_symbol("$R$ ")));
+    /* [L | | R1 0:R2]* */
     result = fsm_minimize(fsm_kleene_star(fsm_union(L, fsm_concat(R1, fsm_cross_product(fsm_empty_string(), R2)))));
     return(result);    
 }
@@ -322,11 +334,23 @@ struct fsm *cg_removeaux(int count) {
     return(result);
 }
 
+/** Compiles the rule. */
+/* TODO: understand this. */
 void cg_compile_rule() {
-    char linknumstring[10], headnumstring[10];
-    int numskip, linkcount;
-    struct cg_rule_complex *rules, *linkrule;
-    struct fsm *rawrules, *constrain, *tests, *thisrule, *rule, *match, *skip, *scan, *thistest;
+    char linknumstring[10], headnumstring[10];  // for sprintf
+    int numskip,                      
+        linkcount;        // Counts the number of links in the inner loop
+    struct cg_rule_complex *rules,    // Running variable in the outer loop
+                           *linkrule; // The currently analysed linked rule
+    struct fsm *rawrules,
+           *constrain,    // SELECT or REMOVE (ConstrainS or ConstrainR)
+	   *tests,        // TODO: should be "test"? The test part in the rule
+	   *thisrule,
+	   *rule,
+	   *match,
+	   *skip,
+	   *scan,
+	   *thistest;
     if (rule_operation == OP_SELECT) {
 	constrain = fsm_copy(CG_DEF_ConstrainS);
     } else if (rule_operation == OP_REMOVE) {
@@ -354,15 +378,18 @@ void cg_compile_rule() {
 
 		/* MATCH */
 
+                /* Normal / safe matching. */
 		if (linkrule->scope_mode & MODE_CAREFUL) {
 		    match = cg_match_cohort_careful(fsm_copy(linkrule->condition));
 		} else {
 		    match = cg_match_cohort(fsm_copy(linkrule->condition));
 		}
+		/* TODO: add $linkcount$ to the above? */
 		if (linkrule->link != NULL) {
 		    sprintf(linknumstring,"$%i$ ",linkcount);
 		    match = fsm_minimize(fsm_concat(fsm_symbol(linknumstring), match));
 		}
+		/* TODO: the head: $linkcount-1$ or $A$. */
 		if (linkcount > 1) {
 		    sprintf(headnumstring,"$%i$ ", linkcount-1);
 		} else {
@@ -371,6 +398,7 @@ void cg_compile_rule() {
 
 		/* SCAN */
 
+		/* Create an ANYCOHORT "train" of scope length. */
 		numskip = linkrule->scope_num >= 0 ? linkrule->scope_num : abs(linkrule->scope_num+1);
 		skip = fsm_concat_n(fsm_copy(CG_DEF_ANYCOHORT), numskip);
 
@@ -381,6 +409,7 @@ void cg_compile_rule() {
 			scan = fsm_minimize(fsm_minus(scan, cg_match_cohort(fsm_copy(linkrule->barrier))));
 		    }
 		    /* Only matters in the presence of LINKed contexts */
+		    /* Q: what is this? Also: cg_match_cohor_careful? */
 		    if ((linkrule->scope_mode & MODE_STAR) && (rules->num_links > 0)) {
 			scan = fsm_minimize(fsm_minus(scan, cg_match_cohort(fsm_copy(linkrule->condition))));
 		    }
@@ -388,30 +417,36 @@ void cg_compile_rule() {
 		} else {
 		    scan = fsm_empty_string();
 		    /* We remove the BARRIER from skip only if no scanning is used */
+		    /* Q: why? Shouldn't this be done above too? */
 		    if (linkrule->barrier != NULL) {
 			skip = fsm_minimize(fsm_minus(skip, cg_match_cohort(fsm_copy(linkrule->barrier))));
 		    }
 		}
+		/* + or - scope. */
 		if (linkrule->scope_num >=0) {
 		    scan = fsm_minimize(fsm_concat(skip,scan));
 		} else {
 		    scan = fsm_minimize(fsm_concat(scan,skip));
 		}
 		
-		/* TESTS: ABSOLUTE SCOPE */
+		/* TESTS: ABSOLUTE SCOPE (scope = absolute word index) */
 		if (linkrule->scope_mode & MODE_ABSOLUTE) {
 		    if (linkrule->scope_num >=0) {
 			/* Look right */
 			if (linkrule->rule_not) {
+			    /* Q: why the first part? [~$"$i$ " || ~[scan match ?*] ]  */
 			    tests = fsm_minimize(fsm_union(fsm_complement(fsm_contains(fsm_symbol(headnumstring))), fsm_complement(fsm_concat(fsm_minimize(fsm_concat(scan, match)), fsm_universal()))));
 			} else {
+			    /* [~$"$i$ " || scan match ?*] */
 			    tests = fsm_minimize(fsm_union(fsm_complement(fsm_contains(fsm_symbol(headnumstring))), fsm_concat(fsm_minimize(fsm_concat(scan, match)), fsm_universal())));
 			}
 		    } else {	
 			/* Look left */
 			if (linkrule->rule_not) {
+			    /* [ ~$"$i$ " || ~[?* match scan] ] */
 			    tests = fsm_minimize(fsm_union(fsm_complement(fsm_contains(fsm_symbol(headnumstring))), fsm_complement(fsm_concat(fsm_universal(),fsm_minimize(fsm_concat(match, scan))))));
 			} else {
+			    /* [ ~$"$i$ " || ?* match scan] */
 			    tests = fsm_minimize(fsm_union(fsm_complement(fsm_contains(fsm_symbol(headnumstring))), fsm_concat(fsm_universal(),fsm_minimize(fsm_concat(match, scan)))));
 			}
 		    }
@@ -420,35 +455,39 @@ void cg_compile_rule() {
 		    if (linkrule->scope_num >=0) {
 			/* Look right */
 			if (linkrule->rule_not) {
+			    /* ~$["$i$ " [scan match]] */
 			    tests = cg_simple_crrnot(fsm_symbol(headnumstring),fsm_minimize(fsm_concat(scan, match)));
 			} else {
+			    /* "$i$ " => _ [scan match]] */
 			    tests = cg_simple_crr(fsm_symbol(headnumstring), fsm_minimize(fsm_concat(scan, match)));
 			}
 		    } else {
 			/* Look left */
 			if (linkrule->rule_not) {
+			    /* ~$[ [match scan] "$i$ "] */
 			    tests = cg_simple_crlnot(fsm_symbol(headnumstring),fsm_minimize(fsm_concat(match, scan)));
 			} else {
+			    /* "$i$ " => [match scan] _] */
 			    tests = cg_simple_crl(fsm_symbol(headnumstring), fsm_minimize(fsm_concat(match, scan)));
 			}
 		    }
-		}		
+		}
 	    } else {
 		tests = fsm_universal();
 	    }
 	    
 	    /* InitialFilter .o. mark_form_target(wordform, target) .o. constrain .o. tests */
 	    if (linkcount == 1) {
-		thistest = fsm_minimize(fsm_compose(fsm_compose(fsm_copy(CG_DEF_InitialFilter),cg_mark_form_target(fsm_copy(cg_rule_complex->wordform),fsm_copy(cg_rule_complex->target))),fsm_copy(constrain)));
+	        /* The original condition. */
+		thistest = fsm_minimize(fsm_compose(fsm_compose(fsm_copy(CG_DEF_InitialFilter),cg_mark_form_target(fsm_copy(cg_rule_complex->wordform), fsm_copy(cg_rule_complex->target))),fsm_copy(constrain)));
 		/* need to add insertaux if needed */
 		if (linkrule->num_links > 0) {
 		    thistest = fsm_minimize(fsm_compose(thistest, cg_insertaux(linkrule->num_links)));
 		}
-		thistest = fsm_minimize(fsm_compose(thistest, tests));
-	    } else {
-		thistest = fsm_minimize(fsm_compose(thistest, tests));
 	    }
-	}
+	    /* Add the linked test to the list of current tests (with .o.). */
+    	    thistest = fsm_minimize(fsm_compose(thistest, tests));
+	}  // end for LINKs
 
 	/* Add removeaux if needed */
 	if (rules->num_links > 0) {
@@ -473,6 +512,7 @@ void cg_compile_rule() {
     /* Cleanup mem */
 }
 
+/* TODO: why add a space? */
 char *cg_string_addspace(char *s) {
      char *newstring;
      newstring = malloc((strlen(s)+2)*sizeof(char));
@@ -496,6 +536,7 @@ void cg_fsm_add(char *string, int where, int type) {
 	net = fsm_symbol(cg_string_addspace(string));
     }
 
+    /* @*fsm@* */
     net = fsm_minimize(fsm_concat(fsm_copy(CG_DEF_NODEL), fsm_concat(fsm_copy(net), fsm_copy(CG_DEF_NODEL))));
 
     if (where == WHERE_TARGET)
@@ -521,6 +562,10 @@ void cg_fsm_add(char *string, int where, int type) {
     }
 }
 
+/**
+ * Adds the current set to the linked list that stores sets (cg_sets). Called
+ * at the end of both the LIST and SET commands. 
+ */
 void cg_list_add(void) {
     struct cg_sets *cgs;
     if (cg_list_name == NULL) {
@@ -543,22 +588,41 @@ void cg_list_add(void) {
     cg_list_currcelement = NULL;
 }
 
- void cg_set_element_add(char *name) { 
+void cg_set_element_add(char *name) { 
+    /** Creates the regex @*name@* */
+    struct fsm* contains_name = 
+            fsm_concat(fsm_copy(CG_DEF_NODEL),
+                       fsm_concat(fsm_symbol(cg_string_addspace(name)),
+                                  fsm_copy(CG_DEF_NODEL)));
+
     if (cg_list_currelement == NULL) {
-	cg_list_currelement = fsm_minimize(fsm_concat(fsm_copy(CG_DEF_NODEL), fsm_concat(fsm_symbol(cg_string_addspace(name)), fsm_copy(CG_DEF_NODEL))));
+        cg_list_currelement = fsm_minimize(contains_name);
     } else {
-	if (curr_op == OP_PLUS) {
-	    cg_list_currelement = fsm_minimize(fsm_concat(cg_list_currelement, fsm_concat(fsm_copy(CG_DEF_NODEL), fsm_concat(fsm_symbol(cg_string_addspace(name)), fsm_copy(CG_DEF_NODEL)))));
-	}
-	if (curr_op == OP_MINUS) {
-	    cg_list_currelement = fsm_minimize(fsm_minus(cg_list_currelement, fsm_concat(fsm_copy(CG_DEF_NODEL), fsm_concat(fsm_symbol(cg_string_addspace(name)), fsm_copy(CG_DEF_NODEL)))));
-	}
-	if (curr_op == OP_OR) {
-	    cg_list_currelement = fsm_minimize(fsm_union(cg_list_currelement, fsm_concat(fsm_copy(CG_DEF_NODEL), fsm_concat(fsm_symbol(cg_string_addspace(name)), fsm_copy(CG_DEF_NODEL)))));
-	}
+        /* + operator: concats @*name@* to the end of the current element. */
+        if (curr_op == OP_PLUS) {
+            cg_list_currelement = fsm_minimize(
+                    fsm_concat(cg_list_currelement, contains_name));
+        }
+        /* - operator: current element - @*name@*. Not the opposite of +! */
+        if (curr_op == OP_MINUS) {
+            cg_list_currelement = fsm_minimize(
+                    fsm_minus(cg_list_currelement, contains_name));
+        }
+        /* OR operator: union */
+        if (curr_op == OP_OR) {
+            cg_list_currelement = fsm_minimize(
+              fsm_union(cg_list_currelement, contains_name));
+        }
     }
+    /* TODO: else if */
 }
 
+/* Set definition functions, that tackle the LIST command. The resulting FSM is
+ * a union of the list's
+ * elements, with the exception of elements in parentheses, which are
+ * concatenated. A space is inserted to the end of all elements. */
+/* TODO: why? */
+/* */
 
 void cg_list_element_add(char *name) { 
     if (cg_list_currelement == NULL) {
@@ -601,11 +665,18 @@ void yerrorprint(char *s) {
 
 %}
 
-%x s0 s1 s2 s3 s4 s5 s6 s7 s8 s9 s10 s11 s12 s13 s14 s15 s16 s17 s18 sIF ERROR LISTCOLLECT LISTEQ LISTING LISTCONCAT SETCOLLECT SETEQ SETLISTING
+%x s0 s1 s2 s3 s4 s5 s6 s7 s8 s9 s10 s11 s12 s13 s14 s15 s16 s17 s18 sIF
+%x DELIMCOLLECT DELIMLISTING DELIMCONCAT
+%x LISTCOLLECT LISTEQ LISTING LISTCONCAT
+%x SETCOLLECT SETEQ SETLISTING
+%x ERROR 
 
 DIGIT    [0-9]
+    /* ID: [\@_:<>*+,?=$!%^.-[]' or alnum], then the same or unicode characters */
+    /* anything between double quotes. */
 ID       ([\\@_:"<>"a-zA-Z0-9*+,?=$!%\^.\-\[\]\']([\\"<>"/\-_@:A-Za-z0-9*+,?=$!%\^.\[\]\']|[\300-\337].|[\340-\357]..|[\360-\367]...)*)|["][^"]*["] 
 RULESCOPE ("*"|"*""*")?"@"?"-"?{DIGIT}+C?
+    /* e.g. *-1 */
 %%
 <ERROR>[^\n]*       { yerrorprint(yytext);  }
 
@@ -614,11 +685,35 @@ RULESCOPE ("*"|"*""*")?"@"?"-"?{DIGIT}+C?
 
 (?i:LIST)           { dprint("LIST "); lineno_begin_rule = yylineno; BEGIN(LISTCOLLECT); }
 (?i:SET)            { dprint("SET ");   lineno_begin_rule = yylineno;BEGIN(SETCOLLECT);  }
-(?i:DELIMITERS)     { dprint("DELIMITERS "); lineno_begin_rule = yylineno;               }
-(?i:SECTION)        { dprint("DELIMITERS "); lineno_begin_rule = yylineno;               }
-(?i:CONSTRAINTS)    { dprint("DELIMITERS "); lineno_begin_rule = yylineno;               }
-(?i:MAPPINGS)       { dprint("DELIMITERS "); lineno_begin_rule = yylineno;               }
+(?i:DELIMITERS)     { dprint("DELIMITERS "); lineno_begin_rule = yylineno; BEGIN(DELIMCOLLECT); }
+(?i:SECTION)        { dprint("SECTION "); lineno_begin_rule = yylineno;                  }
+(?i:CONSTRAINTS)    { dprint("CONSTRAINTS "); lineno_begin_rule = yylineno;              }
+(?i:MAPPINGS)       { dprint("MAPPINGS "); lineno_begin_rule = yylineno;                 }
+    /* TODO: what are SECTION, CONSTRAINTS, MAPPINGS? */
 
+<DELIMCOLLECT>"="   { dprint("DELIMEQ");
+                      cg_list_name = "DELIMITERS";
+                      BEGIN(DELIMLISTING); }
+<DELIMCOLLECT>.     { yerror("delimiter", yytext, yylineno);
+                      BEGIN(ERROR); }
+
+<DELIMLISTING>{ID}  { dprint("DELEMENT:[%s] ",yytext);
+                      cg_list_element_add(yytext); }
+<DELIMLISTING>"("   { dprint("DCONC ");
+                      BEGIN(DELIMCONCAT); }
+<DELIMLISTING>";"   { dprint("DEND\n"); cg_list_add();
+                      BEGIN(0); }
+<DELIMLISTING>.     { yerror("delim element or ; ",yytext,yylineno);
+                      BEGIN(ERROR); }
+
+<DELIMCONCAT>{ID}    { dprint("DCELEMENT:[%s] ",yytext);
+                       cg_list_celement_add(yytext); }
+<DELIMCONCAT>")"     { dprint("DNORMAL ");
+                       cg_list_celement_end(yytext);
+                       BEGIN(DELIMLISTING); }
+<DELIMCONCAT>.       { yerror("list element or ) ",yytext,yylineno);
+                       BEGIN(ERROR); }
+ 
 <LISTCOLLECT>{ID}   { dprint("LNAME:[%s] ",yytext); cg_list_name = strdup(yytext); BEGIN(LISTEQ);       }
 <LISTCOLLECT>.      { yerror("list name",yytext,yylineno); BEGIN(ERROR); }
 
@@ -650,6 +745,8 @@ RULESCOPE ("*"|"*""*")?"@"?"-"?{DIGIT}+C?
 (?i:SELECT)      { dprint("SELECT ");  lineno_begin_rule = yylineno; rule_operation = OP_SELECT; curr_op = OP_NONE; BEGIN(s2); }
 (?i:REMOVE)      { dprint("REMOVE ");  lineno_begin_rule = yylineno; rule_operation = OP_REMOVE; curr_op = OP_NONE; BEGIN(s2); }
 ^{ID}+           { dprint("WORDFORM ");  lineno_begin_rule = yylineno; cg_wordform_add(yytext); curr_op = OP_NONE; BEGIN(s1);  }
+
+   /* TODO: rename s1 and s2 to meaningful names. */
 
 <s1>(?i:SELECT)   { dprint("SELECT "); rule_operation = OP_SELECT; BEGIN(s2);  }
 <s1>(?i:REMOVE)   { dprint("REMOVE "); rule_operation = OP_REMOVE; BEGIN(s2);  }
@@ -704,7 +801,7 @@ RULESCOPE ("*"|"*""*")?"@"?"-"?{DIGIT}+C?
     cg_rule_complex_current->link = calloc(1, sizeof(struct cg_rule_complex));
     cg_rule_complex_current = cg_rule_complex_current->link;
     BEGIN(s5);
-}
+}  /* TODO: understand linking. */
 
 <s10>")"          { dprint("CLOSEPAR "); BEGIN(s11); }
 <s10>(?i:BARRIER) { dprint("BARRIER "); BEGIN(s12);  }
@@ -751,7 +848,7 @@ RULESCOPE ("*"|"*""*")?"@"?"-"?{DIGIT}+C?
 <s13>"("         { dprint("OPENPAR "); BEGIN(s9); }
 <s13>.           { yerror("set, NOT, or (", yytext, yylineno); BEGIN(ERROR); }
 
-"="              { dprint("EQUALS ");   }
+"="              { dprint("EQUALS\n");   }
 
 .                { yerror("WORDFORM or SELECT OR REMOVE",yytext,yylineno); }
 %%
