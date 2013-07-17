@@ -290,7 +290,11 @@ void cg_add_rule_to_chain(struct fsm *rule) {
 
 struct fsm *cg_match_cohort(struct fsm *net) {
   /* [\"#BOC# "* "#BOC# " \"#EOC# "* DEL ALIVE \DEL* X \"#EOC# "* "#EOC# " ~$"#BOC# "] */
-  return(fsm_minimize(fsm_concat(fsm_copy(CG_DEF_MATCHCOHORT1), fsm_concat(net, fsm_copy(CG_DEF_MATCHCOHORT2)))));
+  return fsm_minimize(fsm_concat(
+             fsm_copy(CG_DEF_MATCHCOHORT1),
+             fsm_concat(
+                 net,
+                 fsm_copy(CG_DEF_MATCHCOHORT2))));
 }
 
 struct fsm *cg_match_cohort_careful(struct fsm *net) {
@@ -372,7 +376,9 @@ struct fsm *cg_insertaux(int count) {
     sprintf(linknumstring, "$%i$ ", i);
     R2 = fsm_concat(R2, fsm_optionality(fsm_symbol(linknumstring)));
   }
-  R1 = fsm_union(fsm_symbol("$0$ "), fsm_union(fsm_symbol("$A$ "), fsm_symbol("$R$ ")));
+  R1 = fsm_union(
+           fsm_symbol("$0$ "),
+           fsm_union(fsm_symbol("$A$ "), fsm_symbol("$R$ ")));
   /* [L | | R1 0:R2]* */
   result = fsm_minimize(fsm_kleene_star(fsm_union(
            L,
