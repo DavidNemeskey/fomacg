@@ -652,23 +652,19 @@ void cg_delim_wordform_add(char* string) {
  * with it.
  */
 void cg_delim_write() {
-  struct fsm* delimiter_rule = NULL;  // TODO: fsm_empty_set
+  struct fsm* delimiter_rule = fsm_empty_set();
   if (cg_delim_wordforms != NULL) {
     // TODO: nope, must embed in $0$ X #BOC# ...
-    delimiter_rule = cg_delim_wordforms;
+    delimiter_rule = fsm_union(delimiter_rule,
+                               fsm_concat(fsm_universal(),
+                                          fsm_concat(cg_delim_wordforms,
+                                                     fsm_universal())));
     cg_delim_wordforms = NULL;
   }
   if (cg_list_currelement != NULL) {
-    if (delimiter_rule != NULL) {
-      delimiter_rule = fsm_union(delimiter_rule,
-                                 cg_match_cohort(cg_list_currelement));
-    } else {
-      delimiter_rule = cg_match_cohort(cg_list_currelement);
-    }
+    delimiter_rule = fsm_union(delimiter_rule,
+                               cg_match_cohort(cg_list_currelement));
     cg_list_currelement = NULL;
-  }
-  if (delimiter_rule == NULL) {
-    delimiter_rule = fsm_empty_set();
   }
   delimiter_rule = fsm_minimize(delimiter_rule);
   write_prolog(delimiter_rule, "DELIMITERS.prolog");
