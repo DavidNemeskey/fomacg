@@ -36,6 +36,7 @@
 #include "fomalib.h"
 #include <stdio.h>
 #include <stdarg.h>
+#include <string.h>
 #include "zlib.h"
 
 #define MODE_CAREFUL  1
@@ -81,6 +82,9 @@
              *CG_DEF_MWFPROLOG, *CG_DEF_MWFEPILOG, *CG_DEF_ANYCOHORT,
              *CG_DEF_MATCHCOHORT1, *CG_DEF_MATCHCOHORT2, *CG_DEF_DEAD,
              *CG_DEF_ALIVE, *CG_DEF_DEL;
+
+  /* For the DELIMITERS. */
+  struct fsm *cg_delim_wordforms = NULL;
 
   struct fsm *cg_list_currelement = NULL;
   struct fsm *cg_list_currcelement = NULL;
@@ -631,6 +635,46 @@ char *cg_string_addspace(char *s) {
   return(newstring);
 }
 
+/* Delimiters. For tags, we reuse the infrastructure for the LIST command
+   (cg_list_currelement, etc). */
+
+/** Registers a delimiter word form. */
+void cg_delim_wordform_add(char* string) {
+  if (cg_delim_wordforms == NULL) {
+    cg_delim_wordforms = fsm_symbol(string);
+  } else {
+    cg_delim_wordforms = fsm_union(cg_delim_wordforms, fsm_symbol(string));
+  }
+}
+
+/**
+ * Writes the delimiters "rule" to a file, and frees the resources associated
+ * with it.
+ */
+void cg_delim_write() {
+  struct fsm* delimiter_rule = NULL;  // TODO: fsm_empty_set
+  if (cg_delim_wordforms != NULL) {
+    // TODO: nope, must embed in $0$ X #BOC# ...
+    delimiter_rule = cg_delim_wordforms;
+    cg_delim_wordforms = NULL;
+  }
+  if (cg_list_currelement != NULL) {
+    if (delimiter_rule != NULL) {
+      delimiter_rule = fsm_union(delimiter_rule,
+                                 cg_match_cohort(cg_list_currelement));
+    } else {
+      delimiter_rule = cg_match_cohort(cg_list_currelement);
+    }
+    cg_list_currelement = NULL;
+  }
+  if (delimiter_rule == NULL) {
+    delimiter_rule = fsm_empty_set();
+  }
+  delimiter_rule = fsm_minimize(delimiter_rule);
+  write_prolog(delimiter_rule, "DELIMITERS.prolog");
+  fsm_destroy(delimiter_rule);
+}
+
 void cg_wordform_add(char *string) {
   cg_rule_complex->wordform = fsm_symbol(string);
 }
@@ -816,16 +860,24 @@ RULESCOPE ("*"|"*""*")?"@"?"-"?{DIGIT}+C?
 <DELIMCOLLECT>.     { yerror("delimiter", yytext, yylineno);
                       BEGIN(ERROR); }
 
-<DELIMLISTING>{ID}  { dprint("DELEMENT:[%s] ",yytext);
-                      cg_list_element_add(yytext); }
+<DELIMLISTING>{ID}  { dprint("DELEMENT:[%s] ", yytext);
+                      if (strncmp(yytext, "\"<", 2) == 0) {
+                        dprint("WORD FORM ");
+                        cg_delim_wordform_add(yytext);
+                      } else {
+                        dprint("TAG ");
+                        cg_list_element_add(yytext);
+                      }
+                    }
 <DELIMLISTING>"("   { dprint("DCONC ");
                       BEGIN(DELIMCONCAT); }
-<DELIMLISTING>";"   { dprint("DEND\n"); cg_list_add();
+<DELIMLISTING>";"   { dprint("DEND\n");
+                      cg_delim_write();
                       BEGIN(0); }
-<DELIMLISTING>.     { yerror("delim element or ; ",yytext,yylineno);
+<DELIMLISTING>.     { yerror("delim element or ; ", yytext, yylineno);
                       BEGIN(ERROR); }
 
-<DELIMCONCAT>{ID}    { dprint("DCELEMENT:[%s] ",yytext);
+<DELIMCONCAT>{ID}    { dprint("DCELEMENT:[%s] ", yytext);
                        cg_list_celement_add(yytext); }
 <DELIMCONCAT>")"     { dprint("DNORMAL ");
                        cg_list_celement_end(yytext);
