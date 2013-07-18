@@ -667,6 +667,7 @@ void cg_delim_write() {
     cg_list_currelement = NULL;
   }
   delimiter_rule = fsm_minimize(delimiter_rule);
+  strcpy(delimiter_rule->name, "DELIMITERS");
   write_prolog(delimiter_rule, "DELIMITERS.prolog");
   fsm_destroy(delimiter_rule);
 }
