@@ -1025,30 +1025,69 @@ RULESCOPE ("*"|"*""*")?"@"?"-"?{DIGIT}+C?
 .                { yerror("WORDFORM or SELECT OR REMOVE",yytext,yylineno); }
 %%
 
+/**
+ * Opens the binary file that corresponds to the current rule's section for
+ * writing. If it is already open, does nothing; if another file is open, closes
+ * it and opens a new one.
+ * 
+ * @param[in,out] outfile the address of the file pointer.
+ * @param[in] prefix the file name prefix of the output file (= the name of the
+ *                   grammar file without the extension).
+ * @param[in] rule the current rule.
+ * @param[in,out] section the section of the currently opened file.
+ * @return @c outfile
+ */
+gzFile* open_outfile(gzFile** outfile, const char* prefix,
+                     struct cg_rules* rule, int* section) {
+  if (rule->section_no != *section) {
+    if (outfile != NULL) gzclose(*outfile);
+    *section = rule->section_no;
+    
+    char* outfile_name = calloc(strlen(prefix) + 15, sizeof(char));
+    snprintf(outfile_name, strlen(prefix) + 15, "%s_%d.fst", prefix, *section);
+    if ((*outfile = gzopen(outfile_name, "wb")) == NULL) {
+      printf("Error opening file %s for writing.\n", outfile_name);
+    }
+    free(outfile_name);
+  }
+  return *outfile;
+}
+
 int save_rules_fsm(char *filename) {
   char prolog_name[30];
-  gzFile *outfile;
   struct cg_rules *rules;
-  if ((outfile = gzopen(filename, "wb")) == NULL) {
-    printf("Error opening file %s for writing.\n", filename);
-    return(-1);
-  }
-  printf("Writing rules to file %s.\n", filename);
+  int section = -1;
+  gzFile* outfile = NULL;
+  printf("Writing rules to files %s_*.fst.\n", filename);
+
   for (rules = cg_rules ; rules != NULL; rules = rules->next) {
+    if ((outfile = open_outfile(&outfile, filename, rules, &section)) == NULL)
+      return -1;
     foma_net_print(rules->rule, outfile);
     sprintf(prolog_name,"%s.prolog",rules->rule->name);
     write_prolog(rules->rule, prolog_name);
   }
   gzclose(outfile);
-  return(1);
+  return 1;
 }
 
 int main(int argc, char **argv) {
   ++argv, --argc;  /* skip over program name */
-  if (argc > 0)
-    yyin = fopen(argv[0], "r");
-  else
+  char* grammar_file = argv[0];
+  char* binary_prefix;
+  if (argc > 0) {
+    binary_prefix = calloc(strlen(grammar_file) + 1, sizeof(char));
+    strcpy(binary_prefix, grammar_file);
+    char* extension = strrchr(binary_prefix, '.');
+    if (extension != NULL) {
+      *extension = 0;
+    }
+    yyin = fopen(grammar_file, "r");
+  } else {
+    binary_prefix = calloc(strlen("outfile") + 1, sizeof(char));
+    strcpy(binary_prefix, "outfile");
     yyin = stdin;
+  }
 
   cg_init();
   yylex();
@@ -1060,6 +1099,7 @@ int main(int argc, char **argv) {
   printf("Total number of transitions: %i\n",total_arcs);
 
   if (cg_rules != NULL)
-	save_rules_fsm("outfile");
-  return(1);
+	save_rules_fsm(binary_prefix);
+  free(binary_prefix);
+  return 1;
 }
