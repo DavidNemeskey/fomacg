@@ -116,6 +116,7 @@
   /* We store each rule as a fsm + lineno combo */
   struct cg_rules {
     int lineno;
+    int section_no;
     struct fsm *rule;
     struct cg_rules *next;
   } *cg_rules = NULL;
@@ -289,6 +290,7 @@ void cg_add_rule_to_chain(struct fsm *rule) {
   }
   cg_rules->rule = rule;
   cg_rules->lineno = lineno_begin_rule;
+  cg_rules->section_no = section_no;
   total_states += rule->statecount;
   total_arcs += rule->arccount;
   total_rules++;
@@ -914,7 +916,7 @@ RULESCOPE ("*"|"*""*")?"@"?"-"?{DIGIT}+C?
 
 (?i:SELECT)      { dprint("SELECT ");  lineno_begin_rule = yylineno; rule_operation = OP_SELECT; curr_op = OP_NONE; BEGIN(s2); }
 (?i:REMOVE)      { dprint("REMOVE ");  lineno_begin_rule = yylineno; rule_operation = OP_REMOVE; curr_op = OP_NONE; BEGIN(s2); }
-^{ID}+           { dprint("WORDFORM ");  lineno_begin_rule = yylineno; cg_wordform_add(yytext); curr_op = OP_NONE; BEGIN(s1);  }
+^{ID}            { dprint("WORDFORM ");  lineno_begin_rule = yylineno; cg_wordform_add(yytext); curr_op = OP_NONE; BEGIN(s1);  }
 
    /* TODO: rename s1 and s2 to meaningful names. */
 
