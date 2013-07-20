@@ -64,6 +64,8 @@
 
   int g_debug = 1;
   int lineno_begin_rule;
+  /** The number of the current section. */
+  int section_no = 0;
 
   int total_rules = 0 ;
   int total_states = 0;
@@ -273,8 +275,8 @@ struct fsm *cg_rule_wrapup(struct fsm *rawrule) {
 
 void cg_add_rule_to_chain(struct fsm *rule) {
   struct cg_rules *newrule;
-  char rulename[10];
-  sprintf(rulename, "R%i", lineno_begin_rule);
+  char rulename[20];
+  sprintf(rulename, "R_%d_%i", section_no, lineno_begin_rule);
   strcpy(rule->name, rulename);
 
   newrule = malloc(sizeof(struct cg_rules));
@@ -846,8 +848,8 @@ RULESCOPE ("*"|"*""*")?"@"?"-"?{DIGIT}+C?
 (?i:LIST)           { dprint("LIST "); lineno_begin_rule = yylineno; BEGIN(LISTCOLLECT); }
 (?i:SET)            { dprint("SET ");   lineno_begin_rule = yylineno;BEGIN(SETCOLLECT);  }
 (?i:DELIMITERS)     { dprint("DELIMITERS "); lineno_begin_rule = yylineno; BEGIN(DELIMCOLLECT); }
-(?i:SECTION)        { dprint("SECTION "); lineno_begin_rule = yylineno;                  }
-(?i:CONSTRAINTS)    { dprint("CONSTRAINTS "); lineno_begin_rule = yylineno;              }
+(?i:SECTION)        { dprint("SECTION "); lineno_begin_rule = yylineno; section_no++;    }
+(?i:CONSTRAINTS)    { dprint("CONSTRAINTS "); lineno_begin_rule = yylineno; section_no++;}
 (?i:MAPPINGS)       { dprint("MAPPINGS "); lineno_begin_rule = yylineno;                 }
     /* TODO: what are SECTION, CONSTRAINTS, MAPPINGS? */
 
