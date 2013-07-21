@@ -66,6 +66,8 @@
   int lineno_begin_rule;
   /** The number of the current section. */
   int section_no = 0;
+  /** The prefix of the binary output files. */
+  char* binary_prefix;
 
   int total_rules = 0 ;
   int total_states = 0;
@@ -671,8 +673,12 @@ void cg_delim_write() {
     cg_list_currelement = NULL;
   }
   delimiter_rule = fsm_minimize(delimiter_rule);
+  char* filename = calloc(strlen(binary_prefix) + 16, sizeof(char));
+  sprintf(filename, "%s_DELIMITERS.fst", binary_prefix);
   strcpy(delimiter_rule->name, "DELIMITERS");
+  fsm_write_binary_file(delimiter_rule, filename);
   write_prolog(delimiter_rule, "DELIMITERS.prolog");
+  free(filename);
   fsm_destroy(delimiter_rule);
 }
 
@@ -1074,7 +1080,6 @@ int save_rules_fsm(char *filename) {
 int main(int argc, char **argv) {
   ++argv, --argc;  /* skip over program name */
   char* grammar_file = argv[0];
-  char* binary_prefix;
   if (argc > 0) {
     binary_prefix = calloc(strlen(grammar_file) + 1, sizeof(char));
     strcpy(binary_prefix, grammar_file);
