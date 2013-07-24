@@ -632,13 +632,22 @@ void cg_compile_rule() {
   /* Cleanup mem */
 }
 
-/* TODO: why add a space? */
-char *cg_string_addspace(char *s) {
-  char *newstring;
-  newstring = malloc((strlen(s)+2)*sizeof(char));
-  newstring = strcpy(newstring,s);
-  newstring = strcat(newstring, " ");
-  return(newstring);
+/**
+ * Returns a symbol for a tag. To ensure that tags have the "postfix property",
+ * the symbol is not "tag ", as in the paper and the original version, but
+ * "<tag> ". Tags starting with a quotation mark are exempt from this change to
+ * prevent clutter, and also, they are already "safe".
+ */
+struct fsm* cg_tag_symbol(char* tag) {
+  char* symbol;
+  if (tag[0] == '\"') {
+    symbol = malloc((strlen(tag) + 2) * sizeof(char));
+    sprintf(symbol, "%s ", tag);
+  } else {
+    symbol = malloc((strlen(tag) + 4) * sizeof(char));
+    sprintf(symbol, "<%s> ", tag);
+  }
+  return fsm_symbol(symbol);
 }
 
 /* Delimiters. For tags, we reuse the infrastructure for the LIST command
@@ -694,7 +703,7 @@ void cg_fsm_add(char *string, int where, int type) {
       exit(0);
     }
   } else if (type == TYPE_TAG) {
-    net = fsm_symbol(cg_string_addspace(string));
+    net = cg_tag_symbol(string);
   }
 
   /* @*fsm@* */
@@ -755,7 +764,7 @@ void cg_set_element_add(char *name) {
   /** Creates the regex @*name@* */
   struct fsm* contains_name = 
       fsm_concat(fsm_copy(CG_DEF_NODEL),
-                 fsm_concat(fsm_symbol(cg_string_addspace(name)),
+                 fsm_concat(cg_tag_symbol(name),
                             fsm_copy(CG_DEF_NODEL)));
 
   if (cg_list_currelement == NULL) {
@@ -789,23 +798,23 @@ void cg_set_element_add(char *name) {
 
 void cg_list_element_add(char *name) { 
   if (cg_list_currelement == NULL) {
-    cg_list_currelement = fsm_symbol(cg_string_addspace(name));
+    cg_list_currelement = cg_tag_symbol(name);
   } else {
     cg_list_currelement = fsm_minimize(fsm_union(
                               cg_list_currelement,
-                              fsm_symbol(cg_string_addspace(name))));
+                              cg_tag_symbol(name)));
   }
 }
 
 void cg_list_celement_add(char *name) {
   if (cg_list_currcelement == NULL) {
     //	cg_list_currcelement = fsm_minimize(fsm_concat(fsm_copy(CG_DEF_NODEL), fsm_concat(fsm_symbol(cg_string_addspace(name)), fsm_copy(CG_DEF_NODEL))));
-    cg_list_currcelement = fsm_symbol(cg_string_addspace(name));
+    cg_list_currcelement = cg_tag_symbol(name);
   } else {
     //	cg_list_currcelement = fsm_minimize(fsm_concat(cg_list_currcelement, fsm_minimize(fsm_concat(fsm_copy(CG_DEF_NODEL), fsm_concat(fsm_symbol(cg_string_addspace(name)), fsm_copy(CG_DEF_NODEL))))));
     cg_list_currcelement = fsm_minimize(fsm_concat(
                                cg_list_currcelement,
-                               fsm_symbol(cg_string_addspace(name))));
+                               cg_tag_symbol(name)));
   }
 }
 
