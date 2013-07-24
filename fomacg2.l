@@ -166,7 +166,7 @@ void cg_init(void) {
   CG_DEF_ConstrainS = fsm_read_binary_file("cg_ConstrainS.foma");
   CG_DEF_ConstrainR = fsm_read_binary_file("cg_ConstrainR.foma");
   CG_DEF_Rollback = fsm_read_binary_file("cg_Rollback.foma");  // = invCR
-  CG_DEF_Cleanup = fsm_read_binary_file("cg_Cleanup2.foma");
+  CG_DEF_Cleanup = fsm_read_binary_file("cg_Cleanup.foma");
   CG_DEF_InitialFilter = fsm_read_binary_file("cg_InitialFilter.foma");
   CG_DEF_MWFPROLOG = fsm_read_binary_file("cg_MWFPROLOG.foma");
   CG_DEF_MWFEPILOG = fsm_read_binary_file("cg_MWFEPILOG.foma");
