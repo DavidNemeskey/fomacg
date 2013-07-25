@@ -648,6 +648,8 @@ struct fsm* cg_tag_symbol(char* tag) {
     sprintf(symbol, "<%s> ", tag);
   }
   return fsm_symbol(symbol);
+  /* Doesn't help the speed problems. */
+  // return fsm_explode(symbol);
 }
 
 /* Delimiters. For tags, we reuse the infrastructure for the LIST command
