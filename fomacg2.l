@@ -694,7 +694,7 @@ void cg_delim_write() {
 }
 
 void cg_wordform_add(char *string) {
-  cg_rule_complex->wordform = fsm_symbol(string);
+  cg_rule_complex->wordform = cg_tag_symbol(string);
 }
 
 void cg_fsm_add(char *string, int where, int type) {
