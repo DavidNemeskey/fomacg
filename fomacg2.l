@@ -85,7 +85,7 @@
              *CG_DEF_Rollback, *CG_DEF_Cleanup, *CG_DEF_InitialFilter,
              *CG_DEF_MWFPROLOG, *CG_DEF_MWFEPILOG, *CG_DEF_ANYCOHORT,
              *CG_DEF_MATCHCOHORT1, *CG_DEF_MATCHCOHORT2, *CG_DEF_DEAD,
-             *CG_DEF_ALIVE, *CG_DEF_DEL, *CG_DEF_DeleteX;
+             *CG_DEF_ALIVE, *CG_DEF_DEL, *CG_DEF_DeleteX, *CG_DEF_Modified;
 
   /* For the DELIMITERS. */
   struct fsm *cg_delim_wordforms = NULL;
@@ -178,6 +178,7 @@ void cg_init(void) {
   CG_DEF_ALIVE = fsm_read_binary_file("cg_ALIVE.foma");
   CG_DEF_DEL = fsm_read_binary_file("cg_DEL.foma");
   CG_DEF_DeleteX = fsm_read_binary_file("cg_DeleteX.foma");
+  CG_DEF_Modified = fsm_read_binary_file("cg_Modified.foma");
   cg_rule_complex =
   cg_rule_complex_current =
   cg_rule_complex_current_head = calloc(1,sizeof(struct cg_rule_complex));
@@ -284,7 +285,22 @@ struct fsm *cg_rule_wrapup(struct fsm *rawrule) {
   return(result);
 }
 
-void cg_add_rule_to_chain(struct fsm *rule) {
+/**
+ * Creates an automaton that accepts the sentence if the rule transducer
+ * created from @p rawrule would change it.
+ */
+struct fsm *cg_create_checker(struct fsm* rawrule) {
+  struct fsm *result;
+  result = fsm_minimize(
+             fsm_determinize(
+               fsm_upper(
+                 fsm_compose(
+                   fsm_copy(rawrule),
+                   fsm_copy(CG_DEF_Modified)))));
+  return result;
+}
+
+void cg_add_rule_to_chain(struct fsm *rule, struct fsm *conditions) {
   struct cg_rules *newrule;
   char rulename[20];
   sprintf(rulename, "R_%d_%i", section_no, lineno_begin_rule);
@@ -299,6 +315,7 @@ void cg_add_rule_to_chain(struct fsm *rule) {
     cg_rules = newrule;
   }
   cg_rules->rule = rule;
+  cg_rules->conditions = conditions;
   cg_rules->lineno = lineno_begin_rule;
   cg_rules->section_no = section_no;
   total_states += rule->statecount;
@@ -654,10 +671,10 @@ void cg_compile_rule() {
   }
 
   rule    = cg_rule_wrapup(rawrules);
-//  checker = cg_create_checker(rawrules);
+  checker = cg_create_checker(rawrules);
   rule = fsm_topsort(rule);
   cg_print_rule_info(rule);
-  cg_add_rule_to_chain(rule);
+  cg_add_rule_to_chain(rule, checker);
 
   /* Cleanup mem */
   fsm_destroy(constrain);
@@ -1121,8 +1138,11 @@ int save_rules_fsm(char *filename) {
     if ((outfile = open_outfile(&outfile, filename, rules, &section)) == NULL)
       return -1;
     foma_net_print(rules->rule, outfile);
-    sprintf(prolog_name,"%s.prolog",rules->rule->name);
+    foma_net_print(rules->conditions, outfile);
+    sprintf(prolog_name,"%s.prolog", rules->rule->name);
     write_prolog(rules->rule, prolog_name);
+    sprintf(prolog_name,"%sA.prolog", rules->rule->name);
+    write_prolog(rules->conditions, prolog_name);
   }
   gzclose(outfile);
   return 1;
