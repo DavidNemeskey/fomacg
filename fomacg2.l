@@ -120,6 +120,7 @@
     int lineno;
     int section_no;
     struct fsm *rule;
+    struct fsm *conditions;  /* Automaton that checks rule applicability. */
     struct cg_rules *next;
   } *cg_rules = NULL;
 
@@ -203,6 +204,7 @@ struct fsm *cg_coerce_rules(struct fsm *rawrules) {
   return(result);
 }
 
+/** @note destroys both parameters. */
 struct fsm *cg_mark_form_target(struct fsm *wordform, struct fsm *target) {
   struct fsm *result, *constrain1, *constrain2;
 
@@ -245,6 +247,8 @@ struct fsm *cg_mark_form_target(struct fsm *wordform, struct fsm *target) {
                    fsm_copy(CG_DEF_MWFPROLOG),
                    fsm_intersect(constrain1, constrain2)),
                fsm_copy(CG_DEF_MWFEPILOG)));
+  fsm_destroy(wordform);
+  fsm_destroy(target);
   return(result);
 }
 
@@ -423,6 +427,28 @@ struct fsm *cg_removeaux(int count) {
   return(result);
 }
 
+void cg_free_rule_complex() {
+  struct cg_rule_complex* to_del = cg_rule_complex_current_head;
+  while (to_del != NULL) {
+    /* Delete fsms. */
+    if (to_del->wordform != NULL)  fsm_destroy(to_del->wordform);
+    if (to_del->target != NULL)    fsm_destroy(to_del->target);
+    if (to_del->condition != NULL) fsm_destroy(to_del->condition);
+    if (to_del->barrier != NULL)   fsm_destroy(to_del->barrier);
+    /* Delete linked conditions. */
+    struct cg_rule_complex* to_del_link = to_del->link;
+    while (to_del_link != NULL) {
+      struct cg_rule_complex* to_del_link_next = to_del_link->link;
+      free(to_del_link);
+      to_del_link = to_del_link_next;
+    }
+    /* Delete this object and go to the next. */
+    struct cg_rule_complex* to_del_next = to_del->next;
+    free(to_del);
+    to_del = to_del_next;
+  }
+}
+
 /** Compiles the rule. */
 /* TODO: understand this. */
 void cg_compile_rule() {
@@ -435,7 +461,8 @@ void cg_compile_rule() {
              *constrain,    // SELECT or REMOVE (ConstrainS or ConstrainR)
              *tests,        // TODO: should be "test"? The test part in the rule
              *thisrule,
-             *rule,
+             *rule,         // The "wrapped up" (complete) rule
+             *checker,      // The rule checker FSA
              *match,
              *skip,
              *scan,
@@ -626,14 +653,19 @@ void cg_compile_rule() {
     }
   }
 
-  rule = cg_rule_wrapup(rawrules);
+  rule    = cg_rule_wrapup(rawrules);
+//  checker = cg_create_checker(rawrules);
   rule = fsm_topsort(rule);
   cg_print_rule_info(rule);
   cg_add_rule_to_chain(rule);
+
+  /* Cleanup mem */
+  fsm_destroy(constrain);
+  fsm_destroy(rawrules);
+  cg_free_rule_complex();
   cg_rule_complex =
   cg_rule_complex_current =
   cg_rule_complex_current_head = calloc(1,sizeof(struct cg_rule_complex));
-  /* Cleanup mem */
 }
 
 /**
@@ -651,7 +683,9 @@ struct fsm* cg_tag_symbol(char* tag) {
     symbol = malloc((strlen(tag) + 4) * sizeof(char));
     sprintf(symbol, "<%s> ", tag);
   }
-  return fsm_symbol(symbol);
+  struct fsm* ret = fsm_symbol(symbol);
+  free(symbol);
+  return ret;
   /* Doesn't help the speed problems. */
   // return fsm_explode(symbol);
 }
@@ -715,7 +749,9 @@ void cg_fsm_add(char *string, int where, int type) {
   /* @*fsm@* */
   net = fsm_minimize(fsm_concat(
             fsm_copy(CG_DEF_NODEL),
-            fsm_concat(fsm_copy(net), fsm_copy(CG_DEF_NODEL))));
+            fsm_concat(
+                type == TYPE_SET ? fsm_copy(net) : net,  // clean up tag
+                fsm_copy(CG_DEF_NODEL))));
 
   if (where == WHERE_TARGET)
     combinewith = &(cg_rule_complex_current->target);
@@ -1121,5 +1157,6 @@ int main(int argc, char **argv) {
   if (cg_rules != NULL)
 	save_rules_fsm(binary_prefix);
   free(binary_prefix);
+  cg_free_rule_complex();
   return 1;
 }
