@@ -33,13 +33,19 @@
 
 %{
 
+#ifndef FOMA_INCLUDED
+#define FOMA_INCLUDED
+#include <stdbool.h>  // to avoid errors in fomalib.h
 #include "fomalib.h"
+#endif
+
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
 #include "zlib.h"
 
 #include "fomacg_types.h"
+#include "rule_condition_tree.h"
 
 #define MODE_CAREFUL  1
 #define MODE_STAR     2
@@ -1105,7 +1111,14 @@ int save_rules_fsm(char *filename) {
   sprintf(outfile_name, "%s.fst", filename);
   gzFile* outfile = gzopen(outfile_name, "wb");
   printf("Writing rules to file %s.\n", outfile_name);
-  //create_binary_tree(cg_rules, total_rules);
+  struct Node* trees = create_binary_tree(cg_rules, total_rules);
+  size_t num_rules;
+  struct fsm** to_print = serialize_tree(trees, &num_rules);
+  printf("num_rules: %zu\n", num_rules);
+  size_t i;
+  for (i = 0; i < num_rules; i++) {
+    printf("FSM %s\n", to_print[i]->name);
+  }
 
   /* Return to the original rule order. */
   reverse_rule_order();
