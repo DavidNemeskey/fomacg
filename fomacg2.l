@@ -39,6 +39,8 @@
 #include <string.h>
 #include "zlib.h"
 
+#include "fomacg_types.h"
+
 #define MODE_CAREFUL  1
 #define MODE_STAR     2
 #define MODE_TWOSTAR  4
@@ -93,36 +95,15 @@
   struct fsm *cg_list_currelement = NULL;
   struct fsm *cg_list_currcelement = NULL;
 
-  struct cg_sets {
-    char *name;
-    struct fsm *net;
-    struct cg_sets *next;
-  } *cg_sets = NULL;
+  struct cg_sets *cg_sets = NULL;
 
   /* Each rule is stored as it is built into the cg_rule_complex struct */
 
-  /* What do these fields mean? */
-  struct cg_rule_complex {
-    struct fsm *wordform  ;
-    struct fsm *target    ;
-    struct fsm *condition ;
-    struct fsm *barrier   ;
-    int rule_not ;
-    int scope_mode ;
-    int scope_num  ;
-    int num_links  ;                /* Number of LINKed conditions */
-    struct cg_rule_complex *link;   /* Linked conditions   */
-    struct cg_rule_complex *next;   /* multiple conditions */
-  } *cg_rule_complex, *cg_rule_complex_current, *cg_rule_complex_current_head;
+  struct cg_rule_complex *cg_rule_complex, *cg_rule_complex_current,
+                         *cg_rule_complex_current_head;
 
   /* We store each rule as a fsm + lineno combo */
-  struct cg_rules {
-    int lineno;
-    int section_no;
-    struct fsm *rule;
-    struct fsm *conditions;  /* Automaton that checks rule applicability. */
-    struct cg_rules *next;
-  } *cg_rules = NULL;
+  struct cg_rules *cg_rules = NULL;
 
 void dprint(const char* format, ...) {
   va_list args;
@@ -272,17 +253,19 @@ struct fsm *cg_rule_wrapup(struct fsm *rawrule) {
   /* [Rawrule .o. ~[Rawrule .o. Rollback].l .o. Cleanup]; */
 
   struct fsm *result;
-  result = fsm_minimize(
-             fsm_compose(
+  result = fsm_topsort(
+             fsm_minimize(
                fsm_compose(
                  fsm_compose(
-                   fsm_copy(rawrule),
-                   fsm_complement(fsm_lower(fsm_compose(
+                   fsm_compose(
                      fsm_copy(rawrule),
-                     fsm_copy(CG_DEF_Rollback))))),
-                 fsm_copy(CG_DEF_Cleanup)),
-               fsm_copy(CG_DEF_DeleteX)));
-  return(result);
+                     fsm_complement(fsm_lower(fsm_compose(
+                       fsm_copy(rawrule),
+                       fsm_copy(CG_DEF_Rollback))))),
+                   fsm_copy(CG_DEF_Cleanup)),
+                 fsm_copy(CG_DEF_DeleteX))));
+  fsm_sort_arcs(result, 1);
+  return result;
 }
 
 /**
@@ -291,12 +274,14 @@ struct fsm *cg_rule_wrapup(struct fsm *rawrule) {
  */
 struct fsm *cg_create_checker(struct fsm* rawrule) {
   struct fsm *result;
-  result = fsm_minimize(
-             fsm_determinize(
-               fsm_upper(
-                 fsm_compose(
-                   fsm_copy(rawrule),
-                   fsm_copy(CG_DEF_Modified)))));
+  result = fsm_topsort(
+             fsm_minimize(
+               fsm_determinize(
+                 fsm_upper(
+                   fsm_compose(
+                     fsm_copy(rawrule),
+                     fsm_copy(CG_DEF_Modified))))));
+  fsm_sort_arcs(result, 1);
   return result;
 }
 
@@ -305,6 +290,8 @@ void cg_add_rule_to_chain(struct fsm *rule, struct fsm *conditions) {
   char rulename[20];
   sprintf(rulename, "R_%d_%i", section_no, lineno_begin_rule);
   strcpy(rule->name, rulename);
+  sprintf(rulename, "C_%d_%i", section_no, lineno_begin_rule);
+  strcpy(conditions->name, rulename);
 
   newrule = malloc(sizeof(struct cg_rules));
   if (cg_rules == NULL) {
@@ -673,6 +660,7 @@ void cg_compile_rule() {
   rule    = cg_rule_wrapup(rawrules);
   checker = cg_create_checker(rawrules);
   rule = fsm_topsort(rule);
+  checker = fsm_topsort(checker);
   cg_print_rule_info(rule);
   cg_add_rule_to_chain(rule, checker);
 
@@ -1141,7 +1129,7 @@ int save_rules_fsm(char *filename) {
     foma_net_print(rules->conditions, outfile);
     sprintf(prolog_name,"%s.prolog", rules->rule->name);
     write_prolog(rules->rule, prolog_name);
-    sprintf(prolog_name,"%sA.prolog", rules->rule->name);
+    sprintf(prolog_name,"%sA.prolog", rules->conditions->name);
     write_prolog(rules->conditions, prolog_name);
   }
   gzclose(outfile);
