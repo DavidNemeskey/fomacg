@@ -91,6 +91,7 @@
 
   /* For the DELIMITERS. */
   struct fsm *cg_delim_wordforms = NULL;
+  struct fsm* delimiter_rule;
 
   struct fsm *cg_list_currelement = NULL;
   struct fsm *cg_list_currcelement = NULL;
@@ -712,7 +713,7 @@ void cg_delim_wordform_add(char* string) {
  * with it.
  */
 void cg_delim_write() {
-  struct fsm* delimiter_rule = fsm_empty_set();
+  delimiter_rule = fsm_empty_set();
   if (cg_delim_wordforms != NULL) {
     // TODO: nope, must embed in $0$ X #BOC# ...
     delimiter_rule = fsm_union(delimiter_rule,
@@ -726,14 +727,9 @@ void cg_delim_write() {
                                cg_match_cohort(cg_list_currelement));
     cg_list_currelement = NULL;
   }
-  delimiter_rule = fsm_minimize(delimiter_rule);
-  char* filename = calloc(strlen(binary_prefix) + 16, sizeof(char));
-  sprintf(filename, "%s_DELIMITERS.fst", binary_prefix);
+  delimiter_rule = fsm_minimize(fsm_determinize(delimiter_rule));
+  fsm_sort_arcs(delimiter_rule, 1);
   strcpy(delimiter_rule->name, "DELIMITERS");
-  fsm_write_binary_file(delimiter_rule, filename);
-  write_prolog(delimiter_rule, "DELIMITERS.prolog");
-  free(filename);
-  fsm_destroy(delimiter_rule);
 }
 
 void cg_wordform_add(char *string) {
@@ -1087,52 +1083,54 @@ RULESCOPE ("*"|"*""*")?"@"?"-"?{DIGIT}+C?
 .                { yerror("WORDFORM or SELECT OR REMOVE",yytext,yylineno); }
 %%
 
-/**
- * Opens the binary file that corresponds to the current rule's section for
- * writing. If it is already open, does nothing; if another file is open, closes
- * it and opens a new one.
- * 
- * @param[in,out] outfile the address of the file pointer.
- * @param[in] prefix the file name prefix of the output file (= the name of the
- *                   grammar file without the extension).
- * @param[in] rule the current rule.
- * @param[in,out] section the section of the currently opened file.
- * @return @c outfile
- */
-gzFile* open_outfile(gzFile** outfile, const char* prefix,
-                     struct cg_rules* rule, int* section) {
-  if (rule->section_no != *section) {
-    if (outfile != NULL) gzclose(*outfile);
-    *section = rule->section_no;
-    
-    char* outfile_name = calloc(strlen(prefix) + 15, sizeof(char));
-    snprintf(outfile_name, strlen(prefix) + 15, "%s_%d.fst", prefix, *section);
-    if ((*outfile = gzopen(outfile_name, "wb")) == NULL) {
-      printf("Error opening file %s for writing.\n", outfile_name);
-    }
-    free(outfile_name);
+/** Reverses the order of cg_rules to regain the original rule order. */
+void reverse_rule_order() {
+  struct cg_rules* last = cg_rules;
+  struct cg_rules* curr = last->next;
+  last->next = NULL;
+  while (curr != NULL) {
+    struct cg_rules* next = curr->next;
+    curr->next = last;
+    last = curr;
+    curr = next;
   }
-  return *outfile;
+  cg_rules = last;
 }
 
 int save_rules_fsm(char *filename) {
   char prolog_name[30];
   struct cg_rules *rules;
   int section = -1;
-  gzFile* outfile = NULL;
-  printf("Writing rules to files %s_*.fst.\n", filename);
+  char* outfile_name = calloc(strlen(filename) + 5, sizeof(char));
+  sprintf(outfile_name, "%s.fst", filename);
+  gzFile* outfile = gzopen(outfile_name, "wb");
+  printf("Writing rules to file %s.\n", outfile_name);
+  //create_binary_tree(cg_rules, total_rules);
 
+  /* Return to the original rule order. */
+  reverse_rule_order();
+
+  /* First the DELIMITERS... */
+  foma_net_print(delimiter_rule, outfile);
+  write_prolog(delimiter_rule, "DELIMITERS.prolog");
+
+  /* ... then all the rules. */
   for (rules = cg_rules ; rules != NULL; rules = rules->next) {
-    if ((outfile = open_outfile(&outfile, filename, rules, &section)) == NULL)
-      return -1;
+    if (rules->section_no != section) {
+      struct fsm* delim = fsm_empty_set();
+      strcpy(delim->name, "---");
+      foma_net_print(delim, outfile);
+      section = rules->section_no;
+    }
     foma_net_print(rules->rule, outfile);
     foma_net_print(rules->conditions, outfile);
     sprintf(prolog_name,"%s.prolog", rules->rule->name);
     write_prolog(rules->rule, prolog_name);
-    sprintf(prolog_name,"%sA.prolog", rules->conditions->name);
+    sprintf(prolog_name,"%s.prolog", rules->conditions->name);
     write_prolog(rules->conditions, prolog_name);
   }
   gzclose(outfile);
+  free(outfile_name);
   return 1;
 }
 
@@ -1166,5 +1164,6 @@ int main(int argc, char **argv) {
 	save_rules_fsm(binary_prefix);
   free(binary_prefix);
   cg_free_rule_complex();
+  fsm_destroy(delimiter_rule);
   return 1;
 }
