@@ -171,6 +171,8 @@ struct Node* create_binary_tree(struct cg_rules* cg_rules, size_t no_rules) {
   return ret;
 }
 
+/******************************* Serialization ********************************/
+
 /**
  * Counts the non-NULL struct fsm*'s in @p tree. When you call this func tion,
  * @p count should be @c 0.
@@ -201,6 +203,45 @@ struct fsm** serialize_tree(struct Node* tree, size_t* num_rules) {
   return rules;
 }
 
-struct Node* deserialize_tree(struct fsm* rules[], size_t num_rules) {
-  return NULL;
+/****************************** De-serialization ******************************/
+
+/**
+ * The recursive function that walks through @p rules and builds trees from it.
+ *
+ * @param rules the rule fsm array.
+ * @param num_rules the total number of rules.
+ * @param index the current index in @p rules.
+ */
+static struct Node* array_to_tree(struct fsm* rules[], size_t num_rules,
+                                  size_t* index) {
+  struct Node* new_tree = calloc(1, sizeof(struct Node));
+  /* Leaf node. */
+  if (!strncmp(rules[*index]->name, "C", 1)) {
+    new_tree->no_rules = 1;
+    new_tree->fsa = rules[(*index)++];
+    new_tree->fst = rules[(*index)++];
+  } else {
+    new_tree->fsa = rules[(*index)++];
+    struct Node* left_tree = array_to_tree(rules, num_rules, index);
+    struct Node* right_tree = array_to_tree(rules, num_rules, index);
+    new_tree->no_rules = left_tree->no_rules + right_tree->no_rules;
+  }
+  return new_tree;
 }
+
+struct Node* deserialize_tree(struct fsm* rules[], size_t num_rules) {
+  struct Node* ret = NULL;   // the returned tree
+  struct Node* curr = NULL;  // the last tree in the chain
+  size_t index = 0;
+  while (index < num_rules) {
+    struct Node* new_tree = array_to_tree(rules, num_rules, &index);
+    if (ret == NULL) {
+      ret = curr = new_tree;
+    } else {
+      curr->next = new_tree;
+      curr = new_tree;
+    }
+  }
+  return ret;
+}
+
