@@ -71,7 +71,7 @@ struct fsm** serialize_tree(struct Node* tree, size_t* num_rules);
  * "C") are represented by their condition FSA; leaf nodes are by both the
  * FSA and the rule FST.
  */
-struct Node* deserialize_tree(struct fsm* rules[], size_t no_rules);
+struct Node* deserialize_tree(struct fsm* rules[], size_t num_rules);
 
 struct Node* parse_binary_tree(struct cg_rules* cg_rules, size_t num_rules);
 

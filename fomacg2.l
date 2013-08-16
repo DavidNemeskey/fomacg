@@ -1111,6 +1111,10 @@ int save_rules_fsm(char *filename) {
   sprintf(outfile_name, "%s.fst", filename);
   gzFile* outfile = gzopen(outfile_name, "wb");
   printf("Writing rules to file %s.\n", outfile_name);
+
+  /* Return to the original rule order. */
+  reverse_rule_order();
+
   struct Node* trees = create_binary_tree(cg_rules, total_rules);
   size_t num_rules;
   struct fsm** to_print = serialize_tree(trees, &num_rules);
@@ -1119,9 +1123,6 @@ int save_rules_fsm(char *filename) {
   for (i = 0; i < num_rules; i++) {
     printf("FSM %s\n", to_print[i]->name);
   }
-
-  /* Return to the original rule order. */
-  reverse_rule_order();
 
   /* First the DELIMITERS... */
   foma_net_print(delimiter_rule, outfile);
