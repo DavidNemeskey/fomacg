@@ -20,7 +20,9 @@
 /*     Hulden, M. (2011). Constraint Grammar parsing with left and right     */
 /*     sequential finite transducers. In Proceedings of the 9th FSMNLP.      */
 
-/*     Compile with: flex -8 fomacg2.l ; gcc -o fomacg2 lex.yy.c -lfoma -lz  */
+/*     Compile with: flex -8 fomacg2.l ; gcc -o fomacg2 lex.yy.c -lfoma -lz; */
+/*                   g++ -Wno-write-strings -o fomacg2 lex.yy.c              */
+/*                       rule_condition_tree.c -lfoma -lz                    */
 /*     Run: fomacg2 file.rle                                                 */
 /*     Currently only outputs a .prolog file for each rule in the .rle file  */
 /*     where the filename is RXXX.prolog where XXX is the line number the    */
@@ -169,7 +171,7 @@ void cg_init(void) {
   CG_DEF_Modified = fsm_read_binary_file("cg_Modified.foma");
   cg_rule_complex =
   cg_rule_complex_current =
-  cg_rule_complex_current_head = calloc(1,sizeof(struct cg_rule_complex));
+  cg_rule_complex_current_head = (struct cg_rule_complex*)calloc(1,sizeof(struct cg_rule_complex));
 }
 
 void cg_print_rule_info(struct fsm *net) {
@@ -300,7 +302,7 @@ void cg_add_rule_to_chain(struct fsm *rule, struct fsm *conditions) {
   sprintf(rulename, "C_%d_%i", section_no, lineno_begin_rule);
   strcpy(conditions->name, rulename);
 
-  newrule = malloc(sizeof(struct cg_rules));
+  newrule = (struct cg_rules*)malloc(sizeof(struct cg_rules));
   if (cg_rules == NULL) {
     cg_rules = newrule;
     cg_rules->next = NULL;
@@ -677,7 +679,7 @@ void cg_compile_rule() {
   cg_free_rule_complex();
   cg_rule_complex =
   cg_rule_complex_current =
-  cg_rule_complex_current_head = calloc(1,sizeof(struct cg_rule_complex));
+  cg_rule_complex_current_head = (struct cg_rule_complex*)calloc(1,sizeof(struct cg_rule_complex));
 }
 
 /**
@@ -689,10 +691,10 @@ void cg_compile_rule() {
 struct fsm* cg_tag_symbol(char* tag) {
   char* symbol;
   if (tag[0] == '\"') {
-    symbol = malloc((strlen(tag) + 2) * sizeof(char));
+    symbol = (char*)malloc((strlen(tag) + 2) * sizeof(char));
     sprintf(symbol, "%s ", tag);
   } else {
-    symbol = malloc((strlen(tag) + 4) * sizeof(char));
+    symbol = (char*)malloc((strlen(tag) + 4) * sizeof(char));
     sprintf(symbol, "<%s> ", tag);
   }
   struct fsm* ret = fsm_symbol(symbol);
@@ -792,7 +794,7 @@ void cg_list_add(void) {
   if (cg_list_name == NULL) {
     printf("Something wrong. No list name\n"); exit(0);
   }
-  cgs = malloc(sizeof(struct cg_sets));
+  cgs = (struct cg_sets*)malloc(sizeof(struct cg_sets));
   cgs->name = cg_list_name;
   cgs->net = fsm_minimize(cg_list_currelement);
   printf("SET/LIST \"%s\": ",cg_list_name);
@@ -945,7 +947,7 @@ RULESCOPE ("*"|"*""*")?"@"?"-"?{DIGIT}+C?
 <DELIMCONCAT>{ID}    { dprint("DCELEMENT:[%s] ", yytext);
                        cg_list_celement_add(yytext); }
 <DELIMCONCAT>")"     { dprint("DNORMAL ");
-                       cg_list_celement_end(yytext);
+                       cg_list_celement_end();
                        BEGIN(DELIMLISTING); }
 <DELIMCONCAT>.       { yerror("list element or ) ",yytext,yylineno);
                        BEGIN(ERROR); }
@@ -962,7 +964,7 @@ RULESCOPE ("*"|"*""*")?"@"?"-"?{DIGIT}+C?
 <LISTING>.          { yerror("list element or ; ",yytext,yylineno); BEGIN(ERROR);   }
 
 <LISTCONCAT>{ID}    { dprint("LCELEMENT:[%s] ",yytext); cg_list_celement_add(yytext);     }
-<LISTCONCAT>")"     { dprint("LNORMAL "); cg_list_celement_end(yytext); BEGIN(LISTING);   }
+<LISTCONCAT>")"     { dprint("LNORMAL "); cg_list_celement_end(); BEGIN(LISTING);   }
 <LISTCONCAT>.       { yerror("list element or ) ",yytext,yylineno); BEGIN(ERROR);         }
 
 <SETCOLLECT>{ID}   { dprint("SNAME:[%s] ",yytext); cg_list_name = strdup(yytext); BEGIN(SETEQ);    }
@@ -1034,17 +1036,30 @@ RULESCOPE ("*"|"*""*")?"@"?"-"?{DIGIT}+C?
 <s10>(?i:LINK)    { 
     dprint("LINK ");
     cg_rule_complex_current_head->num_links++;
-    cg_rule_complex_current->link = calloc(1, sizeof(struct cg_rule_complex));
+    cg_rule_complex_current->link = (struct cg_rule_complex*)calloc(1, sizeof(struct cg_rule_complex));
     cg_rule_complex_current = cg_rule_complex_current->link;
     BEGIN(s5);
 }  /* TODO: understand linking. */
 
 <s10>")"          { dprint("CLOSEPAR "); BEGIN(s11); }
 <s10>(?i:BARRIER) { dprint("BARRIER "); BEGIN(s12);  }
-<s10>(?i:AND)     { dprint("AND "); cg_rule_complex_current_head->next = calloc(1, sizeof(struct cg_rule_complex)); cg_rule_complex_current_head->next->scope_mode = cg_rule_complex_current_head->scope_mode; cg_rule_complex_current_head->next->scope_num = cg_rule_complex_current_head->scope_num; cg_rule_complex_current_head = cg_rule_complex_current = cg_rule_complex_current_head->next; BEGIN(s13);      }
+<s10>(?i:AND)     {
+                    dprint("AND ");
+                    cg_rule_complex_current_head->next = (struct cg_rule_complex*)calloc(1, sizeof(struct cg_rule_complex));
+                    cg_rule_complex_current_head->next->scope_mode = cg_rule_complex_current_head->scope_mode;
+                    cg_rule_complex_current_head->next->scope_num = cg_rule_complex_current_head->scope_num;
+                    cg_rule_complex_current_head =
+                    cg_rule_complex_current = cg_rule_complex_current_head->next;
+                    BEGIN(s13);      }
 <s10>.            { yerror("OR, +, -, LINK, ), BARRIER or AND", yytext, yylineno); BEGIN(ERROR); }
 
-<s11>"("         { dprint("OPENPAR "); cg_rule_complex_current_head->next = calloc(1, sizeof(struct cg_rule_complex)); cg_rule_complex_current = cg_rule_complex_current_head = cg_rule_complex_current_head->next; BEGIN(s5); }
+<s11>"("         {
+                   dprint("OPENPAR ");
+                   cg_rule_complex_current_head->next = (struct cg_rule_complex*)calloc(1, sizeof(struct cg_rule_complex));
+                   cg_rule_complex_current =
+                   cg_rule_complex_current_head = cg_rule_complex_current_head->next;
+                   BEGIN(s5);
+                 }
 <s11>";"         { dprint("END-OF-RULE\n"); cg_compile_rule(); BEGIN(0); } /* Join rules here FR(R1 & R2 ... Rn) */
 <s11>.           { yerror("( or ;", yytext, yylineno);         BEGIN(ERROR);}
 
@@ -1064,7 +1079,8 @@ RULESCOPE ("*"|"*""*")?"@"?"-"?{DIGIT}+C?
 <s15>"-"         { dprint("MINUS "); curr_op = OP_MINUS; BEGIN(s12); }
 <s15>(?i:AND)    { 
     dprint("AND ");
-    cg_rule_complex_current_head->next = calloc(1, sizeof(struct cg_rule_complex));
+    cg_rule_complex_current_head->next =
+        (struct cg_rule_complex*)calloc(1, sizeof(struct cg_rule_complex));
     cg_rule_complex_current_head->next->scope_mode = cg_rule_complex_current_head->scope_mode;
     cg_rule_complex_current_head->next->scope_num = cg_rule_complex_current_head->scope_num;
     cg_rule_complex_current_head = cg_rule_complex_current = cg_rule_complex_current_head->next; 
@@ -1072,7 +1088,8 @@ RULESCOPE ("*"|"*""*")?"@"?"-"?{DIGIT}+C?
 <s15>(?i:LINK)  { 
     dprint("LINK "); 
     cg_rule_complex_current_head->num_links++;
-    cg_rule_complex_current->link = calloc(1, sizeof(struct cg_rule_complex));
+    cg_rule_complex_current->link =
+        (struct cg_rule_complex*)calloc(1, sizeof(struct cg_rule_complex));
     cg_rule_complex_current = cg_rule_complex_current->link ;
     BEGIN(s5);
 }
@@ -1107,9 +1124,9 @@ int save_rules_fsm(char *filename) {
   char prolog_name[30];
   struct cg_rules *rules;
   int section = -1;
-  char* outfile_name = calloc(strlen(filename) + 5, sizeof(char));
+  char* outfile_name = (char*)calloc(strlen(filename) + 5, sizeof(char));
   sprintf(outfile_name, "%s.fst", filename);
-  gzFile* outfile = gzopen(outfile_name, "wb");
+  gzFile* outfile = (gzFile*)gzopen(outfile_name, "wb");
   printf("Writing rules to file %s.\n", outfile_name);
 
   /* Return to the original rule order. */
@@ -1152,7 +1169,7 @@ int main(int argc, char **argv) {
   ++argv, --argc;  /* skip over program name */
   char* grammar_file = argv[0];
   if (argc > 0) {
-    binary_prefix = calloc(strlen(grammar_file) + 1, sizeof(char));
+    binary_prefix = (char*)calloc(strlen(grammar_file) + 1, sizeof(char));
     strcpy(binary_prefix, grammar_file);
     char* extension = strrchr(binary_prefix, '.');
     if (extension != NULL) {
@@ -1160,7 +1177,7 @@ int main(int argc, char **argv) {
     }
     yyin = fopen(grammar_file, "r");
   } else {
-    binary_prefix = calloc(strlen("outfile") + 1, sizeof(char));
+    binary_prefix = (char*)calloc(strlen("outfile") + 1, sizeof(char));
     strcpy(binary_prefix, "outfile");
     yyin = stdin;
   }

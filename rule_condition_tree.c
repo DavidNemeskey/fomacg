@@ -60,12 +60,12 @@ static int tree_compare(const void* tree1, const void* tree2) {
 static struct Node* build_section_tree(struct cg_rules* rules[],
                                        size_t begin, size_t length) {
   fprintf(stderr, "build_section_tree(%zu, %zu)\n", begin, length);
-  struct Node** trees = calloc(length, sizeof(struct Node*));
+  struct Node** trees = (struct Node**)calloc(length, sizeof(struct Node*));
   /* Let's fill the array. */
   int i;
   for (i = 0; i < length; i++) {
     int rule = begin + i;
-    trees[i] = calloc(1, sizeof(struct Node));
+    trees[i] = (struct Node*)calloc(1, sizeof(struct Node));
     trees[i]->fsa = rules[rule]->conditions;
     trees[i]->fst = rules[rule]->rule;
     trees[i]->section = rules[rule]->section_no;
@@ -77,7 +77,7 @@ static struct Node* build_section_tree(struct cg_rules* rules[],
   /** And now: smallest-first union. */
   while (trees_still > 1 && trees[0]->fsa->statecount < MAX_STATES
                          && trees[1]->fsa->statecount < MAX_STATES) {
-    struct Node* new_tree = calloc(1, sizeof(struct Node));
+    struct Node* new_tree = (struct Node*)calloc(1, sizeof(struct Node));
     new_tree->fsa = fsm_topsort(
                       fsm_minimize(
                         fsm_determinize(
@@ -132,7 +132,7 @@ static void add_trees_to_ret(struct Node* trees,
 }
 
 struct Node* create_binary_tree(struct cg_rules* cg_rules, size_t no_rules) {
-  struct cg_rules** rules = calloc(no_rules, sizeof(struct cg_rules*));
+  struct cg_rules** rules = (struct cg_rules**)calloc(no_rules, sizeof(struct cg_rules*));
   struct Node* ret = NULL;
   struct Node* last = NULL;
   int i;
@@ -198,7 +198,7 @@ static size_t fill_fsms(struct Node* tree, struct fsm** rules, size_t i) {
 
 struct fsm** serialize_tree(struct Node* tree, size_t* num_rules) {
   *num_rules = count_fsms(tree, 0);
-  struct fsm** rules = calloc(*num_rules, sizeof(struct fsm*));
+  struct fsm** rules = (struct fsm**)calloc(*num_rules, sizeof(struct fsm*));
   fill_fsms(tree, rules, 0);
   return rules;
 }
@@ -214,7 +214,7 @@ struct fsm** serialize_tree(struct Node* tree, size_t* num_rules) {
  */
 static struct Node* array_to_tree(struct fsm* rules[], size_t num_rules,
                                   size_t* index) {
-  struct Node* new_tree = calloc(1, sizeof(struct Node));
+  struct Node* new_tree = (struct Node*)calloc(1, sizeof(struct Node));
   /* Leaf node. */
   if (!strncmp(rules[*index]->name, "C", 1)) {
     new_tree->no_rules = 1;

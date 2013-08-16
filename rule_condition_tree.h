@@ -73,7 +73,7 @@ struct fsm** serialize_tree(struct Node* tree, size_t* num_rules);
  */
 struct Node* deserialize_tree(struct fsm* rules[], size_t num_rules);
 
-struct Node* parse_binary_tree(struct cg_rules* cg_rules, size_t num_rules);
+struct Node* create_binary_tree(struct cg_rules* cg_rules, size_t num_rules);
 
 #ifdef __cplusplus
 }
