@@ -20,9 +20,9 @@
 /*     Hulden, M. (2011). Constraint Grammar parsing with left and right     */
 /*     sequential finite transducers. In Proceedings of the 9th FSMNLP.      */
 
-/*     Compile with: flex -8 fomacg2.l ; gcc -o fomacg2 lex.yy.c -lfoma -lz; */
-/*                   g++ -Wno-write-strings -o fomacg2 lex.yy.c              */
-/*                       rule_condition_tree.c -lfoma -lz                    */
+/*     Compile with: flex -8 src/fomacg2.l ;                                 */
+/*                   g++ -Wno-write-strings -o bin/fomacg2 lex.yy.c          */
+/*                       src/rule_condition_tree.c -lfoma -lz                */
 /*     Run: fomacg2 file.rle                                                 */
 /*     Currently only outputs a .prolog file for each rule in the .rle file  */
 /*     where the filename is RXXX.prolog where XXX is the line number the    */

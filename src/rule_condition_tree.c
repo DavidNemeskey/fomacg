@@ -62,7 +62,7 @@ static struct Node* build_section_tree(struct cg_rules* rules[],
   fprintf(stderr, "build_section_tree(%zu, %zu)\n", begin, length);
   struct Node** trees = (struct Node**)calloc(length, sizeof(struct Node*));
   /* Let's fill the array. */
-  int i;
+  size_t i;
   for (i = 0; i < length; i++) {
     int rule = begin + i;
     trees[i] = (struct Node*)calloc(1, sizeof(struct Node));
@@ -101,7 +101,7 @@ static struct Node* build_section_tree(struct cg_rules* rules[],
   for (i = 0; i < length && trees[i] != NULL; i++) {
     trees[i]->next = trees[i + 1];
     if (strncmp(trees[i]->fsa->name, "C_", 2)) {
-      snprintf(trees[i]->fsa->name, 40, "S_%d_%d", trees[i]->section, i);
+      snprintf(trees[i]->fsa->name, 40, "S_%d_%zu", trees[i]->section, i);
     }
   }
 
@@ -135,7 +135,7 @@ struct Node* create_binary_tree(struct cg_rules* cg_rules, size_t no_rules) {
   struct cg_rules** rules = (struct cg_rules**)calloc(no_rules, sizeof(struct cg_rules*));
   struct Node* ret = NULL;
   struct Node* last = NULL;
-  int i;
+  size_t i;
 
   for (i = 0; i < no_rules; i++) {
     rules[i] = cg_rules;
