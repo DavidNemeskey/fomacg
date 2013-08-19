@@ -12,6 +12,8 @@
 #include "fomacg_stream_reader.h"
 #include "fomacg_rule_applier.h"
 
+#include <time.h>
+
 void test_converter(Converter* conv) {
   std::string fomacg = conv->apertium_to_fomacg(
 //      L"^Volt/van<vbser><past>/volt<n><sg><nom>$^ebed/eb<n><sg><px2ss><nom>$^?/?<sent>$");
@@ -74,6 +76,13 @@ int main(int argc, char* argv[]) {
   StreamReader reader(stdin);
   //test_reader(reader);
   RuleApplier applier = RuleApplier::get(*conv, grammar_file);
+
+  struct timespec start, end;
+  clock_gettime(CLOCK_REALTIME, &start);
   do_it(reader, *conv, applier);
+  clock_gettime(CLOCK_REALTIME, &end);
+  double elapsed = end.tv_sec - start.tv_sec +
+                   (end.tv_nsec - start.tv_nsec) / 1000000000.0;
+//  fprintf(stderr, "Total time: %lf\n", elapsed);
   delete conv;
 }

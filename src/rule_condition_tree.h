@@ -32,6 +32,7 @@
 #include <fomalib.h>
 #endif
 
+#include "fomacg_common.h"
 #include "fomacg_types.h"
 
 #ifdef __cplusplus
@@ -44,9 +45,9 @@ struct Node {
   /** The number of rules this tree covers. */
   size_t no_rules;
   /** The condition FSA. */
-  struct fsm* fsa;
+  FstPair fsa;
   /** The rule FST. */
-  struct fsm* fst;
+  FstPair fst;
   struct Node* left;
   struct Node* right;
   /** The next group of tests on the same level as this one. */
@@ -71,7 +72,7 @@ struct fsm** serialize_tree(struct Node* tree, size_t* num_rules);
  * "C") are represented by their condition FSA; leaf nodes are by both the
  * FSA and the rule FST.
  */
-struct Node* deserialize_tree(struct fsm* rules[], size_t num_rules);
+struct Node* deserialize_tree(const FstVector& rules);
 
 struct Node* create_binary_tree(struct cg_rules* cg_rules, size_t num_rules);
 

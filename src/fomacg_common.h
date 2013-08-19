@@ -7,11 +7,14 @@
  */
 
 #include <string>
-#include <vector>
+#include <deque>
 #include <stdexcept>
 
+#ifndef FOMA_INCLUDED
+#define FOMA_INCLUDED
 #include <stdbool.h>  // to avoid errors in fomalib.h
 #include "fomalib.h"
+#endif
 
 /**
  * All data we need for an FST: its struct and apply handle. The main goal of
@@ -30,7 +33,7 @@ struct FstPair {
 };
 
 /** A vector of FSTs with their apply handle. */
-typedef std::vector<FstPair> FstVector;
+typedef std::deque<FstPair> FstVector;
 
 /**
  * Loads an FST from a file.

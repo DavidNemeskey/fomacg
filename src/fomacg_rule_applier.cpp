@@ -4,6 +4,7 @@
 #include <cstring>
 
 #include <sstream>
+#include <iostream>
 
 #include "fomacg_converter.h"
 
@@ -16,6 +17,7 @@ RuleApplier::RuleApplier(Converter& converter, const std::string& fst_file)
 RuleApplier RuleApplier::get(Converter& converter, const std::string& fst_file)
     throw (std::invalid_argument, std::length_error) {
   RuleApplier ra(converter, fst_file);
+  //ra.load_file_tree();
   ra.load_file();
   return ra;
 }
@@ -61,6 +63,70 @@ Continue:
         }
       }  // for rule
     }  // for section
+    break;
+  }
+  /* Return the resulting string without the >>> cohort and <<< tags. */
+  result = result.erase(result.length() - 14, 6).substr(begin_cohort.length());
+//  fprintf(stderr, "Output: %s\n", result.c_str());
+  return applied;
+}
+
+// TODO: move this to rule_condition_tree
+FstPair* RuleApplier::find_rule(Node* rule, const std::string& sentence,
+                                bool match) const {
+//  fprintf(stderr, "Testing condition %s...\n", rule->fsa.fst->name);
+  if (match || apply_detmin_fsa(rule->fsa.ah, const_cast<char*>(sentence.c_str()))) {
+    if (rule->left == NULL) {  // Leaf node -- just return the rule
+ //     fprintf(stderr, "Leaf rule: returning %s / %s...\n", rule->fsa.fst->name, rule->fst.fst->name);
+      return &rule->fst;
+    } else {                   // else we traverse down the tree
+      FstPair* left = find_rule(rule->left, sentence);
+      if (left != NULL) {
+//        fprintf(stderr, "Found left: %s.\n", left->fst->name);
+        return left;
+      } else {
+//        fprintf(stderr, "Not found, going right...\n");
+        return find_rule(rule->right, sentence, true);
+      }
+    }
+  } else {
+//    fprintf(stderr, "Condition %s does not match.\n", rule->fsa.fst->name);
+    return NULL;
+  }
+}
+
+size_t RuleApplier::apply_rules2(std::string& result,
+                                 const std::string& sentence) const {
+  size_t applied = 0;
+  /* Add the >>> and <<< tags. >>> comes in a separate cohort, while <<< is
+   * appended to the tag list of the last cohort. It comes before the "| #EOC# "
+   * at the end of the sentence (length = 8).
+   */
+  result = begin_cohort + sentence.substr(0, sentence.length() - 8) + "<<<<> " +
+           sentence.substr(sentence.length() - 8);
+//  fprintf(stderr, "Input: \n%s\n", sentence.c_str());
+
+  while (true) {
+Continue:
+    for (Node* rule = rules; rule != NULL; rule = rule->next) {
+//        fprintf(stderr, "Trying rule %s...\n", sections[section][rule].fst->name);
+//        char* fomacg_result = apply_down(sections[section][rule + 1].ah,
+//                                         const_cast<char*>(result.c_str()));
+//        if (fomacg_result != NULL) {
+      FstPair* rule_pair = find_rule(rule, result);
+      if (rule_pair != NULL) {
+//        fprintf(stderr, "Rule found: %s\n", rule_pair->fst->name);
+        char* fomacg_result = apply_down(rule_pair->ah,
+                                   const_cast<char*>(result.c_str()));
+//          fprintf(stderr, "Applied rule %s, result:\n%s\n",
+//              rule_pair->fst->name, fomacg_result);
+        result = fomacg_result;
+        applied++;
+        goto Continue;
+      } else {
+//          fprintf(stderr, "Couldn't do anything for >>>%s<<<\n", sentence.c_str());
+      }
+    }  // for rule
     break;
   }
   /* Return the resulting string without the >>> cohort and <<< tags. */
@@ -136,6 +202,19 @@ void RuleApplier::load_file() {
   if (num_sections != sections.size()) {
     throw std::length_error("Section numbers are not contiguous. ");
   }
+}
+
+// TODO: logging?
+void RuleApplier::load_file_tree() {
+  FstVector fsts = load_fsts(fst_file);
+  delimiters = fsts[0];
+  fsts.pop_front();  // delimiters
+//  std::cerr << "Num rules: " << fsts.size() << std::endl;
+//  for (size_t i = 0; i < fsts.size(); i++) {
+//    std::cerr << "Rule " << fsts[i].fst->name << std::endl;
+//  }
+
+  rules = deserialize_tree(fsts);
 }
 
 RuleApplier::~RuleApplier() {

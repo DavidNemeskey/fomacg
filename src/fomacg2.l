@@ -1145,21 +1145,26 @@ int save_rules_fsm(char *filename) {
   foma_net_print(delimiter_rule, outfile);
   write_prolog(delimiter_rule, "DELIMITERS.prolog");
 
-  /* ... then all the rules. */
-  for (rules = cg_rules ; rules != NULL; rules = rules->next) {
-    if (rules->section_no != section) {
-      struct fsm* delim = fsm_empty_set();
-      strcpy(delim->name, "---");
-      foma_net_print(delim, outfile);
-      section = rules->section_no;
-    }
-    foma_net_print(rules->rule, outfile);
-    foma_net_print(rules->conditions, outfile);
-    sprintf(prolog_name,"%s.prolog", rules->rule->name);
-    write_prolog(rules->rule, prolog_name);
-    sprintf(prolog_name,"%s.prolog", rules->conditions->name);
-    write_prolog(rules->conditions, prolog_name);
+  /* ... then the deserialized rule tree. */
+  for (i = 0; i < num_rules; i++) {
+    foma_net_print(to_print[i], outfile);
   }
+
+//  /* ... then all the rules. */
+//  for (rules = cg_rules ; rules != NULL; rules = rules->next) {
+//    if (rules->section_no != section) {
+//      struct fsm* delim = fsm_empty_set();
+//      strcpy(delim->name, "---");
+//      foma_net_print(delim, outfile);
+//      section = rules->section_no;
+//    }
+//    foma_net_print(rules->rule, outfile);
+//    foma_net_print(rules->conditions, outfile);
+//    sprintf(prolog_name,"%s.prolog", rules->rule->name);
+//    write_prolog(rules->rule, prolog_name);
+//    sprintf(prolog_name,"%s.prolog", rules->conditions->name);
+//    write_prolog(rules->conditions, prolog_name);
+//  }
   gzclose(outfile);
   free(outfile_name);
   return 1;

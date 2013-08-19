@@ -39,9 +39,9 @@ static int tree_compare(const void* tree1, const void* tree2) {
     if (t2 == NULL) {
       return -1;
     } else {
-      if (t1->fsa->statecount < t2->fsa->statecount) {
+      if (t1->fsa.fst->statecount < t2->fsa.fst->statecount) {
         return -1;
-      } else if (t1->fsa->statecount > t2->fsa->statecount) {
+      } else if (t1->fsa.fst->statecount > t2->fsa.fst->statecount) {
         return 1;
       } else {
         return 0;
@@ -66,8 +66,8 @@ static struct Node* build_section_tree(struct cg_rules* rules[],
   for (i = 0; i < length; i++) {
     int rule = begin + i;
     trees[i] = (struct Node*)calloc(1, sizeof(struct Node));
-    trees[i]->fsa = rules[rule]->conditions;
-    trees[i]->fst = rules[rule]->rule;
+    trees[i]->fsa.fst = rules[rule]->conditions;
+    trees[i]->fst.fst = rules[rule]->rule;
     trees[i]->section = rules[rule]->section_no;
     trees[i]->no_rules = 1;
     fprintf(stderr, "section %s : %d\n", rules[rule]->conditions->name, rules[rule]->section_no);
@@ -75,17 +75,17 @@ static struct Node* build_section_tree(struct cg_rules* rules[],
 
   int trees_still = length;
   /** And now: smallest-first union. */
-  while (trees_still > 1 && trees[0]->fsa->statecount < MAX_STATES
-                         && trees[1]->fsa->statecount < MAX_STATES) {
+  while (trees_still > 1 && trees[0]->fsa.fst->statecount < MAX_STATES
+                         && trees[1]->fsa.fst->statecount < MAX_STATES) {
     struct Node* new_tree = (struct Node*)calloc(1, sizeof(struct Node));
-    new_tree->fsa = fsm_topsort(
-                      fsm_minimize(
-                        fsm_determinize(
-                          fsm_union(
-                            fsm_copy(trees[0]->fsa),
-                            fsm_copy(trees[1]->fsa)))));
-    fsm_sort_arcs(new_tree->fsa, 1);
-    sprintf(new_tree->fsa->name, "union");
+    new_tree->fsa.fst = fsm_topsort(
+                          fsm_minimize(
+                            fsm_determinize(
+                              fsm_union(
+                                fsm_copy(trees[0]->fsa.fst),
+                                fsm_copy(trees[1]->fsa.fst)))));
+    fsm_sort_arcs(new_tree->fsa.fst, 1);
+    sprintf(new_tree->fsa.fst->name, "union");
     new_tree->left  = trees[0];
     new_tree->right = trees[1];
     new_tree->section = trees[0]->section;
@@ -100,14 +100,14 @@ static struct Node* build_section_tree(struct cg_rules* rules[],
   struct Node* ret = trees[0];
   for (i = 0; i < length && trees[i] != NULL; i++) {
     trees[i]->next = trees[i + 1];
-    if (strncmp(trees[i]->fsa->name, "C_", 2)) {
-      snprintf(trees[i]->fsa->name, 40, "S_%d_%zu", trees[i]->section, i);
+    if (strncmp(trees[i]->fsa.fst->name, "C_", 2)) {
+      snprintf(trees[i]->fsa.fst->name, 40, "S_%d_%zu", trees[i]->section, i);
     }
   }
 
   struct Node* p = trees[0];
   while (p != NULL) {
-    fprintf(stderr, "Tree %s : %d (%zu)\n", p->fsa->name, p->fsa->statecount, p->no_rules);
+    fprintf(stderr, "Tree %s : %d (%zu)\n", p->fsa.fst->name, p->fsa.fst->statecount, p->no_rules);
     p = p->next;
   }
 
@@ -178,8 +178,8 @@ struct Node* create_binary_tree(struct cg_rules* cg_rules, size_t no_rules) {
  * @p count should be @c 0.
  */
 static size_t count_fsms(struct Node* tree, size_t count) {
-  if (tree->fsa != NULL) count++;
-  if (tree->fst != NULL) count++;
+  if (tree->fsa.fst != NULL) count++;
+  if (tree->fst.fst != NULL) count++;
   if (tree->left != NULL) count = count_fsms(tree->left, count);
   if (tree->right != NULL) count = count_fsms(tree->right, count);
   if (tree->next != NULL) count = count_fsms(tree->next, count);
@@ -188,8 +188,8 @@ static size_t count_fsms(struct Node* tree, size_t count) {
 
 /** Fills @p rules with the rules and conditions in @p tree. */
 static size_t fill_fsms(struct Node* tree, struct fsm** rules, size_t i) {
-  if (tree->fsa != NULL) rules[i++] = tree->fsa;
-  if (tree->fst != NULL) rules[i++] = tree->fst;
+  if (tree->fsa.fst != NULL) rules[i++] = tree->fsa.fst;
+  if (tree->fst.fst != NULL) rules[i++] = tree->fst.fst;
   if (tree->left != NULL) i = fill_fsms(tree->left, rules, i);
   if (tree->right != NULL) i = fill_fsms(tree->right, rules, i);
   if (tree->next != NULL) i = fill_fsms(tree->next, rules, i);
@@ -212,29 +212,30 @@ struct fsm** serialize_tree(struct Node* tree, size_t* num_rules) {
  * @param num_rules the total number of rules.
  * @param index the current index in @p rules.
  */
-static struct Node* array_to_tree(struct fsm* rules[], size_t num_rules,
-                                  size_t* index) {
+static struct Node* array_to_tree(const FstVector& rules, size_t* index) {
   struct Node* new_tree = (struct Node*)calloc(1, sizeof(struct Node));
   /* Leaf node. */
-  if (!strncmp(rules[*index]->name, "C", 1)) {
+  if (!strncmp(rules[*index].fst->name, "C", 1)) {
     new_tree->no_rules = 1;
     new_tree->fsa = rules[(*index)++];
     new_tree->fst = rules[(*index)++];
   } else {
     new_tree->fsa = rules[(*index)++];
-    struct Node* left_tree = array_to_tree(rules, num_rules, index);
-    struct Node* right_tree = array_to_tree(rules, num_rules, index);
+    struct Node* left_tree = array_to_tree(rules, index);
+    struct Node* right_tree = array_to_tree(rules, index);
     new_tree->no_rules = left_tree->no_rules + right_tree->no_rules;
+    new_tree->left  = left_tree;
+    new_tree->right = right_tree;
   }
   return new_tree;
 }
 
-struct Node* deserialize_tree(struct fsm* rules[], size_t num_rules) {
+struct Node* deserialize_tree(const FstVector& rules) {
   struct Node* ret = NULL;   // the returned tree
   struct Node* curr = NULL;  // the last tree in the chain
   size_t index = 0;
-  while (index < num_rules) {
-    struct Node* new_tree = array_to_tree(rules, num_rules, &index);
+  while (index < rules.size()) {
+    struct Node* new_tree = array_to_tree(rules, &index);
     if (ret == NULL) {
       ret = curr = new_tree;
     } else {

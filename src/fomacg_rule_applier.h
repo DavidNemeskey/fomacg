@@ -22,6 +22,7 @@
 #include <stdexcept>
 
 #include "fomacg_common.h"
+#include "rule_condition_tree.h"
 
 class Converter;
 
@@ -56,7 +57,7 @@ public:
    * @return the number of rules applied.
    */
   size_t apply_rules(std::string& result, const std::string& sentence) const;
-//  size_t apply_rules2(std::string& result, const std::string& sentence) const;
+  size_t apply_rules2(std::string& result, const std::string& sentence) const;
   size_t apply_rules3(std::string& result, const std::string& sentence) const;
 
 private:
@@ -64,6 +65,16 @@ private:
   RuleApplier(Converter& converter, const std::string& fst_file);
   /** Loads the FST file. */
   void load_file();
+  /** Loads the FSTs into trees. */
+  void load_file_tree();
+  /**
+   * Finds a rule recursively that can be applied to @p sentence in @p rule.
+   * @param match if @c true, we assume that the condition is fulfilled and the
+   *              fsa is not checked. The default is @c false; it is only set to
+   *              @c true when we check the last remaining branch under a
+   *              matching node.
+   */
+  FstPair* find_rule(Node* rule, const std::string& sentence, bool match=false) const;
 
   Converter& converter;
   std::string fst_file;
@@ -72,6 +83,8 @@ private:
 
   /** The rules by sections. */
   std::vector<FstVector> sections;
+  /** The rule trees. */
+  Node* rules;
   /** The delimiters rule. */
   FstPair delimiters;
   /** The >>> cohort. */
