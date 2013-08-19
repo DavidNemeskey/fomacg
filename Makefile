@@ -1,12 +1,17 @@
 CPPFLAGS = -g -ggdb -Wall -Wno-write-strings -Wno-uninitialized -O3
 CPP = g++
 CXX = g++
-LINKFLAGS = -lfoma -lz
+LINKFOMA = -lfoma
+LINKALL  = $(LINKFOMA) -lz
 LEX = flex
-all: fomacg
+all: fomacg fomacg_proc
 
 fomacg:
-	cd src; $(LEX) -8 fomacg2.l ; $(CXX) $(CPPFLAGS) -o ../fomacg2 lex.yy.c rule_condition_tree.c $(LINKFLAGS); cd ..
+	cd src; $(LEX) -8 fomacg2.l ; $(CXX) $(CPPFLAGS) -o ../fomacg2 lex.yy.c rule_condition_tree.c $(LINKALL); cd ..
+
+fomacg_proc:
+	cd src; $(CXX) $(CPPFLAGS) *.cpp -o ../fomacg_proc $(LINKFOMA) ; cd ..
 
 clean:
-	rm fomacg2
+	rm fomacg2 fomacg_proc
+#-I/usr/local/include/ -I. 
