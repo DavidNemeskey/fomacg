@@ -26,6 +26,10 @@
 // TODO: flat tree
 // TOOO: test transducers?
 
+#ifndef MAX_STATES
+#define MAX_STATES 1000
+#endif
+
 #ifndef FOMA_INCLUDED
 #define FOMA_INCLUDED
 #include <stdbool.h>  // to avoid errors in fomalib.h
@@ -157,9 +161,42 @@ private:
  * state count).
  */
 class SmallestFirstTreeMerger : public TreeConditionMerger {
+public:
+  /**
+   * Constructor.
+   * @param max_states if a condition has more states than this, it is not
+   *                    considered for merging.
+   */
+  SmallestFirstTreeMerger(int max_states=MAX_STATES);
+
 protected:
   struct Node* build_section_tree(std::vector<struct cg_rules*>& rules,
                                   size_t begin, size_t length);
+
+private:
+  int max_states;
+};
+
+/**
+ * Creates trees of a previously fixed level.
+ *
+ * @warning Be careful and do not set the number of levels too high (>3 ...), or
+ *          the <tt>fsm_union()</tt> operation may freeze your machine.
+ */
+class FixLevelTreeMerger : public TreeConditionMerger {
+public:
+  /**
+   * Constructor.
+   * @param levels the height of the trees. The default is three.
+   */
+  FixLevelTreeMerger(int levels=3);
+
+protected:
+  struct Node* build_section_tree(std::vector<struct cg_rules*>& rules,
+                                  size_t begin, size_t length);
+
+private:
+  int levels;
 };
 
 #endif

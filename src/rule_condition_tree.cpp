@@ -5,8 +5,12 @@
 
 #include <algorithm>
 
-// TODO: to parameter
-#define MAX_STATES 1000
+SmallestFirstTreeMerger::SmallestFirstTreeMerger(int max_states) :
+    max_states(max_states) {}
+
+FixLevelTreeMerger::FixLevelTreeMerger(int levels) : levels(levels) {}
+
+/********************************* Comparison *********************************/
 
 bool ConditionMerger::rule_compare(const struct cg_rules* rule1,
                                    const struct cg_rules* rule2) {
@@ -25,12 +29,10 @@ bool ConditionMerger::rule_compare(const struct cg_rules* rule1,
 
 bool TreeConditionMerger::tree_compare(const struct Node* tree1,
                                        const struct Node* tree2) {
-  if (tree1->fsa.fst->statecount > tree2->fsa.fst->statecount) {
-    return false;
-  } else {
-    return true;
-  }
+  return tree1->fsa.fst->statecount <= tree2->fsa.fst->statecount;
 }
+
+/********************************** Merging ***********************************/
 
 struct Node* SmallestFirstTreeMerger::build_section_tree(
     std::vector<struct cg_rules*>& rules, size_t begin, size_t length) {
@@ -72,6 +74,69 @@ struct Node* SmallestFirstTreeMerger::build_section_tree(
   /* Finishing touches... */
   struct Node* ret = trees[0];
   for (i = 0; i < trees.size(); i++) {
+    if (i < trees.size() - 1) {
+      trees[i]->next = trees[i + 1];
+    }
+    if (strncmp(trees[i]->fsa.fst->name, "C_", 2)) {
+      snprintf(trees[i]->fsa.fst->name, 40, "S_%d_%zu", trees[i]->section, i);
+    }
+  }
+
+  struct Node* p = trees[0];
+  while (p != NULL) {
+    fprintf(stderr, "Tree %s : %d (%zu)\n", p->fsa.fst->name, p->fsa.fst->statecount, p->no_rules);
+    p = p->next;
+  }
+
+  return ret;
+}
+
+struct Node* FixLevelTreeMerger::build_section_tree(
+    std::vector<struct cg_rules*>& rules, size_t begin, size_t length) {
+  fprintf(stderr, "build_section_tree(%zu, %zu)\n", begin, length);
+  std::deque<struct Node*> trees(length);
+  /* Let's fill the array. */
+  for (size_t i = 0; i < length; i++) {
+    int rule = begin + i;
+    trees[i] = (struct Node*)calloc(1, sizeof(struct Node));
+    trees[i]->fsa.fst = rules[rule]->conditions;
+    trees[i]->fst.fst = rules[rule]->rule;
+    trees[i]->section = rules[rule]->section_no;
+    trees[i]->no_rules = 1;
+    fprintf(stderr, "section %s : %d\n", rules[rule]->conditions->name, rules[rule]->section_no);
+  }
+
+  for (int curr_level = 1; trees.size() > 2 && curr_level < levels;
+         curr_level++) {
+//    fprintf(stderr, "curr level: %d, levels: %d\n", curr_level, levels);
+    /* Union trees in the first half of the array with those in the second. */
+    for (size_t i = 0; i < trees.size() - 1; i++) {
+//      fprintf(stderr, "Merging %s(%zu) - %d & %s(%zu) - %d ...\n",
+//          trees[i]->fsa.fst->name, i, trees[i]->fsa.fst->statecount,
+//          trees[trees.size() - 1]->fsa.fst->name, trees.size() - 1,
+//          trees[trees.size() - 1]->fsa.fst->statecount);
+      struct Node* new_tree = (struct Node*)calloc(1, sizeof(struct Node));
+      new_tree->fsa.fst = fsm_topsort(
+                            fsm_minimize(
+                              fsm_determinize(
+                                fsm_union(
+                                  fsm_copy(trees[i]->fsa.fst),
+                                  fsm_copy(trees.back()->fsa.fst)))));
+      fsm_sort_arcs(new_tree->fsa.fst, 1);
+      sprintf(new_tree->fsa.fst->name, "union");
+      new_tree->left  = trees[i];
+      new_tree->right = trees[trees.size() - 1];
+      new_tree->section = trees[i]->section;
+      new_tree->no_rules = trees[i]->no_rules + trees.back()->no_rules;
+      trees[i] = new_tree;
+      trees.pop_back();
+    }
+    std::sort(trees.begin(), trees.end(), tree_compare);
+  }
+
+  /* Finishing touches... */
+  struct Node* ret = trees[0];
+  for (size_t i = 0; i < trees.size(); i++) {
     if (i < trees.size() - 1) {
       trees[i]->next = trees[i + 1];
     }
