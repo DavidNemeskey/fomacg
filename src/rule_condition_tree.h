@@ -32,6 +32,8 @@
 #include <fomalib.h>
 #endif
 
+#include <vector>
+
 #include "fomacg_common.h"
 #include "fomacg_types.h"
 
@@ -83,7 +85,8 @@ protected:
    * Comparison function for qsort() that sorts the rules first by section, then
    * by size.
    */
-  static int rule_compare(const void* rule1, const void* rule2);
+  static bool rule_compare(const struct cg_rules* rule1,
+                           const struct cg_rules* rule2);
 };
 
 /** A merger that returns binary trees. */
@@ -109,11 +112,11 @@ protected:
    * @param length the length of the section.
    * @return the tree.
    */
-  virtual struct Node* build_section_tree(struct cg_rules* rules[],
+  virtual struct Node* build_section_tree(std::vector<struct cg_rules* >& rules,
                                           size_t begin, size_t length)=0;
 
   /** Comparison function for qsort() that sorts the tree(-node)s by size. */
-  static int tree_compare(const void* tree1, const void* tree2);
+  static bool tree_compare(const struct Node* tree1, const struct Node* tree2);
 
 private:
   /**
@@ -155,7 +158,7 @@ private:
  */
 class SmallestFirstTreeMerger : public TreeConditionMerger {
 protected:
-  struct Node* build_section_tree(struct cg_rules* rules[],
+  struct Node* build_section_tree(std::vector<struct cg_rules*>& rules,
                                   size_t begin, size_t length);
 };
 

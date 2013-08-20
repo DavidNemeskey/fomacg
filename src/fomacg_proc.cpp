@@ -83,6 +83,6 @@ int main(int argc, char* argv[]) {
   clock_gettime(CLOCK_REALTIME, &end);
   double elapsed = end.tv_sec - start.tv_sec +
                    (end.tv_nsec - start.tv_nsec) / 1000000000.0;
-//  fprintf(stderr, "Total time: %lf\n", elapsed);
+  fprintf(stderr, "Total time: %lf\n", elapsed);
   delete conv;
 }
