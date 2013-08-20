@@ -6,11 +6,7 @@
 // TODO: to parameter
 #define MAX_STATES 1000
 
-/**
- * Comparison function for qsort() that sorts the rules first by section, then
- * by size.
- */
-static int rule_compare(const void* rule1, const void* rule2) {
+int ConditionMerger::rule_compare(const void* rule1, const void* rule2) {
   struct cg_rules* r1 = *((struct cg_rules **)rule1);
   struct cg_rules* r2 = *((struct cg_rules **)rule2);
   if (r1->section_no < r2->section_no) {
@@ -28,8 +24,7 @@ static int rule_compare(const void* rule1, const void* rule2) {
   }
 }
 
-/** Comparison function for qsort() that sorts the tree(-node)s by size. */
-static int tree_compare(const void* tree1, const void* tree2) {
+int TreeConditionMerger::tree_compare(const void* tree1, const void* tree2) {
   struct Node* t1 = *((struct Node**) tree1);
   struct Node* t2 = *((struct Node**) tree2);
   /* NULL goes to the end. */
@@ -50,15 +45,8 @@ static int tree_compare(const void* tree1, const void* tree2) {
   }
 }
 
-/**
- * Builds the binary tree for the current section.
- * @param rules the rules array.
- * @paran begin the index of the first rule in the section.
- * @param length the length of the section.
- * @return the tree.
- */
-static struct Node* build_section_tree(struct cg_rules* rules[],
-                                       size_t begin, size_t length) {
+struct Node* SmallestFirstTreeMerger::build_section_tree(
+    struct cg_rules* rules[], size_t begin, size_t length) {
   fprintf(stderr, "build_section_tree(%zu, %zu)\n", begin, length);
   struct Node** trees = (struct Node**)calloc(length, sizeof(struct Node*));
   /* Let's fill the array. */
@@ -115,13 +103,9 @@ static struct Node* build_section_tree(struct cg_rules* rules[],
   return ret;
 }
 
-/**
- * Called by create_binary_tree() to add the newly created tree group @p trees
- * to the returned set (which starts at @p ret and ends in @p last). Updates the
- * latter two.
- */
-static void add_trees_to_ret(struct Node* trees,
-                             struct Node** ret, struct Node** last) {
+void TreeConditionMerger::add_trees_to_ret(struct Node* trees,
+                                           struct Node** ret,
+                                           struct Node** last) {
   if (*ret == NULL) {
     *ret = *last = trees;
     for (; (*last)->next != NULL; *last = (*last)->next);
@@ -131,7 +115,8 @@ static void add_trees_to_ret(struct Node* trees,
   }
 }
 
-struct Node* create_binary_tree(struct cg_rules* cg_rules, size_t no_rules) {
+struct Node* TreeConditionMerger::merge(struct cg_rules* cg_rules,
+                                        size_t no_rules) {
   struct cg_rules** rules = (struct cg_rules**)calloc(no_rules, sizeof(struct cg_rules*));
   struct Node* ret = NULL;
   struct Node* last = NULL;
@@ -173,11 +158,7 @@ struct Node* create_binary_tree(struct cg_rules* cg_rules, size_t no_rules) {
 
 /******************************* Serialization ********************************/
 
-/**
- * Counts the non-NULL struct fsm*'s in @p tree. When you call this func tion,
- * @p count should be @c 0.
- */
-static size_t count_fsms(struct Node* tree, size_t count) {
+size_t TreeConditionMerger::count_fsms(struct Node* tree, size_t count) {
   if (tree->fsa.fst != NULL) count++;
   if (tree->fst.fst != NULL) count++;
   if (tree->left != NULL) count = count_fsms(tree->left, count);
@@ -186,8 +167,8 @@ static size_t count_fsms(struct Node* tree, size_t count) {
   return count;
 }
 
-/** Fills @p rules with the rules and conditions in @p tree. */
-static size_t fill_fsms(struct Node* tree, struct fsm** rules, size_t i) {
+size_t TreeConditionMerger::fill_fsms(struct Node* tree, struct fsm** rules,
+                                      size_t i) {
   if (tree->fsa.fst != NULL) rules[i++] = tree->fsa.fst;
   if (tree->fst.fst != NULL) rules[i++] = tree->fst.fst;
   if (tree->left != NULL) i = fill_fsms(tree->left, rules, i);
@@ -196,23 +177,17 @@ static size_t fill_fsms(struct Node* tree, struct fsm** rules, size_t i) {
   return i;
 }
 
-struct fsm** serialize_tree(struct Node* tree, size_t* num_rules) {
-  *num_rules = count_fsms(tree, 0);
+struct fsm** TreeConditionMerger::serialize(struct Node* tree, size_t* num_rules) {
+  *num_rules = count_fsms(tree);
   struct fsm** rules = (struct fsm**)calloc(*num_rules, sizeof(struct fsm*));
-  fill_fsms(tree, rules, 0);
+  fill_fsms(tree, rules);
   return rules;
 }
 
 /****************************** De-serialization ******************************/
 
-/**
- * The recursive function that walks through @p rules and builds trees from it.
- *
- * @param rules the rule fsm array.
- * @param num_rules the total number of rules.
- * @param index the current index in @p rules.
- */
-static struct Node* array_to_tree(const FstVector& rules, size_t* index) {
+struct Node* TreeConditionMerger::array_to_tree(const FstVector& rules,
+                                                size_t* index) {
   struct Node* new_tree = (struct Node*)calloc(1, sizeof(struct Node));
   /* Leaf node. */
   if (!strncmp(rules[*index].fst->name, "C", 1)) {
@@ -230,7 +205,7 @@ static struct Node* array_to_tree(const FstVector& rules, size_t* index) {
   return new_tree;
 }
 
-struct Node* deserialize_tree(const FstVector& rules) {
+struct Node* TreeConditionMerger::deserialize(const FstVector& rules) {
   struct Node* ret = NULL;   // the returned tree
   struct Node* curr = NULL;  // the last tree in the chain
   size_t index = 0;

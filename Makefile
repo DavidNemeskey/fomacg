@@ -7,10 +7,10 @@ LEX = flex
 all: fomacg fomacg_proc
 
 fomacg:
-	cd src; $(LEX) -8 fomacg2.l ; $(CXX) $(CPPFLAGS) -o ../fomacg2 lex.yy.c rule_condition_tree.c $(LINKALL); cd ..
+	cd src; $(LEX) -8 fomacg2.l ; $(CXX) $(CPPFLAGS) -o ../fomacg2 lex.yy.c rule_condition_tree.cpp $(LINKALL); cd ..
 
 fomacg_proc:
-	cd src; $(CXX) $(CPPFLAGS) *.cpp -o ../fomacg_proc $(LINKFOMA) ; cd ..
+	cd src; $(CXX) $(CPPFLAGS) *.cpp -o ../fomacg_proc $(LINKFOMA) -lrt ; cd ..
 
 clean:
 	rm fomacg2 fomacg_proc

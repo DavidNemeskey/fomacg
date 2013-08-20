@@ -1132,9 +1132,11 @@ int save_rules_fsm(char *filename) {
   /* Return to the original rule order. */
   reverse_rule_order();
 
-  struct Node* trees = create_binary_tree(cg_rules, total_rules);
+  SmallestFirstTreeMerger merger;
+
+  struct Node* trees = merger.merge(cg_rules, total_rules);
   size_t num_rules;
-  struct fsm** to_print = serialize_tree(trees, &num_rules);
+  struct fsm** to_print = merger.serialize(trees, &num_rules);
   printf("num_rules: %zu\n", num_rules);
   size_t i;
   for (i = 0; i < num_rules; i++) {

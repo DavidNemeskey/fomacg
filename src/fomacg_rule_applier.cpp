@@ -17,8 +17,8 @@ RuleApplier::RuleApplier(Converter& converter, const std::string& fst_file)
 RuleApplier RuleApplier::get(Converter& converter, const std::string& fst_file)
     throw (std::invalid_argument, std::length_error) {
   RuleApplier ra(converter, fst_file);
-  //ra.load_file_tree();
-  ra.load_file();
+  ra.load_file_tree();
+  //ra.load_file();
   return ra;
 }
 
@@ -209,12 +209,13 @@ void RuleApplier::load_file_tree() {
   FstVector fsts = load_fsts(fst_file);
   delimiters = fsts[0];
   fsts.pop_front();  // delimiters
-//  std::cerr << "Num rules: " << fsts.size() << std::endl;
-//  for (size_t i = 0; i < fsts.size(); i++) {
-//    std::cerr << "Rule " << fsts[i].fst->name << std::endl;
-//  }
+  std::cerr << "Num rules: " << fsts.size() << std::endl;
+  for (size_t i = 0; i < fsts.size(); i++) {
+    std::cerr << "Rule " << fsts[i].fst->name << std::endl;
+  }
 
-  rules = deserialize_tree(fsts);
+  SmallestFirstTreeMerger merger;
+  rules = merger.deserialize(fsts);
 }
 
 RuleApplier::~RuleApplier() {

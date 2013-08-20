@@ -35,10 +35,6 @@
 #include "fomacg_common.h"
 #include "fomacg_types.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /** A node in the tree. */
 struct Node {
   int section;
@@ -54,30 +50,113 @@ struct Node {
   struct Node* next;
 };
 
-/**
- * Serializes @p tree.
- *
- * @param[in] tree the tree to serialize.
- * @param[out] num_rules the number of rules in @p tree.
- * @return an array of <tt>struct fsm*</tt>s. The order will be the one
- *         described for deserialize_tree().
- */
-struct fsm** serialize_tree(struct Node* tree, size_t* num_rules);
-/**
- * Given an array of FSTs read from a .fst file, it creates the binary trees
- * they were created from.
- *
- * The FSTs must be in prefix order (root, left, leftleft, ..., leftright, ...,
- * right, ...). The intermediate nodes (whose name does not start with "R" or
- * "C") are represented by their condition FSA; leaf nodes are by both the
- * FSA and the rule FST.
- */
-struct Node* deserialize_tree(const FstVector& rules);
+/** The ancestor of all classes the merge conditions. */
+class ConditionMerger {
+public:
+  /**
+   * Serializes @p tree. Called by fomacg when it writes the rules to file.
+   *
+   * @note The signature is subject to change in case we decide to support
+   *       non-tree-based mergers.
+   * @param[in] tree the tree to serialize.
+   * @param[out] num_rules the number of rules in @p tree.
+   * @return an array of <tt>struct fsm*</tt>s. The order will be the one
+   *         described for deserialize_tree().
+   */
+  virtual struct fsm** serialize(struct Node* tree, size_t* num_rules)=0;
 
-struct Node* create_binary_tree(struct cg_rules* cg_rules, size_t num_rules);
+  /**
+   * Given an array of FSTs read from a .fst file, it creates the binary trees
+   * they were created from.
+   *
+   * The FSTs must have been saved by the current ConditionMerger subclass.
+   *
+   * @note Same as for serialize().
+   */
+  virtual struct Node* deserialize(const FstVector& rules)=0;
 
-#ifdef __cplusplus
-}
-#endif
+  /** Merges the conditions it can and returns the resulting tree. */
+  virtual struct Node* merge(struct cg_rules* cg_rules, size_t num_rules)=0;
+
+protected:
+  /**
+   * Comparison function for qsort() that sorts the rules first by section, then
+   * by size.
+   */
+  static int rule_compare(const void* rule1, const void* rule2);
+};
+
+/** A merger that returns binary trees. */
+class TreeConditionMerger : public ConditionMerger {
+public:
+  /**
+   * The FSTs are in prefix order (root, left, leftleft, ..., leftright, ...,
+   * right, ...). The intermediate nodes (whose name does not start with "R" or
+   * "C") are represented by their condition FSA; leaf nodes are by both the
+   * FSA and the rule FST.
+   */
+  struct fsm** serialize(struct Node* tree, size_t* num_rules);
+  struct Node* deserialize(const FstVector& rules);
+  struct Node* merge(struct cg_rules* cg_rules, size_t num_rules);
+
+protected:
+  /**
+   * Builds the binary tree(s) for the current section. It's up to the
+   * sub-classes to specify how the trees are built.
+   *
+   * @param rules the rules array.
+   * @paran begin the index of the first rule in the section.
+   * @param length the length of the section.
+   * @return the tree.
+   */
+  virtual struct Node* build_section_tree(struct cg_rules* rules[],
+                                          size_t begin, size_t length)=0;
+
+  /** Comparison function for qsort() that sorts the tree(-node)s by size. */
+  static int tree_compare(const void* tree1, const void* tree2);
+
+private:
+  /**
+   * Recursive function that counts the non-NULL struct fsm*'s in @p tree.
+   * Called by serialize().
+   * @note @p count is for inner use; when you call this function, it should be
+   * @c 0 (the default).
+   */
+  size_t count_fsms(struct Node* tree, size_t count=0);
+  /**
+   * Recursive function that fills @p rules with the rules and conditions in
+   * @p tree. Called by serialize().
+   * @note @p i is for inner bookkeeping; when you call this function, it should
+   * be @c 0 (the default).
+   */
+  size_t fill_fsms(struct Node* tree, struct fsm** rules, size_t i=0);
+
+  /**
+   * The recursive function that walks through @p rules and builds trees from
+   * it. Called by deserialize().
+   *
+   * @param rules the rule fsm array.
+   * @param index the current index in @p rules.
+   */
+  struct Node* array_to_tree(const FstVector& rules, size_t* index);
+
+  /**
+   * Called by merge() to add the newly created tree group @p trees to the
+   * returned set (which starts at @p ret and ends in @p last). Updates the
+   * latter two.
+   */
+  void add_trees_to_ret(struct Node* trees,
+                        struct Node** ret, struct Node** last);
+};
+
+/**
+ * Creates the trees by always merging the two smallest conditions (in terms of
+ * state count).
+ */
+class SmallestFirstTreeMerger : public TreeConditionMerger {
+protected:
+  struct Node* build_section_tree(struct cg_rules* rules[],
+                                  size_t begin, size_t length);
+};
 
 #endif
