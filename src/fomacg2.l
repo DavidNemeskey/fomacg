@@ -811,33 +811,40 @@ void cg_list_add(void) {
   cg_list_currcelement = NULL;
 }
 
-bool cg_set_element_add(char *name) { 
-  struct fsm* contains_name = cg_set_find(name);
-
-  if (contains_name == NULL) return false;
-
+void cg_set_element_add(struct fsm *list_fsm) { 
   if (cg_list_currelement == NULL) {
-    cg_list_currelement = fsm_copy(contains_name);
+    cg_list_currelement = fsm_copy(list_fsm);
   } else {
     /* + operator: concats @*name@* to the end of the current element. */
     if (curr_op == OP_PLUS) {
       cg_list_currelement = fsm_minimize(
-          fsm_concat(cg_list_currelement, fsm_copy(contains_name)));
+          fsm_concat(cg_list_currelement, fsm_copy(list_fsm)));
     }
     /* - operator: current element - @*name@*. Not the opposite of +! */
     if (curr_op == OP_MINUS) {
       cg_list_currelement = fsm_minimize(
-          fsm_minus(cg_list_currelement, fsm_copy(contains_name)));
+          fsm_minus(cg_list_currelement, fsm_copy(list_fsm)));
     }
     /* OR operator: union */
     if (curr_op == OP_OR) {
       cg_list_currelement = fsm_minimize(
-          fsm_union(cg_list_currelement, fsm_copy(contains_name)));
+          fsm_union(cg_list_currelement, fsm_copy(list_fsm)));
     }
   }
-
-  return true;
   /* TODO: else if */
+}
+
+bool cg_set_list_add(char* name) {
+  struct fsm *list_fsm = cg_set_find(name);
+  if (list_fsm == NULL) return false;
+  cg_set_element_add(list_fsm);
+  return true;
+}
+
+void cg_set_celement_end() {
+  struct fsm *list_fsm = cg_list_currcelement;
+  cg_set_element_add(list_fsm);
+  cg_list_currcelement = NULL;
 }
 
 /* Set definition functions, that tackle the LIST command. The resulting FSM is
@@ -898,7 +905,7 @@ void yerrorprint(char *s) {
 %x s0 s1 s2 s3 s4 s5 s6 s7 s8 s9 s10 s11 s12 s13 s14 s15 s16 s17 s18 sIF
 %x DELIMCOLLECT DELIMLISTING DELIMCONCAT
 %x LISTCOLLECT LISTEQ LISTING LISTCONCAT
-%x SETCOLLECT SETEQ SETLISTING
+%x SETCOLLECT SETEQ SETLISTING SETCONCAT
 %x ERROR 
 
 DIGIT    [0-9]
@@ -975,16 +982,21 @@ RULESCOPE ("*"|"*""*")?"@"?"-"?{DIGIT}+C?
 
 <SETLISTING>{ID}   {
   dprint("SELEMENT:[%s] ",yytext);
-  if (!cg_set_element_add(yytext)) {
+  if (!cg_set_list_add(yytext)) {
     yerror("list doesn't exist", yytext, yylineno);
     BEGIN(ERROR);
   }
 }
+<SETLISTING>"("           { dprint("SCONC "); BEGIN(SETCONCAT);                          }
 <SETLISTING>"+"" "        { dprint("SPLUS "); curr_op = OP_PLUS;                          }
 <SETLISTING>"-"" "        { dprint("SMINUS "); curr_op = OP_MINUS;                        }
 <SETLISTING>(?i:OR)" "    { dprint("OR "); curr_op = OP_OR;                               }
 <SETLISTING>";"        { dprint("SEND\n"); cg_list_add(); BEGIN(0);                    }
 <SETLISTING>.          { yerror("list element or ; ",yytext,yylineno); BEGIN(ERROR);   }
+
+<SETCONCAT>{ID}    { dprint("SCELEMENT:[%s] ",yytext); cg_list_celement_add(yytext);     }
+<SETCONCAT>")"     { dprint("SNORMAL "); cg_set_celement_end(); BEGIN(SETLISTING);   }
+<SETCONCAT>.       { yerror("list element or ) ",yytext,yylineno); BEGIN(ERROR);         }
 
 (?i:SELECT)      { dprint("SELECT ");  lineno_begin_rule = yylineno; rule_operation = OP_SELECT; curr_op = OP_NONE; BEGIN(s2); }
 (?i:REMOVE)      { dprint("REMOVE ");  lineno_begin_rule = yylineno; rule_operation = OP_REMOVE; curr_op = OP_NONE; BEGIN(s2); }
