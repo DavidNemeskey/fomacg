@@ -250,8 +250,8 @@ struct fsm *cg_mark_form_target(struct fsm *wordform, struct fsm *target) {
 struct fsm *cg_set_find(char *string) {
   struct cg_sets *cgs;
   for (cgs = cg_sets; cgs != NULL; cgs = cgs->next) {
-    if (strcmp(string,cgs->name) == 0) {
-      return(cgs->net);
+    if (strcmp(string, cgs->name) == 0) {
+      return cgs->net;
     }
   }
   return NULL;
@@ -811,32 +811,32 @@ void cg_list_add(void) {
   cg_list_currcelement = NULL;
 }
 
-void cg_set_element_add(char *name) { 
-  /** Creates the regex @*name@* */
-  struct fsm* contains_name = 
-      fsm_concat(fsm_copy(CG_DEF_NODEL),
-                 fsm_concat(cg_tag_symbol(name),
-                            fsm_copy(CG_DEF_NODEL)));
+bool cg_set_element_add(char *name) { 
+  struct fsm* contains_name = cg_set_find(name);
+
+  if (contains_name == NULL) return false;
 
   if (cg_list_currelement == NULL) {
-    cg_list_currelement = fsm_minimize(contains_name);
+    cg_list_currelement = fsm_copy(contains_name);
   } else {
     /* + operator: concats @*name@* to the end of the current element. */
     if (curr_op == OP_PLUS) {
       cg_list_currelement = fsm_minimize(
-          fsm_concat(cg_list_currelement, contains_name));
+          fsm_concat(cg_list_currelement, fsm_copy(contains_name)));
     }
     /* - operator: current element - @*name@*. Not the opposite of +! */
     if (curr_op == OP_MINUS) {
       cg_list_currelement = fsm_minimize(
-          fsm_minus(cg_list_currelement, contains_name));
+          fsm_minus(cg_list_currelement, fsm_copy(contains_name)));
     }
     /* OR operator: union */
     if (curr_op == OP_OR) {
       cg_list_currelement = fsm_minimize(
-          fsm_union(cg_list_currelement, contains_name));
+          fsm_union(cg_list_currelement, fsm_copy(contains_name)));
     }
   }
+
+  return true;
   /* TODO: else if */
 }
 
@@ -973,7 +973,13 @@ RULESCOPE ("*"|"*""*")?"@"?"-"?{DIGIT}+C?
 <SETEQ>"="         { dprint("SETEQ"); curr_op = OP_NONE; BEGIN(SETLISTING);          }
 <SETEQ>.           { yerror("=",yytext,yylineno); BEGIN(ERROR); }
 
-<SETLISTING>{ID}       { dprint("SELEMENT:[%s] ",yytext); cg_set_element_add(yytext); }
+<SETLISTING>{ID}   {
+  dprint("SELEMENT:[%s] ",yytext);
+  if (!cg_set_element_add(yytext)) {
+    yerror("list doesn't exist", yytext, yylineno);
+    BEGIN(ERROR);
+  }
+}
 <SETLISTING>"+"" "        { dprint("SPLUS "); curr_op = OP_PLUS;                          }
 <SETLISTING>"-"" "        { dprint("SMINUS "); curr_op = OP_MINUS;                        }
 <SETLISTING>(?i:OR)" "    { dprint("OR "); curr_op = OP_OR;                               }
@@ -1145,7 +1151,6 @@ int save_rules_fsm(char *filename) {
 
   /* First the DELIMITERS... */
   foma_net_print(delimiter_rule, outfile);
-  write_prolog(delimiter_rule, "DELIMITERS.prolog");
 
   /* ... then the deserialized rule tree. */
   for (i = 0; i < num_rules; i++) {
