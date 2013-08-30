@@ -914,6 +914,7 @@ DIGIT    [0-9]
 ID       ([\\@_:"<>"a-zA-Z0-9*+,?=$!%\^.\-\[\]\']([\\"<>"/\-_@:A-Za-z0-9*+,?=$!%\^.\[\]\']|[\300-\337].|[\340-\357]..|[\360-\367]...)*)|["][^"]*["] 
 RULESCOPE ("*"|"*""*")?"@"?"-"?{DIGIT}+C?
     /* e.g. *-1 */
+WHITESPACE [[:blank:]\n]
 %%
 <ERROR>[^\n]*       { yerrorprint(yytext);  }
 
@@ -977,7 +978,7 @@ RULESCOPE ("*"|"*""*")?"@"?"-"?{DIGIT}+C?
 <SETCOLLECT>{ID}   { dprint("SNAME:[%s] ",yytext); cg_list_name = strdup(yytext); BEGIN(SETEQ);    }
 <SETCOLLECT>.      { yerror("set name",yytext,yylineno); BEGIN(ERROR);                             }
 
-<SETEQ>"="         { dprint("SETEQ"); curr_op = OP_NONE; BEGIN(SETLISTING);          }
+<SETEQ>"="         { dprint("SETEQ "); curr_op = OP_NONE; BEGIN(SETLISTING);          }
 <SETEQ>.           { yerror("=",yytext,yylineno); BEGIN(ERROR); }
 
 <SETLISTING>{ID}   {
@@ -988,9 +989,9 @@ RULESCOPE ("*"|"*""*")?"@"?"-"?{DIGIT}+C?
   }
 }
 <SETLISTING>"("           { dprint("SCONC "); BEGIN(SETCONCAT);                          }
-<SETLISTING>"+"" "        { dprint("SPLUS "); curr_op = OP_PLUS;                          }
-<SETLISTING>"-"" "        { dprint("SMINUS "); curr_op = OP_MINUS;                        }
-<SETLISTING>(?i:OR)" "    { dprint("OR "); curr_op = OP_OR;                               }
+<SETLISTING>"+"{WHITESPACE}        { dprint("SPLUS "); curr_op = OP_PLUS;                          }
+<SETLISTING>"-"{WHITESPACE}        { dprint("SMINUS "); curr_op = OP_MINUS;                        }
+<SETLISTING>(?i:OR){WHITESPACE}    { dprint("OR "); curr_op = OP_OR;                               }
 <SETLISTING>";"        { dprint("SEND\n"); cg_list_add(); BEGIN(0);                    }
 <SETLISTING>.          { yerror("list element or ; ",yytext,yylineno); BEGIN(ERROR);   }
 
