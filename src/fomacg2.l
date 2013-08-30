@@ -911,7 +911,8 @@ void yerrorprint(char *s) {
 DIGIT    [0-9]
     /* ID: [\@_:<>*+,?=$!%^.-[]' or alnum], then the same or unicode characters */
     /* anything between double quotes. */
-ID       ([\\@_:"<>"a-zA-Z0-9*+,?=$!%\^.\-\[\]\']([\\"<>"/\-_@:A-Za-z0-9*+,?=$!%\^.\[\]\']|[\300-\337].|[\340-\357]..|[\360-\367]...)*)|["][^"]*["] 
+    /* ID       ([\\@_:"<>"a-zA-Z0-9*+,?=$!%\^.\-\[\]\']([\\"<>"/\-_@:A-Za-z0-9*+,?=$!%\^.\[\]\']|[\300-\337].|[\340-\357]..|[\360-\367]...)*)|["][^"]*["] */
+ID       ([\\"<>"/\-_@:A-Za-z0-9*+,?=$!%\^.\[\]\']|[\300-\337].|[\340-\357]..|[\360-\367]...)+|["][^"]*["] 
 RULESCOPE ("*"|"*""*")?"@"?"-"?{DIGIT}+C?
     /* e.g. *-1 */
 WHITESPACE [[:blank:]\n]
@@ -963,7 +964,7 @@ WHITESPACE [[:blank:]\n]
 <LISTCOLLECT>{ID}   { dprint("LNAME:[%s] ",yytext); cg_list_name = strdup(yytext); BEGIN(LISTEQ);       }
 <LISTCOLLECT>.      { yerror("list name",yytext,yylineno); BEGIN(ERROR); }
 
-<LISTEQ>"="         { dprint("LISTEQ"); BEGIN(LISTING);          }
+<LISTEQ>"="         { dprint("LISTEQ "); BEGIN(LISTING);          }
 <LISTEQ>.           { yerror("=",yytext,yylineno); BEGIN(ERROR); }
 
 <LISTING>{ID}       { dprint("LELEMENT:[%s] ",yytext); cg_list_element_add(yytext); }
