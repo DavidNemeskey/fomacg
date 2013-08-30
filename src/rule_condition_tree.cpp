@@ -19,17 +19,17 @@ bool ConditionMerger::rule_compare(const struct cg_rules* rule1,
   } else if (rule1->section_no > rule2->section_no) {
     return false;
   } else {
-    if (rule1->conditions->statecount > rule2->conditions->statecount) {
-      return false;
-    } else{
+    if (rule1->conditions->statecount < rule2->conditions->statecount) {
       return true;
+    } else{
+      return false;
     }
   }
 }
 
 bool TreeConditionMerger::tree_compare(const struct Node* tree1,
                                        const struct Node* tree2) {
-  return tree1->fsa.fst->statecount <= tree2->fsa.fst->statecount;
+  return tree1->fsa.fst->statecount < tree2->fsa.fst->statecount;
 }
 
 /********************************** Merging ***********************************/
