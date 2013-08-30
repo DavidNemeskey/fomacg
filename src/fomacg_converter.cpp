@@ -53,7 +53,7 @@ std::string Converter::apertium_to_fomacg(const std::wstring& str) {
 }
 
 std::wstring Converter::fomacg_to_apertium(const std::string& str) {
-  char* apertium = apply_up(f2a.ah, const_cast<char*>(str.c_str()));
+  char* apertium = apply_up(f2a.ah, str.c_str());
   if (apertium != NULL) {
     size_t len = strlen(apertium);
     ensure_buffers(len);

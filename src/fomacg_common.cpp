@@ -16,7 +16,7 @@ void FstPair::cleanup() {
 
 FstPair load_fst(const std::string& fst_file)
     throw (std::invalid_argument, std::runtime_error) {
-  struct fsm* fst = fsm_read_binary_file(const_cast<char*>(fst_file.c_str()));
+  struct fsm* fst = fsm_read_binary_file(fst_file.c_str());
   if (fst == NULL) {
     throw std::invalid_argument("Could not load FST from " + fst_file);
   }
@@ -36,8 +36,7 @@ FstPair load_fst(const std::string& fst_file)
 FstVector load_fsts(const std::string& fst_file) throw (std::invalid_argument) {
   FstVector ret;
   fsm_read_binary_handle fsrh;
-  char* file_name = const_cast<char*>(fst_file.c_str());  // See foma bug #48
-  if ((fsrh = fsm_read_binary_file_multiple_init(file_name)) == NULL) {
+  if ((fsrh = fsm_read_binary_file_multiple_init(fst_file.c_str())) == NULL) {
     throw std::invalid_argument("Could not open FST file " + fst_file);
   }
 

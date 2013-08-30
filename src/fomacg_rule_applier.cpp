@@ -23,8 +23,7 @@ RuleApplier RuleApplier::get(Converter& converter, const std::string& fst_file)
 }
 
 bool RuleApplier::is_delimiter(const std::string& cohort) const {
-  // TODO: get rid of the const_cast once the foma interface becomes sane
-  return apply_detmin_fsa(delimiters.ah, const_cast<char*>(cohort.c_str()));
+  return apply_detmin_fsa(delimiters.ah, cohort.c_str());
 }
 
 size_t RuleApplier::apply_rules(std::string& result,
@@ -45,7 +44,7 @@ Continue:
       for (size_t rule = 0; rule < sections[section].size(); rule++) {
 //        fprintf(stderr, "Trying rule %s...\n", sections[section][rule].fst->name);
         char* fomacg_result = apply_down(sections[section][rule].ah,
-                                         const_cast<char*>(result.c_str()));
+                                         result.c_str());
         if (fomacg_result != NULL) {
           size_t new_length = strlen(fomacg_result);
           if (old_length != new_length) {
@@ -75,7 +74,7 @@ Continue:
 FstPair* RuleApplier::find_rule(Node* rule, const std::string& sentence,
                                 bool match) const {
 //  fprintf(stderr, "Testing condition %s...\n", rule->fsa.fst->name);
-  if (match || apply_detmin_fsa(rule->fsa.ah, const_cast<char*>(sentence.c_str()))) {
+  if (match || apply_detmin_fsa(rule->fsa.ah, sentence.c_str())) {
     if (rule->left == NULL) {  // Leaf node -- just return the rule
  //     fprintf(stderr, "Leaf rule: returning %s / %s...\n", rule->fsa.fst->name, rule->fst.fst->name);
       return &rule->fst;
@@ -111,13 +110,12 @@ Continue:
     for (Node* rule = rules; rule != NULL; rule = rule->next) {
 //        fprintf(stderr, "Trying rule %s...\n", sections[section][rule].fst->name);
 //        char* fomacg_result = apply_down(sections[section][rule + 1].ah,
-//                                         const_cast<char*>(result.c_str()));
+//                                         result.c_str());
 //        if (fomacg_result != NULL) {
       FstPair* rule_pair = find_rule(rule, result);
       if (rule_pair != NULL) {
 //        fprintf(stderr, "Rule found: %s\n", rule_pair->fst->name);
-        char* fomacg_result = apply_down(rule_pair->ah,
-                                   const_cast<char*>(result.c_str()));
+        char* fomacg_result = apply_down(rule_pair->ah, result.c_str());
 //          fprintf(stderr, "Applied rule %s, result:\n%s\n",
 //              rule_pair->fst->name, fomacg_result);
         result = fomacg_result;
@@ -152,11 +150,11 @@ Continue:
       for (size_t rule = 0; rule < sections[section].size(); rule +=2) {
 //        fprintf(stderr, "Trying rule %s...\n", sections[section][rule].fst->name);
 //        char* fomacg_result = apply_down(sections[section][rule + 1].ah,
-//                                         const_cast<char*>(result.c_str()));
+//                                         result.c_str());
 //        if (fomacg_result != NULL) {
-        if (apply_detmin_fsa(sections[section][rule + 1].ah, const_cast<char*>(result.c_str()))) {
+        if (apply_detmin_fsa(sections[section][rule + 1].ah, result.c_str())) {
           char* fomacg_result = apply_down(sections[section][rule].ah,
-                                     const_cast<char*>(result.c_str()));
+                                           result.c_str());
 //          fprintf(stderr, "Applied rule %s, result:\n%s\n",
 //              sections[section][rule].fst->name, fomacg_result);
           result = fomacg_result;
