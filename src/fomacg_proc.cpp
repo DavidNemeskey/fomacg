@@ -66,6 +66,10 @@ int main(int argc, char* argv[]) {
     std::cerr << "Usage: " << argv[0] << " grammar_file " << std::endl;
     exit(1);
   }
+
+  struct timespec init, start, end;
+  clock_gettime(CLOCK_REALTIME, &init);
+
   char* grammar_file = argv[1];
   Converter* conv = Converter::get("data/apertium_to_fomacg.fst");
   if (conv == NULL) {
@@ -77,12 +81,14 @@ int main(int argc, char* argv[]) {
   //test_reader(reader);
   RuleApplier applier = RuleApplier::get(*conv, grammar_file);
 
-  struct timespec start, end;
   clock_gettime(CLOCK_REALTIME, &start);
   do_it(reader, *conv, applier);
   clock_gettime(CLOCK_REALTIME, &end);
+  double init_elapsed = start.tv_sec - init.tv_sec +
+                        (start.tv_nsec - init.tv_nsec) / 1000000000.0;
   double elapsed = end.tv_sec - start.tv_sec +
                    (end.tv_nsec - start.tv_nsec) / 1000000000.0;
-  fprintf(stderr, "Total time: %lf\n", elapsed);
+  fprintf(stderr, "Init time: %lf\n", init_elapsed);
+  fprintf(stderr, "Run time: %lf\n", elapsed);
   delete conv;
 }
