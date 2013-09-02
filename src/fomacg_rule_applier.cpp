@@ -7,6 +7,7 @@
 #include <iostream>
 
 #include "fomacg_converter.h"
+#include "foma_extra.h"
 
 const std::string RuleApplier::begin_cohort =
     std::string("$0$ \">>>\" #BOC# | #0# \">>>\" <>>>> | #EOC# ");
