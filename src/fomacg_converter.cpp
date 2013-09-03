@@ -3,6 +3,7 @@
 #include <cstdlib>
 
 #include "fomacg_common.h"
+#include "foma_extra.h"
 
 std::string Converter::FAILED  = "";
 std::wstring Converter::WFAILED = L"";
@@ -43,8 +44,9 @@ std::string Converter::apertium_to_fomacg(const std::wstring& str) {
   size_t clen = wcstombs(utf_8_input, str.c_str(), wlen);
   utf_8_input[clen] = 0;
 
-  char* fomacg = apply_down(a2f.ah, utf_8_input);
-  //printf("fomacg: >%s<\n", fomacg);
+//  char* fomacg = apply_down(a2f.ah, utf_8_input);
+  char* fomacg = apply_detmin_fst(a2f.ah, utf_8_input);
+//  printf("fomacg: >%s<\n", fomacg);
   if (fomacg != NULL) {
     return std::string(fomacg);
   } else {
