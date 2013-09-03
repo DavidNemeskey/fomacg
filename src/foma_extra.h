@@ -21,7 +21,7 @@ bool apply_detmin_fsa(struct apply_handle *h, const char *word);
 //std::string apply_detmin_fst(struct apply_handle *h, const char *word);
 
 /** Finds the transition for the current state and input via binary search. Returns @c NULL if it could not be found. */
-inline struct fsm_state* find_transition(struct apply_handle *h, int curr_state, int& ipos);
+inline struct fsm_state* find_transition(struct apply_handle *h);
 // TODO: up & down
 
 #endif
