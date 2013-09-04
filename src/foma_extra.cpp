@@ -3,6 +3,8 @@
 #include <set>
 #include <iostream>
 
+#include <fomalibconf.h>
+
 /*
  * Good to know:
  * h->instring: the input string
@@ -12,86 +14,50 @@
  * h->opos: current position in the output word
  * h->sigmatch_array: the list of symbols in the input; index by h->ipos
  * h->sigs: the list of symbols (string, length).
+ * h->sigma_trie: a trie for symbols
+ * h->sigma_trie_arrays: keeps track of the trie arrays. For memory cleanup.
  * h->ptr: the current state (stable)
  * h->curr_ptr: the current state (dynamic, for loops, etc.)
  * h->gstates: fsm->states == transitions; index by h->ptr
  * h->statemap: the offset of the state's transition list from h->gstates.
  * h->numlines: the number of transitions from a state.
+ * h->last_net: the (last?) FST
  */
 
 inline static void add_output(struct apply_handle* h, int out_symbol);
 inline static void add_output(struct apply_handle* h, char* out_str, int out_len);
+static void custom_create_sigmatch(struct apply_handle *h,
+                                   const std::vector<std::string>& sentence,
+                                   int inlen);
 
 bool apply_detmin_fsa(struct apply_handle *h, const char *word) {
-  static int count = 0;
   h->instring = const_cast<char*>(word);
   apply_create_sigmatch(h);
 
-  struct fsm* fsa = h->last_net;
-  //    fprintf(stderr, "Sorted: %d, arity: %d\n", fsa->arcs_sorted_in, fsa->arity);
-  if (fsa == NULL || fsa->finalcount == 0) {
-    return false;
-  }
-//  struct fsm_state* transitions = fsa->states;
-
   h->ptr = 0; h->ipos = 0;
-  for (; h->ipos < h->sigmatch_array_size;) {
-Detmin_Fsa_Outer:
-    /* Is this word[i] == 0. */
-    if ((h->sigmatch_array + h->ipos)->signumber == 0 || h->ipos >= h->current_instring_length) break;
-    //	fprintf(stderr, "Reading %d (%c) ...\n",
-    //		(h->sigmatch_array+i)->signumber, word[i]);
-    /* Linear search for the moment. */
-    //	fprintf(stderr, "numlines for state %d: %d\n", curr_state, *(h->numlines+curr_state));
-    if (*(h->numlines + h->ptr) == 0) return false;  /* I think... */
-    //int j = 0;
-    //	fprintf(stderr, "Checking transitions %d(%d) through %d(%d)...\n",
-    //		*(h->statemap + curr_state), j,
-    //		*(h->statemap + curr_state) + *(h->numlines + curr_state),
-    //		*(h->numlines + curr_state));
+  for (; h->ipos < h->current_instring_length;) {
+    /* Trap state. */
+    if (*(h->numlines + h->ptr) == 0) return false;
+
     /* Assumption: FSAs don't support UNKNOWN; detmin FSAs are epsilon-free. */
     if ((h->sigmatch_array + h->ipos)->signumber == IDENTITY) {
-      //	    fprintf(stderr, "%d <= IDENTITY\n", (h->sigmatch_array+i)->signumber);
       struct fsm_state* tr = h->gstates + *(h->statemap + h->ptr);
-      //	    fprintf(stderr, "%dth transition: in %d, target: %d\n", j, tr->in, tr->target);
       h->ptr = tr->target;
       h->ipos += (h->sigmatch_array + h->ipos)->consumes;
-      //	    fprintf(stderr, " found!\n");
-      goto Detmin_Fsa_Outer;
     } else {
       struct fsm_state* tr = find_transition(h);
-      if (tr != NULL) {
-        h->ptr = tr->target;
-        h->ipos += (h->sigmatch_array + h->ipos)->consumes;
-        goto Detmin_Fsa_Outer;
-      }
-      //	    for (j = 0; j < *(h->numlines + curr_state); j++) {
-      //		count++;
-      //		struct fsm_state* tr = transitions + *(h->statemap + curr_state) + j;
-      //    //	    fprintf(stderr, "%dth transition: in %d, target: %d\n", j, tr->in, tr->target);
-      //		if (tr->in == (h->sigmatch_array+i)->signumber) {
-      //		    curr_state = tr->target;
-      //		    i += (h->sigmatch_array+i)->consumes;
-      //    //		fprintf(stderr, " found!\n");
-      //		    goto Detmin_Outer;
-      //		} else {
-      //    //		fprintf(stderr, " not found!\n");
-      //		}
-      //	    }
+      if (tr == NULL) break;
+
+      h->ptr = tr->target;
+      h->ipos += (h->sigmatch_array + h->ipos)->consumes;
     }
-    //	fprintf(stderr, "Count: %d\n", count);
-    return false;  /* I think... */
   }
-  /* TODO: final state? */
+
   if ((h->gstates + *(h->statemap + h->ptr))->final_state) {
-    //	fprintf(stderr, "Count: %d\n", count);
     return true;
   } else {
-    //	fprintf(stderr, "Not in final state!\n");
-    //	fprintf(stderr, "Count: %d\n", count);
     return false;
   }
-  //    fprintf(stderr, "That's all folks!\n");
 }
 
 char* apply_detmin_fst(struct apply_handle *h, const char *word) {
@@ -106,18 +72,10 @@ char* apply_detmin_fst(struct apply_handle *h, const char *word) {
 //                << int(st->start_state) << std::endl;
 //    }
 //  }
-  static int count = 0;
   h->instring = const_cast<char*>(word);
   /* Also sets h->current_instring_length. */
   apply_create_sigmatch(h);
 
-  struct fsm* fst = h->last_net;
-//  fprintf(stdout, "Sorted: %d, arity: %d\n", fst->arcs_sorted_in, fst->arity);
-  if (fst == NULL || fst->finalcount == 0) {
-    return NULL;
-  }
-
-  // TODO: use h->outstring
   h->ptr = 0; h->ipos = 0; h->opos = 0;
 
 //  std::cout << "length: " << h->current_instring_length << std::endl;
@@ -241,5 +199,107 @@ void add_output(struct apply_handle* h, char* out_str, int out_len) {
   strncpy(h->outstring + h->opos, out_str, out_len);
   h->opos += out_len;
   h->outstring[h->opos] = 0;
+}
+
+bool custom_detmin_fsa(struct apply_handle* h, const char* word,
+                       const std::vector<std::string>& sentence,
+                       size_t length) {
+  h->instring = const_cast<char*>(word);
+  /* Also sets h->current_instring_length. */
+  custom_create_sigmatch(h, sentence, static_cast<int>(length));
+
+  h->ptr = 0; h->ipos = 0;
+  for (; h->ipos < h->current_instring_length;) {
+    /* Trap state. */
+    if (*(h->numlines + h->ptr) == 0) return false;
+
+    /* Assumption: FSAs don't support UNKNOWN; detmin FSAs are epsilon-free. */
+    if ((h->sigmatch_array + h->ipos)->signumber == IDENTITY) {
+      struct fsm_state* tr = h->gstates + *(h->statemap + h->ptr);
+      h->ptr = tr->target;
+      h->ipos += (h->sigmatch_array + h->ipos)->consumes;
+    } else {
+      struct fsm_state* tr = find_transition(h);
+      if (tr == NULL) break;
+      
+      h->ptr = tr->target;
+      h->ipos += (h->sigmatch_array + h->ipos)->consumes;
+    }
+  }
+
+  if ((h->gstates + *(h->statemap + h->ptr))->final_state) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+/**
+ * Variant of apply_create_sigmatch(), tailored to the needs of
+ * custom_detmin_fsa(). Each word in sentence is handled as a single IDENTITY
+ * symbol, if it is not in sigma; as opposed to the regular
+ * one-character-per-IDENTITY practice.
+ *
+ * @param inlen the length of the sentence in bytes.
+ */
+void custom_create_sigmatch(struct apply_handle *h,
+                            const std::vector<std::string>& sentence,
+                            int inlen) {
+//  /* We create a sigmatch array only in case we match against a real string */
+//  if (((h->mode) & ENUMERATE) == ENUMERATE) { return; }
+
+  h->current_instring_length = inlen;
+  if (inlen >= h->sigmatch_array_size) {
+    xxfree(h->sigmatch_array);
+    h->sigmatch_array = static_cast<struct apply_handle::sigmatch_array*>(
+      xxmalloc(sizeof(struct apply_handle::sigmatch_array)*(inlen)));
+    h->sigmatch_array_size = inlen;
+  }
+
+  for (size_t word = 0, at = 0; word != sentence.size(); ++word) {
+    const std::string& symbol = sentence[word];
+    const size_t& wlen = symbol.length();
+    struct apply_handle::sigma_trie *st = h->sigma_trie;
+    int signum = 0;
+
+    for (size_t i = 0; i < wlen; i++) {
+      if (i == wlen - 1) {
+        if (st->signum != 0) {
+          signum = st->signum;
+        }
+      } else {
+        st += (unsigned char)symbol[i];
+        if (st->next != NULL) {
+          st = st->next;
+        } else {
+          break;
+        }
+      }
+    }  // for i
+
+    if (signum != 0) {
+      (h->sigmatch_array + at)->signumber = signum;
+      (h->sigmatch_array + at)->consumes = (h->sigs + signum)->length;  // wlen
+    } else {
+      /* Not found */
+      (h->sigmatch_array + at)->signumber = IDENTITY;
+      (h->sigmatch_array + at)->consumes = wlen;
+    }
+
+    at += wlen;
+  }  // for sentence
+
+  /* XXX */
+  apply_print_sigma(h->last_net);
+  printf("Sigmatch array:\n");
+  for (int i = 0; i < h->sigmatch_array_size;) {
+    if ((h->sigmatch_array+i)->signumber == 0) break;
+    printf("Item %d: signum: %d (%.*s), consumes: %d\n", i,
+        (h->sigmatch_array+i)->signumber,
+        (h->sigs+(h->sigmatch_array+i)->signumber)->length,
+        (h->sigs+(h->sigmatch_array+i)->signumber)->symbol,
+        (h->sigmatch_array+i)->consumes);
+    i += (h->sigmatch_array+i)->consumes;
+  }
 }
 
