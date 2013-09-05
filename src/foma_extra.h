@@ -37,8 +37,7 @@ inline struct fsm_state* find_transition(struct apply_handle* h);
  * @param[in] sentence the input, segmented.
  * @param[in] length the length of the input.
  */
-bool custom_detmin_fsa(struct apply_handle* h, const char* word,
-                       const std::vector<std::string>& sentence,
-                       size_t length);
+bool custom_detmin_fsa(struct apply_handle* h, const std::string& word,
+                       const std::vector<std::string>& sentence);
 
 #endif

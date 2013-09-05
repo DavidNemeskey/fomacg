@@ -34,8 +34,29 @@ bool apply_detmin_fsa(struct apply_handle *h, const char *word) {
   h->instring = const_cast<char*>(word);
   apply_create_sigmatch(h);
 
+//  bool debug = !strcmp(h->last_net->name, "C_1_530") || !strcmp(h->last_net->name, "S_1_60");
+//  if (debug) {
+//    fprintf(stderr, "Name: %s\n", h->last_net->name);
+//    apply_print_sigma(h->last_net);
+//    fprintf(stderr, "Sigmatch array:\n");
+//    for (int i = 0; i < h->current_instring_length;) {
+//      if ((h->sigmatch_array+i)->signumber == 0) break;
+//      fprintf(stderr, "Item %d: signum: %d (%.*s), consumes: %d\n", i,
+//          (h->sigmatch_array+i)->signumber,
+//          (h->sigs+(h->sigmatch_array+i)->signumber)->length,
+////          (h->sigs+(h->sigmatch_array+i)->signumber)->symbol,
+//          h->instring+i,
+//          (h->sigmatch_array+i)->consumes);
+//      i += (h->sigmatch_array+i)->consumes;
+//    }
+//  }
+
   h->ptr = 0; h->ipos = 0;
   for (; h->ipos < h->current_instring_length;) {
+//    if (debug) fprintf(stderr, "State %d, ipos: %d, symbol: %d(%.*s)\n",
+//        h->ptr, h->ipos, (h->sigmatch_array + h->ipos)->signumber,
+//        (h->sigs+(h->sigmatch_array + h->ipos)->signumber)->length,
+//        h->instring + h->ipos);
     /* Trap state. */
     if (*(h->numlines + h->ptr) == 0) return false;
 
@@ -54,8 +75,10 @@ bool apply_detmin_fsa(struct apply_handle *h, const char *word) {
   }
 
   if ((h->gstates + *(h->statemap + h->ptr))->final_state) {
+//    if (debug) fprintf(stderr, "Returning true\n");
     return true;
   } else {
+//    if (debug) fprintf(stderr, "Returning false\n");
     return false;
   }
 }
@@ -201,12 +224,11 @@ void add_output(struct apply_handle* h, char* out_str, int out_len) {
   h->outstring[h->opos] = 0;
 }
 
-bool custom_detmin_fsa(struct apply_handle* h, const char* word,
-                       const std::vector<std::string>& sentence,
-                       size_t length) {
-  h->instring = const_cast<char*>(word);
+bool custom_detmin_fsa(struct apply_handle* h, const std::string& word,
+                       const std::vector<std::string>& sentence) {
+  h->instring = const_cast<char*>(word.c_str());
   /* Also sets h->current_instring_length. */
-  custom_create_sigmatch(h, sentence, static_cast<int>(length));
+  custom_create_sigmatch(h, sentence, static_cast<int>(word.length()));
 
   h->ptr = 0; h->ipos = 0;
   for (; h->ipos < h->current_instring_length;) {
@@ -263,17 +285,15 @@ void custom_create_sigmatch(struct apply_handle *h,
     int signum = 0;
 
     for (size_t i = 0; i < wlen; i++) {
+      st += (unsigned char)symbol[i];
       if (i == wlen - 1) {
         if (st->signum != 0) {
           signum = st->signum;
         }
+      } else if (st->next != NULL) {
+        st = st->next;
       } else {
-        st += (unsigned char)symbol[i];
-        if (st->next != NULL) {
-          st = st->next;
-        } else {
-          break;
-        }
+        break;
       }
     }  // for i
 
@@ -288,18 +308,5 @@ void custom_create_sigmatch(struct apply_handle *h,
 
     at += wlen;
   }  // for sentence
-
-  /* XXX */
-  apply_print_sigma(h->last_net);
-  printf("Sigmatch array:\n");
-  for (int i = 0; i < h->sigmatch_array_size;) {
-    if ((h->sigmatch_array+i)->signumber == 0) break;
-    printf("Item %d: signum: %d (%.*s), consumes: %d\n", i,
-        (h->sigmatch_array+i)->signumber,
-        (h->sigs+(h->sigmatch_array+i)->signumber)->length,
-        (h->sigs+(h->sigmatch_array+i)->signumber)->symbol,
-        (h->sigmatch_array+i)->consumes);
-    i += (h->sigmatch_array+i)->consumes;
-  }
 }
 

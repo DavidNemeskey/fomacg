@@ -9,6 +9,22 @@
 #include "fomacg_converter.h"
 #include "foma_extra.h"
 
+namespace {
+  std::vector<std::string> split_string(std::string s, const char& delim) {
+    std::vector<std::string> ret;
+    size_t pos = 0;
+    while (true) {
+      size_t found = s.find(delim, pos);
+      if (found != std::string::npos) {
+        ret.push_back(s.substr(pos, found - pos + 1));
+        pos = found + 1;
+      } else {
+        return ret;
+      }
+    }
+  }
+};
+
 const std::string RuleApplier::begin_cohort =
     std::string("$0$ \">>>\" #BOC# | #0# \">>>\" <>>>> | #EOC# ");
 
@@ -73,20 +89,21 @@ Continue:
 
 // TODO: move this to rule_condition_tree
 FstPair* RuleApplier::find_rule(Node* rule, const std::string& sentence,
+                                const std::vector<std::string>& split,
                                 bool match) const {
 //  fprintf(stderr, "Testing condition %s...\n", rule->fsa.fst->name);
-  if (match || apply_detmin_fsa(rule->fsa.ah, sentence.c_str())) {
+  if (match || custom_detmin_fsa(rule->fsa.ah, sentence.c_str(), split)) {
     if (rule->left == NULL) {  // Leaf node -- just return the rule
  //     fprintf(stderr, "Leaf rule: returning %s / %s...\n", rule->fsa.fst->name, rule->fst.fst->name);
       return &rule->fst;
     } else {                   // else we traverse down the tree
-      FstPair* left = find_rule(rule->left, sentence);
+      FstPair* left = find_rule(rule->left, sentence, split);
       if (left != NULL) {
 //        fprintf(stderr, "Found left: %s.\n", left->fst->name);
         return left;
       } else {
 //        fprintf(stderr, "Not found, going right...\n");
-        return find_rule(rule->right, sentence, true);
+        return find_rule(rule->right, sentence, split, true);
       }
     }
   } else {
@@ -108,12 +125,15 @@ size_t RuleApplier::apply_rules2(std::string& result,
 
   while (true) {
 Continue:
+    /* The sentence split into symbols. */
+    std::vector<std::string> split = split_string(result, ' ');
+
     for (Node* rule = rules; rule != NULL; rule = rule->next) {
-//        fprintf(stderr, "Trying rule %s...\n", sections[section][rule].fst->name);
+//      fprintf(stderr, "Trying rule %s...\n", rule->fsa.fst->name);
 //        char* fomacg_result = apply_down(sections[section][rule + 1].ah,
 //                                         result.c_str());
 //        if (fomacg_result != NULL) {
-      FstPair* rule_pair = find_rule(rule, result);
+      FstPair* rule_pair = find_rule(rule, result, split);
       if (rule_pair != NULL) {
 //        fprintf(stderr, "Rule found: %s\n", rule_pair->fst->name);
         char* fomacg_result = apply_down(rule_pair->ah, result.c_str());
@@ -123,7 +143,7 @@ Continue:
         applied++;
         goto Continue;
       } else {
-//          fprintf(stderr, "Couldn't do anything for >>>%s<<<\n", sentence.c_str());
+//          fprintf(stderr, "Couldn't do anything for >>>%s<<<\n", result.c_str());
       }
     }  // for rule
     break;
