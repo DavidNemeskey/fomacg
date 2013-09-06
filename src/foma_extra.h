@@ -21,8 +21,9 @@ bool apply_detmin_fsa(struct apply_handle *h, const char *word);
  * transitions as well, the latter will get higher priority. The arcs must be
  * sorted.
  */
-char* apply_detmin_fst(struct apply_handle* h, const char* word);
-// TODO: up & down
+char* apply_detmin_fst_down(struct apply_handle* h, const char* word);
+// /** Same as apply_detmin_fst_down(), but up. */
+// char* apply_detmin_fst_up(struct apply_handle* h, const char* word);
 
 /** Finds the transition for the current state and input via binary search. Returns @c NULL if it could not be found. */
 inline struct fsm_state* find_transition(struct apply_handle* h);

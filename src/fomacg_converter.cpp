@@ -11,11 +11,21 @@ size_t Converter::UTF_8_LENGTH = 6;
 
 Converter* Converter::get(const std::string& fst_file) {
   try {
-    FstVector fsts = load_fsts(fst_file);
-    if (fsts.size() != 2) {
-      throw 3;  // TODO
-    }
-    return new Converter(fsts[0], fsts[1]);
+//    FstVector fsts = load_fsts(fst_file);
+//    if (fsts.size() != 2) {
+//      throw 3;  // TODO
+//    }
+    FstPair a2f = load_fst(fst_file);
+    /*
+     * The opposite direction. Separate FST, because we cannot sort the arcs
+     * in two ways.
+     */
+    FstPair f2a;
+    f2a.fst = fsm_invert(fsm_copy(a2f.fst));
+    fsm_sort_arcs(f2a.fst, 1);
+    f2a.ah  = apply_init(f2a.fst);
+//    return new Converter(fsts[0], fsts[1]);
+    return new Converter(a2f, f2a);
   } catch (...) {
     // TODO: error reporting
     return NULL;
@@ -45,7 +55,7 @@ std::string Converter::apertium_to_fomacg(const std::wstring& str) {
   utf_8_input[clen] = 0;
 
 //  char* fomacg = apply_down(a2f.ah, utf_8_input);
-  char* fomacg = apply_detmin_fst(a2f.ah, utf_8_input);
+  char* fomacg = apply_detmin_fst_down(a2f.ah, utf_8_input);
 //  printf("fomacg: >%s<\n", fomacg);
   if (fomacg != NULL) {
     return std::string(fomacg);
@@ -55,7 +65,9 @@ std::string Converter::apertium_to_fomacg(const std::wstring& str) {
 }
 
 std::wstring Converter::fomacg_to_apertium(const std::string& str) {
-  char* apertium = apply_up(f2a.ah, str.c_str());
+  //char* apertium = apply_down(f2a.ah, str.c_str());
+  char* apertium = apply_detmin_fst_down(f2a.ah, str.c_str());
+//  printf("apertium: >%s<\n", apertium);
   if (apertium != NULL) {
     size_t len = strlen(apertium);
     ensure_buffers(len);

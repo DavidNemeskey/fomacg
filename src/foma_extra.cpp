@@ -5,6 +5,10 @@
 
 #include <fomalibconf.h>
 
+/* From apply.c :/. */
+#define UP 8
+#define DOWN 16
+
 /*
  * Good to know:
  * h->instring: the input string
@@ -24,6 +28,7 @@
  * h->last_net: the (last?) FST
  */
 
+//inline static char* apply_detmin_fst(struct apply_handle *h, const char *word);
 inline static void add_output(struct apply_handle* h, int out_symbol);
 inline static void add_output(struct apply_handle* h, char* out_str, int out_len);
 static void custom_create_sigmatch(struct apply_handle *h,
@@ -83,7 +88,34 @@ bool apply_detmin_fsa(struct apply_handle *h, const char *word) {
   }
 }
 
-char* apply_detmin_fst(struct apply_handle *h, const char *word) {
+//char* apply_detmin_fst_down(struct apply_handle *h, const char *word) {
+//  h->mode = DOWN;
+//  h->binsearch = (h->last_net->arcs_sorted_in == 1) ? 1 : 0;
+//  return apply_detmin_fst(h, word);
+//}
+//char* apply_detmin_fst_up(struct apply_handle *h, const char *word) {
+//  h->mode = UP;
+//  h->binsearch = (h->last_net->arcs_sorted_out == 1) ? 1 : 0;
+//  return apply_detmin_fst(h, word);
+//}
+
+char* apply_detmin_fst_down(struct apply_handle *h, const char *word) {
+//  if (debug) {
+//    fprintf(stderr, "Name: %s\n", h->last_net->name);
+//    apply_print_sigma(h->last_net);
+//    fprintf(stderr, "Sigmatch array:\n");
+//    for (int i = 0; i < h->current_instring_length;) {
+//      if ((h->sigmatch_array+i)->signumber == 0) break;
+//      fprintf(stderr, "Item %d: signum: %d (%.*s), consumes: %d\n", i,
+//          (h->sigmatch_array+i)->signumber,
+//          (h->sigs+(h->sigmatch_array+i)->signumber)->length,
+////          (h->sigs+(h->sigmatch_array+i)->signumber)->symbol,
+//          h->instring+i,
+//          (h->sigmatch_array+i)->consumes);
+//      i += (h->sigmatch_array+i)->consumes;
+//    }
+//  }
+
 //  for (int i = 0; i <= 19; i++) {
 //    for (int j = 0; j < *(h->numlines + i); j++) {
 //      struct fsm_state* st = h->gstates + *(h->statemap + i) + j;
@@ -98,6 +130,7 @@ char* apply_detmin_fst(struct apply_handle *h, const char *word) {
   h->instring = const_cast<char*>(word);
   /* Also sets h->current_instring_length. */
   apply_create_sigmatch(h);
+//  std::cout << "instring: >" << h->instring << "<" << std::endl;
 
   h->ptr = 0; h->ipos = 0; h->opos = 0;
 
@@ -127,12 +160,14 @@ char* apply_detmin_fst(struct apply_handle *h, const char *word) {
     struct fsm_state* tr = find_transition(h);
     if (tr != NULL) {
 //      std::cout << "Regular transition for " << (h->sigs + (h->sigmatch_array + h->ipos)->signumber)->symbol << std::endl;
-      if (tr->out != IDENTITY) {
-//        std::cout << "Adding " << ((h->sigs) + tr->out)->symbol << " (" << tr->out << ")" << std::endl;
-        add_output(h, tr->out);
-      } else {
+      if (tr->out == EPSILON) {
+//        std::cout << "Epsilon!" << std::endl;
+      } else if (tr->out == IDENTITY) {
 //        std::cout << "Adding " << std::string(h->instring + h->ipos, (h->sigmatch_array + h->ipos)->consumes) << std::endl;
         add_output(h, h->instring + h->ipos, (h->sigmatch_array + h->ipos)->consumes);
+      } else {  // if (tr->out != IDENTITY) {
+//        std::cout << "Adding " << ((h->sigs) + tr->out)->symbol << " (" << tr->out << ")" << std::endl;
+        add_output(h, tr->out);
       }
       h->ptr = tr->target;
       h->ipos += (h->sigmatch_array + h->ipos)->consumes;
