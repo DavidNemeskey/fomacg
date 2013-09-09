@@ -32,10 +32,6 @@
 //inline static char* apply_detmin_fst(struct apply_handle *h, const char *word);
 inline static void add_output(struct apply_handle* h, int out_symbol);
 inline static void add_output(struct apply_handle* h, char* out_str, int out_len);
-static void custom_create_sigmatch(struct apply_handle *h,
-                                   const std::vector<std::string>& sentence);
-///                                   const std::vector<std::string>& sentence,
-///                                   int inlen);
 /**
  * Replaces the sigma of @p fsm according to the mapping @p sigmas. Helper
  * method for merge_sigma().
@@ -78,7 +74,8 @@ bool apply_detmin_fsa(struct apply_handle *h, const char *word) {
       h->ptr = tr->target;
       h->ipos += (h->sigmatch_array + h->ipos)->consumes;
     } else {
-      struct fsm_state* tr = find_transition(h);
+      struct fsm_state* tr = find_transition(
+          h, (h->sigmatch_array + h->ipos)->signumber);
       if (tr == NULL) break;
 
       h->ptr = tr->target;
@@ -164,7 +161,8 @@ char* apply_detmin_fst_down(struct apply_handle *h, const char *word) {
 //    std::cout << "is there an epsilon move? " << (epsilon_move == NULL ? "no" : "yes") << std::endl;
 
     /* Is there a regular transition with the next symbol of the input? */
-    struct fsm_state* tr = find_transition(h);
+    struct fsm_state* tr = find_transition(
+        h, (h->sigmatch_array + h->ipos)->signumber);
     if (tr != NULL) {
 //      std::cout << "Regular transition for " << (h->sigs + (h->sigmatch_array + h->ipos)->signumber)->symbol << std::endl;
       if (tr->out == EPSILON) {
@@ -225,7 +223,7 @@ char* apply_detmin_fst_down(struct apply_handle *h, const char *word) {
   }
 }
 
-struct fsm_state* find_transition(struct apply_handle *h) {
+struct fsm_state* find_transition(struct apply_handle *h, int signum) {
   int begin = *(h->statemap + h->ptr);
   int end   = begin + *(h->numlines + h->ptr);
   while (begin < end) {
@@ -233,9 +231,9 @@ struct fsm_state* find_transition(struct apply_handle *h) {
     struct fsm_state* tr = h->gstates + middle;
     //	    fprintf(stderr, "begin: %d, end: %d, middle: %d, symbol at middle: %d, symbol: %d(%c)\n",
     //		    begin, end, middle, tr->in, (h->sigmatch_array+i)->signumber, word[i]);
-    if (tr->in == (h->sigmatch_array + h->ipos)->signumber) {
+    if (tr->in == signum) {
       return tr;
-    } else if ((h->sigmatch_array + h->ipos)->signumber < tr->in) {
+    } else if (signum < tr->in) {
       end = middle;
     } else {
       begin = middle + 1;
@@ -285,7 +283,8 @@ bool custom_detmin_fsa(struct apply_handle* h,
       h->ptr = tr->target;
 ///      h->ipos += (h->sigmatch_array + h->ipos)->consumes;
     } else {
-      struct fsm_state* tr = find_transition(h);
+      struct fsm_state* tr = find_transition(
+          h, (h->sigmatch_array + h->ipos)->signumber);
       if (tr == NULL) break;
       
       h->ptr = tr->target;
@@ -301,26 +300,34 @@ bool custom_detmin_fsa(struct apply_handle* h,
   }
 }
 
-bool common_detmin_fsa(struct apply_handle* h, const std::string& word,
+bool common_detmin_fsa(FstPair& fst, struct apply_handle* ch,
                        const std::vector<std::string>& sentence) {
 
+  struct apply_handle* h = fst.ah;
   h->ptr = 0; h->ipos = 0;
-  for (; h->ipos < h->current_instring_length;) {
+  for (; h->ipos < sentence.size();) {
     /* Trap state. */
     if (*(h->numlines + h->ptr) == 0) return false;
 
+    /*
+     * Symbols in the "universal" alphabet, but not in this machine's are
+     * replaced by IDENTITY.
+     */
+    int signum = (ch->sigmatch_array + h->ipos)->signumber;
+    if (fst.sigma.find(signum) == fst.sigma.end()) {
+      signum = IDENTITY;
+    }
     /* Assumption: FSAs don't support UNKNOWN; detmin FSAs are epsilon-free. */
-    if ((h->sigmatch_array + h->ipos)->signumber == IDENTITY) {
+    if (signum == IDENTITY) {
       struct fsm_state* tr = h->gstates + *(h->statemap + h->ptr);
       h->ptr = tr->target;
-      h->ipos += (h->sigmatch_array + h->ipos)->consumes;
     } else {
-      struct fsm_state* tr = find_transition(h);
+      struct fsm_state* tr = find_transition(h, signum);
       if (tr == NULL) break;
       
       h->ptr = tr->target;
-      h->ipos += (h->sigmatch_array + h->ipos)->consumes;
     }
+    h->ipos++;
   }
 
   if ((h->gstates + *(h->statemap + h->ptr))->final_state) {

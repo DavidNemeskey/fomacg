@@ -74,8 +74,8 @@ private:
    *              @c true when we check the last remaining branch under a
    *              matching node.
    */
-  FstPair* find_rule(Node* rule, const std::string& sentence,
-                     const std::vector<std::string>& split, bool match=false) const;
+  FstPair* find_rule(Node* rule, const std::vector<std::string>& split,
+                     bool match=false) const;
 
   Converter& converter;
   std::string fst_file;
@@ -88,6 +88,8 @@ private:
   Node* rules;
   /** The delimiters rule. */
   FstPair delimiters;
+  /** The FSA whose sigma includes all symbols in the grammar. */
+  FstPair allsigma;
   /** The >>> cohort. */
   static const std::string begin_cohort;
 };

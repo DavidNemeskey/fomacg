@@ -8,6 +8,7 @@
 
 #include <string>
 #include <deque>
+#include <set>
 #include <stdexcept>
 
 #include "fomalib.h"
@@ -21,9 +22,14 @@
 struct FstPair {
   struct fsm* fst;
   struct apply_handle* ah;
+  /** The sigma of @c fst. Not computed automatically, as not always needed. */
+  std::set<int> sigma;
 
   FstPair();
   FstPair(struct fsm* fst, struct apply_handle* ah);
+
+  /** Fills the sigma set. */
+  void fill_sigma();
   /** Frees all resources associated with this FST. */
   void cleanup();
 };

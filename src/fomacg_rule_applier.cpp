@@ -88,22 +88,22 @@ Continue:
 }
 
 // TODO: move this to rule_condition_tree
-FstPair* RuleApplier::find_rule(Node* rule, const std::string& sentence,
+FstPair* RuleApplier::find_rule(Node* rule,
                                 const std::vector<std::string>& split,
                                 bool match) const {
 //  fprintf(stderr, "Testing condition %s...\n", rule->fsa.fst->name);
-  if (match || custom_detmin_fsa(rule->fsa.ah, split)) {
+  if (match || common_detmin_fsa(rule->fsa, allsigma.ah, split)) {
     if (rule->left == NULL) {  // Leaf node -- just return the rule
  //     fprintf(stderr, "Leaf rule: returning %s / %s...\n", rule->fsa.fst->name, rule->fst.fst->name);
       return &rule->fst;
     } else {                   // else we traverse down the tree
-      FstPair* left = find_rule(rule->left, sentence, split);
+      FstPair* left = find_rule(rule->left, split);
       if (left != NULL) {
 //        fprintf(stderr, "Found left: %s.\n", left->fst->name);
         return left;
       } else {
 //        fprintf(stderr, "Not found, going right...\n");
-        return find_rule(rule->right, sentence, split, true);
+        return find_rule(rule->right, split, true);
       }
     }
   } else {
@@ -127,13 +127,14 @@ size_t RuleApplier::apply_rules2(std::string& result,
 Continue:
     /* The sentence split into symbols. */
     std::vector<std::string> split = split_string(result, ' ');
+    custom_create_sigmatch(allsigma.ah, split);
 
     for (Node* rule = rules; rule != NULL; rule = rule->next) {
 //      fprintf(stderr, "Trying rule %s...\n", rule->fsa.fst->name);
 //        char* fomacg_result = apply_down(sections[section][rule + 1].ah,
 //                                         result.c_str());
 //        if (fomacg_result != NULL) {
-      FstPair* rule_pair = find_rule(rule, result, split);
+      FstPair* rule_pair = find_rule(rule, split);
       if (rule_pair != NULL) {
 //        fprintf(stderr, "Rule found: %s\n", rule_pair->fst->name);
         char* fomacg_result = apply_down(rule_pair->ah, result.c_str());
@@ -228,13 +229,18 @@ void RuleApplier::load_file_tree() {
   FstVector fsts = load_fsts(fst_file);
   delimiters = fsts[0];
   fsts.pop_front();  // delimiters
-  //fsts.pop_front();  // TODO: allsigma
+  allsigma = fsts[0];
+  fsts.pop_front();  // TODO: allsigma
+  for (size_t i = 0; i < fsts.size(); i++) {
+    fsts[i].fill_sigma();
+  }
   std::cerr << "Num rules: " << fsts.size() << std::endl;
   for (size_t i = 0; i < fsts.size(); i++) {
     std::cerr << "Rule " << fsts[i].fst->name << " det: "
               << fsts[i].fst->is_deterministic << " min: "
               << fsts[i].fst->is_minimized << " eps: "
-              << fsts[i].fst->is_epsilon_free << std::endl;
+              << fsts[i].fst->is_epsilon_free << " |sigma|: "
+              << fsts[i].sigma.size() << std::endl;
   }
 
   SmallestFirstTreeMerger merger;

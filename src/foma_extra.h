@@ -5,6 +5,7 @@
 #include <string>
 
 #include <fomalib.h>
+#include "fomacg_common.h"
 
 /** Custom versions of the few relevant foma functions. */
 
@@ -25,8 +26,11 @@ char* apply_detmin_fst_down(struct apply_handle* h, const char* word);
 // /** Same as apply_detmin_fst_down(), but up. */
 // char* apply_detmin_fst_up(struct apply_handle* h, const char* word);
 
-/** Finds the transition for the current state and input via binary search. Returns @c NULL if it could not be found. */
-inline struct fsm_state* find_transition(struct apply_handle* h);
+/**
+ * Finds the transition for the current state and the input symbol @p signum
+ * via binary search. Returns @c NULL if it could not be found.
+ */
+inline struct fsm_state* find_transition(struct apply_handle* h, int signum);
 
 /**
  * Custom version of the already custom apply_detmin_fsa() function. Since our
@@ -57,8 +61,12 @@ bool custom_detmin_fsa(struct apply_handle* h,
  * sigma ids only once (via the universal FSA), and save a lot of time in the
  * process.
  */
-bool common_detmin_fsa(struct apply_handle* h, const std::string& word,
+bool common_detmin_fsa(FstPair& fst, struct apply_handle* ch,
                        const std::vector<std::string>& sentence);
+
+/** A create_sigmatch function that works on already segmented input. */
+void custom_create_sigmatch(struct apply_handle *h,
+                            const std::vector<std::string>& sentence);
 
 /**
  * Merges the sigma of all fsms in @p fsms. Creates an fsm whose sigma is the

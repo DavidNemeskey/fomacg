@@ -7,6 +7,14 @@
 FstPair::FstPair() : fst(NULL), ah(NULL) {}
 FstPair::FstPair(struct fsm* fst, struct apply_handle* ah) : fst(fst), ah(ah) {}
 
+void FstPair::fill_sigma() {
+  if (fst != NULL) {
+    for (struct sigma* s = fst->sigma; s != NULL; s = s->next) {
+      sigma.insert(s->number);
+    }
+  }
+}
+
 void FstPair::cleanup() {
   if (ah != NULL) {
     apply_clear(ah);
