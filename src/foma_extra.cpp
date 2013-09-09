@@ -33,8 +33,9 @@
 inline static void add_output(struct apply_handle* h, int out_symbol);
 inline static void add_output(struct apply_handle* h, char* out_str, int out_len);
 static void custom_create_sigmatch(struct apply_handle *h,
-                                   const std::vector<std::string>& sentence,
-                                   int inlen);
+                                   const std::vector<std::string>& sentence);
+///                                   const std::vector<std::string>& sentence,
+///                                   int inlen);
 /**
  * Replaces the sigma of @p fsm according to the mapping @p sigmas. Helper
  * method for merge_sigma().
@@ -265,11 +266,43 @@ void add_output(struct apply_handle* h, char* out_str, int out_len) {
   h->outstring[h->opos] = 0;
 }
 
-bool custom_detmin_fsa(struct apply_handle* h, const std::string& word,
+bool custom_detmin_fsa(struct apply_handle* h,
                        const std::vector<std::string>& sentence) {
-  h->instring = const_cast<char*>(word.c_str());
-  /* Also sets h->current_instring_length. */
-  custom_create_sigmatch(h, sentence, static_cast<int>(word.length()));
+///  h->instring = const_cast<char*>(word.c_str());
+///  /* Also sets h->current_instring_length. */
+///  custom_create_sigmatch(h, sentence, static_cast<int>(word.length()));
+  custom_create_sigmatch(h, sentence);
+
+  h->ptr = 0; h->ipos = 0;
+///  for (; h->ipos < h->current_instring_length;) {
+  for (; h->ipos < sentence.size();) {
+    /* Trap state. */
+    if (*(h->numlines + h->ptr) == 0) return false;
+
+    /* Assumption: FSAs don't support UNKNOWN; detmin FSAs are epsilon-free. */
+    if ((h->sigmatch_array + h->ipos)->signumber == IDENTITY) {
+      struct fsm_state* tr = h->gstates + *(h->statemap + h->ptr);
+      h->ptr = tr->target;
+///      h->ipos += (h->sigmatch_array + h->ipos)->consumes;
+    } else {
+      struct fsm_state* tr = find_transition(h);
+      if (tr == NULL) break;
+      
+      h->ptr = tr->target;
+///      h->ipos += (h->sigmatch_array + h->ipos)->consumes;
+    }
+    h->ipos++;
+  }
+
+  if ((h->gstates + *(h->statemap + h->ptr))->final_state) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+bool common_detmin_fsa(struct apply_handle* h, const std::string& word,
+                       const std::vector<std::string>& sentence) {
 
   h->ptr = 0; h->ipos = 0;
   for (; h->ipos < h->current_instring_length;) {
@@ -306,20 +339,25 @@ bool custom_detmin_fsa(struct apply_handle* h, const std::string& word,
  * @param inlen the length of the sentence in bytes.
  */
 void custom_create_sigmatch(struct apply_handle *h,
-                            const std::vector<std::string>& sentence,
-                            int inlen) {
+                            const std::vector<std::string>& sentence) {
+///                            const std::vector<std::string>& sentence,
+///                            int inlen) {
 //  /* We create a sigmatch array only in case we match against a real string */
 //  if (((h->mode) & ENUMERATE) == ENUMERATE) { return; }
 
-  h->current_instring_length = inlen;
-  if (inlen >= h->sigmatch_array_size) {
+///  h->current_instring_length = inlen;
+///  if (inlen >= h->sigmatch_array_size) {
+  if (sentence.size() >= h->sigmatch_array_size) {
     xxfree(h->sigmatch_array);
     h->sigmatch_array = static_cast<struct apply_handle::sigmatch_array*>(
-      xxmalloc(sizeof(struct apply_handle::sigmatch_array)*(inlen)));
-    h->sigmatch_array_size = inlen;
+///      xxmalloc(sizeof(struct apply_handle::sigmatch_array)*(inlen)));
+      xxmalloc(sizeof(struct apply_handle::sigmatch_array)*(sentence.size())));
+///    h->sigmatch_array_size = inlen;
+    h->sigmatch_array_size = sentence.size();
   }
 
-  for (size_t word = 0, at = 0; word != sentence.size(); ++word) {
+///  for (size_t word = 0, at = 0; word != sentence.size(); ++word) {
+  for (size_t word = 0; word != sentence.size(); ++word) {
     const std::string& symbol = sentence[word];
     const size_t& wlen = symbol.length();
     struct apply_handle::sigma_trie *st = h->sigma_trie;
@@ -339,15 +377,19 @@ void custom_create_sigmatch(struct apply_handle *h,
     }  // for i
 
     if (signum != 0) {
-      (h->sigmatch_array + at)->signumber = signum;
-      (h->sigmatch_array + at)->consumes = (h->sigs + signum)->length;  // wlen
+///      (h->sigmatch_array + at)->signumber = signum;
+///      (h->sigmatch_array + at)->consumes = (h->sigs + signum)->length;  // wlen
+      (h->sigmatch_array + word)->signumber = signum;
+      (h->sigmatch_array + word)->consumes = (h->sigs + signum)->length;  // wlen
     } else {
       /* Not found */
-      (h->sigmatch_array + at)->signumber = IDENTITY;
-      (h->sigmatch_array + at)->consumes = wlen;
+///      (h->sigmatch_array + at)->signumber = IDENTITY;
+///      (h->sigmatch_array + at)->consumes = wlen;
+      (h->sigmatch_array + word)->signumber = IDENTITY;
+      (h->sigmatch_array + word)->consumes = wlen;
     }
 
-    at += wlen;
+///    at += wlen;
   }  // for sentence
 }
 

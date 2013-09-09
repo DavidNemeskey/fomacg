@@ -38,7 +38,26 @@ inline struct fsm_state* find_transition(struct apply_handle* h);
  * @param[in] sentence the input, segmented.
  * @param[in] length the length of the input.
  */
-bool custom_detmin_fsa(struct apply_handle* h, const std::string& word,
+bool custom_detmin_fsa(struct apply_handle* h,
+                       const std::vector<std::string>& sentence);
+
+/**
+ * Works on an already segmented input, as does custom_detmin_fsa(). However,
+ * there are two crucial differences:
+ * 
+ * 1. common_detmin_fsa() knows that the automaton represented by @p h does not
+ *    know all of the "universal" sigma, so if it meets an unknown symbol, yet
+ *    there is an IDENTITY edge from the current state, it follows the latter;
+ * 2. it does not call custom_create_sigmatch, but relies on the sigmatch array
+ *    in @p ch, the "common handle", created by an automaton whose alphabet is
+ *    the universal sigma.
+ *
+ * This method is best used when there are many automatons that work on the same
+ * string -- such as the case of CG. Here we convert the string to a vector of
+ * sigma ids only once (via the universal FSA), and save a lot of time in the
+ * process.
+ */
+bool common_detmin_fsa(struct apply_handle* h, const std::string& word,
                        const std::vector<std::string>& sentence);
 
 /**

@@ -92,7 +92,7 @@ FstPair* RuleApplier::find_rule(Node* rule, const std::string& sentence,
                                 const std::vector<std::string>& split,
                                 bool match) const {
 //  fprintf(stderr, "Testing condition %s...\n", rule->fsa.fst->name);
-  if (match || custom_detmin_fsa(rule->fsa.ah, sentence.c_str(), split)) {
+  if (match || custom_detmin_fsa(rule->fsa.ah, split)) {
     if (rule->left == NULL) {  // Leaf node -- just return the rule
  //     fprintf(stderr, "Leaf rule: returning %s / %s...\n", rule->fsa.fst->name, rule->fst.fst->name);
       return &rule->fst;
@@ -228,7 +228,7 @@ void RuleApplier::load_file_tree() {
   FstVector fsts = load_fsts(fst_file);
   delimiters = fsts[0];
   fsts.pop_front();  // delimiters
-  fsts.pop_front();  // TODO: allsigma
+  //fsts.pop_front();  // TODO: allsigma
   std::cerr << "Num rules: " << fsts.size() << std::endl;
   for (size_t i = 0; i < fsts.size(); i++) {
     std::cerr << "Rule " << fsts[i].fst->name << " det: "
