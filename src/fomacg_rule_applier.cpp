@@ -228,6 +228,7 @@ void RuleApplier::load_file_tree() {
   FstVector fsts = load_fsts(fst_file);
   delimiters = fsts[0];
   fsts.pop_front();  // delimiters
+  fsts.pop_front();  // TODO: allsigma
   std::cerr << "Num rules: " << fsts.size() << std::endl;
   for (size_t i = 0; i < fsts.size(); i++) {
     std::cerr << "Rule " << fsts[i].fst->name << " det: "

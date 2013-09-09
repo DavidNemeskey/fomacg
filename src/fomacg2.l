@@ -48,6 +48,7 @@
 
 #include "fomacg_types.h"
 #include "rule_condition_tree.h"
+#include "foma_extra.h"
 
 #define MODE_CAREFUL  1
 #define MODE_STAR     2
@@ -1162,11 +1163,13 @@ int save_rules_fsm(char *filename) {
   for (i = 0; i < num_rules; i++) {
     printf("FSM %s\n", to_print[i]->name);
   }
+  struct fsm* allsigma = merge_sigma(to_print, num_rules);
 
   /* First the DELIMITERS... */
   foma_net_print(delimiter_rule, outfile);
 
   /* ... then the deserialized rule tree. */
+  foma_net_print(allsigma, outfile);
   for (i = 0; i < num_rules; i++) {
     foma_net_print(to_print[i], outfile);
   }

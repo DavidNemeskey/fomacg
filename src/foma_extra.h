@@ -50,5 +50,7 @@ bool custom_detmin_fsa(struct apply_handle* h, const std::string& word,
  * @return an fsm whose sigma is the union of the others'.
  */
 struct fsm* merge_sigma(std::vector<struct fsm*> fsms);
+/** Same as merge_sigma(std::vector<struct fsm*), and calls it internally. */
+struct fsm* merge_sigma(struct fsm** fsms, size_t num_fsms);
 
 #endif

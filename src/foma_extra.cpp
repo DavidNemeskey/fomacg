@@ -351,6 +351,15 @@ void custom_create_sigmatch(struct apply_handle *h,
   }  // for sentence
 }
 
+struct fsm* merge_sigma(struct fsm** fsms, size_t num_fsms) {
+  std::vector<struct fsm*> fsmv;
+  fsmv.reserve(num_fsms);
+  for (size_t i = 0; i < num_fsms; i++) {
+    fsmv.push_back(fsms[i]);
+  }
+  return merge_sigma(fsmv);
+}
+
 struct fsm* merge_sigma(std::vector<struct fsm*> fsms) {
   std::map<std::string, int> sigmas;
   struct fsm* ret = fsm_empty_string();
@@ -399,5 +408,8 @@ static void replace_sigma(struct fsm* fsm, std::map<std::string, int> sigmas) {
     if ((fsm->states + i)->out > IDENTITY)
       (fsm->states + i)->out = sigma_mapping[(fsm->states + i)->out];
   }
+
+  /* Sort the input arcs -- necessary after we messed with the sigmas. */
+  fsm_sort_arcs(fsm, 1);
 }
 
