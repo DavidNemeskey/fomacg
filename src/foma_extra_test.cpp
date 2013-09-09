@@ -24,15 +24,18 @@ int main(int argc, char* argv[]) {
   foma_net_print(first, outfile);
   foma_net_print(second, outfile);
   gzclose(outfile);
+
   std::vector<struct fsm*> fsms;
   fsms.push_back(first);
   fsms.push_back(second);
-  merge_sigma(fsms);
+  struct fsm* allsigma = merge_sigma(fsms);
+
   sh = apply_init(second);
   std::cout << "Run after: " << apply_detmin_fsa(sh, "#BOC# | #X# macska ") << std::endl;
   apply_clear(sh);
   outfile = (gzFile*)gzopen("sigma2.fst", "wb");
   foma_net_print(first, outfile);
   foma_net_print(second, outfile);
+  foma_net_print(allsigma, outfile);
   gzclose(outfile);
 }

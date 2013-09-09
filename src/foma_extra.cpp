@@ -35,6 +35,11 @@ inline static void add_output(struct apply_handle* h, char* out_str, int out_len
 static void custom_create_sigmatch(struct apply_handle *h,
                                    const std::vector<std::string>& sentence,
                                    int inlen);
+/**
+ * Replaces the sigma of @p fsm according to the mapping @p sigmas. Helper
+ * method for merge_sigma().
+ */
+static void replace_sigma(struct fsm* fsm, std::map<std::string, int> sigmas);
 
 bool apply_detmin_fsa(struct apply_handle *h, const char *word) {
   h->instring = const_cast<char*>(word);
@@ -348,6 +353,7 @@ void custom_create_sigmatch(struct apply_handle *h,
 
 struct fsm* merge_sigma(std::vector<struct fsm*> fsms) {
   std::map<std::string, int> sigmas;
+  struct fsm* ret = fsm_empty_string();
 
   /* First, we build the unified sigma table. */
   int last_id = IDENTITY;
@@ -359,6 +365,7 @@ struct fsm* merge_sigma(std::vector<struct fsm*> fsms) {
       std::cout << "SIGMA " << s->symbol << ": " << s->number << std::endl;
       if (s->number > IDENTITY && sigmas.find(s->symbol) == sigmas.end()) {
         sigmas[s->symbol] = ++last_id;
+        ret = fsm_concat(ret, fsm_symbol(s->symbol));
       }
     }
   }
@@ -371,21 +378,26 @@ struct fsm* merge_sigma(std::vector<struct fsm*> fsms) {
   /* Then, we replace the sigmas. */
   for (std::vector<struct fsm*>::const_iterator it = fsms.begin();
        it != fsms.end(); ++it) {
-    struct fsm* fsm = *it;
-    std::map<int, int> sigma_mapping;
-    for (struct sigma* s = fsm->sigma; s != NULL; s = s->next) {
-      if (s->number > IDENTITY) {
-        int new_number = sigmas[s->symbol];
-        sigma_mapping[s->number] = new_number;
-        s->number = new_number;
-      }
+    replace_sigma(*it, sigmas);
+  }
+  replace_sigma(ret, sigmas);
+  return fsm_minimize(ret);
+}
+
+static void replace_sigma(struct fsm* fsm, std::map<std::string, int> sigmas) {
+  std::map<int, int> sigma_mapping;
+  for (struct sigma* s = fsm->sigma; s != NULL; s = s->next) {
+    if (s->number > IDENTITY) {
+      int new_number = sigmas[s->symbol];
+      sigma_mapping[s->number] = new_number;
+      s->number = new_number;
     }
-    for (int i = 0; (fsm->states + i)->state_no != -1; i++) {
-      if ((fsm->states + i)->in > IDENTITY)
-        (fsm->states + i)->in = sigma_mapping[(fsm->states + i)->in];
-      if ((fsm->states + i)->out > IDENTITY)
-        (fsm->states + i)->out = sigma_mapping[(fsm->states + i)->out];
-    }
+  }
+  for (int i = 0; (fsm->states + i)->state_no != -1; i++) {
+    if ((fsm->states + i)->in > IDENTITY)
+      (fsm->states + i)->in = sigma_mapping[(fsm->states + i)->in];
+    if ((fsm->states + i)->out > IDENTITY)
+      (fsm->states + i)->out = sigma_mapping[(fsm->states + i)->out];
   }
 }
 
