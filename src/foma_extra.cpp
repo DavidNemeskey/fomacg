@@ -1,6 +1,7 @@
 #include "foma_extra.h"
 
 #include <set>
+#include <map>
 #include <iostream>
 
 #include <fomalibconf.h>
@@ -343,5 +344,48 @@ void custom_create_sigmatch(struct apply_handle *h,
 
     at += wlen;
   }  // for sentence
+}
+
+struct fsm* merge_sigma(std::vector<struct fsm*> fsms) {
+  std::map<std::string, int> sigmas;
+
+  /* First, we build the unified sigma table. */
+  int last_id = IDENTITY;
+  for (std::vector<struct fsm*>::const_iterator it = fsms.begin();
+       it != fsms.end(); ++it) {
+    std::cout << "FST" << std::endl;
+    struct fsm* fsm = *it;
+    for (struct sigma* s = fsm->sigma; s != NULL; s = s->next) {
+      std::cout << "SIGMA " << s->symbol << ": " << s->number << std::endl;
+      if (s->number > IDENTITY && sigmas.find(s->symbol) == sigmas.end()) {
+        sigmas[s->symbol] = ++last_id;
+      }
+    }
+  }
+
+  for (std::map<std::string, int>::const_iterator it = sigmas.begin();
+       it != sigmas.end(); ++it) {
+    std::cout << it->first << ": " << it->second << std::endl;
+  }
+
+  /* Then, we replace the sigmas. */
+  for (std::vector<struct fsm*>::const_iterator it = fsms.begin();
+       it != fsms.end(); ++it) {
+    struct fsm* fsm = *it;
+    std::map<int, int> sigma_mapping;
+    for (struct sigma* s = fsm->sigma; s != NULL; s = s->next) {
+      if (s->number > IDENTITY) {
+        int new_number = sigmas[s->symbol];
+        sigma_mapping[s->number] = new_number;
+        s->number = new_number;
+      }
+    }
+    for (int i = 0; (fsm->states + i)->state_no != -1; i++) {
+      if ((fsm->states + i)->in > IDENTITY)
+        (fsm->states + i)->in = sigma_mapping[(fsm->states + i)->in];
+      if ((fsm->states + i)->out > IDENTITY)
+        (fsm->states + i)->out = sigma_mapping[(fsm->states + i)->out];
+    }
+  }
 }
 

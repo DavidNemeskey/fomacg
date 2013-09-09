@@ -41,4 +41,14 @@ inline struct fsm_state* find_transition(struct apply_handle* h);
 bool custom_detmin_fsa(struct apply_handle* h, const std::string& word,
                        const std::vector<std::string>& sentence);
 
+/**
+ * Merges the sigma of all fsms in @p fsms. Creates an fsm whose sigma is the
+ * union of those in @p fsms. Rewrites the sigma table of every transducer in
+ * @p fsms.
+ *
+ * @param[in, out] fsms the fsms whose sigma is to be merged.
+ * @return an fsm whose sigma is the union of the others'.
+ */
+struct fsm* merge_sigma(std::vector<struct fsm*> fsms);
+
 #endif
