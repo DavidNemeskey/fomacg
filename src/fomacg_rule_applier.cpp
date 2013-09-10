@@ -230,9 +230,10 @@ void RuleApplier::load_file_tree() {
   delimiters = fsts[0];
   fsts.pop_front();  // delimiters
   allsigma = fsts[0];
-  fsts.pop_front();  // TODO: allsigma
+  fsts.pop_front();
   for (size_t i = 0; i < fsts.size(); i++) {
     fsts[i].fill_sigma();
+//    fsts[i].fill_sigma2(allsigma.ah->sigma_size);
   }
   std::cerr << "Num rules: " << fsts.size() << std::endl;
   for (size_t i = 0; i < fsts.size(); i++) {

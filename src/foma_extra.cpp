@@ -314,9 +314,10 @@ bool common_detmin_fsa(FstPair& fst, struct apply_handle* ch,
      * replaced by IDENTITY.
      */
     int signum = (ch->sigmatch_array + h->ipos)->signumber;
-    if (fst.sigma.find(signum) == fst.sigma.end()) {
+    if (fst.sigma.count(signum) == 0) {
       signum = IDENTITY;
     }
+//    signum = fst.sigma2[signum];
     /* Assumption: FSAs don't support UNKNOWN; detmin FSAs are epsilon-free. */
     if (signum == IDENTITY) {
       struct fsm_state* tr = h->gstates + *(h->statemap + h->ptr);

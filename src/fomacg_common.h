@@ -9,6 +9,7 @@
 #include <string>
 #include <deque>
 #include <set>
+#include <vector>
 #include <stdexcept>
 
 #include "fomalib.h"
@@ -23,6 +24,8 @@ struct FstPair {
   struct fsm* fst;
   struct apply_handle* ah;
   /** The sigma of @c fst. Not computed automatically, as not always needed. */
+  std::vector<int> sigma2;
+  /* Unordered set at this small element size is SLOWER than the regular set. */
   std::set<int> sigma;
 
   FstPair();
@@ -30,6 +33,7 @@ struct FstPair {
 
   /** Fills the sigma set. */
   void fill_sigma();
+  void fill_sigma2(size_t sigma_size);
   /** Frees all resources associated with this FST. */
   void cleanup();
 };

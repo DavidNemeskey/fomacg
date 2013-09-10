@@ -15,6 +15,17 @@ void FstPair::fill_sigma() {
   }
 }
 
+void FstPair::fill_sigma2(size_t sigma_size) {
+  if (fst != NULL) {
+    sigma2.resize(sigma_size, IDENTITY);
+    sigma2[EPSILON] = sigma2[EPSILON];
+    sigma2[UNKNOWN] = sigma2[UNKNOWN];
+    for (struct sigma* s = fst->sigma; s != NULL; s = s->next) {
+      sigma2[s->number] = s->number;
+    }
+  }
+}
+
 void FstPair::cleanup() {
   if (ah != NULL) {
     apply_clear(ah);
