@@ -1,9 +1,11 @@
 #include <iostream>
+#include <string>
 
 #include "foma_extra.h"
+#include "fomacg_common.h"
 
 int main(int argc, char* argv[]) {
-  struct fsm* first = fsm_concat(
+/*  struct fsm* first = fsm_concat(
                         fsm_concat(
                           fsm_symbol("#BOC# "),
                           fsm_symbol("| ")),
@@ -37,5 +39,21 @@ int main(int argc, char* argv[]) {
   foma_net_print(first, outfile);
   foma_net_print(second, outfile);
   foma_net_print(allsigma, outfile);
+  gzclose(outfile);*/
+
+  gzFile* outfile = (gzFile*)gzopen((std::string(argv[2]) + ".fst").c_str(), "wb");
+  FstVector fsts = load_fsts(argv[1]);
+  FstPair fsp = fsts[0];
+  fsts.pop_front();
+  foma_net_print(fsp.fst, outfile);
+  std::vector<struct fsm*> fsms;
+  for (size_t i = 0; i < fsts.size(); i++) {
+    fsms.push_back(fsts[i].fst);
+  }
+  struct fsm* allsigma = merge_sigma(fsms);
+  foma_net_print(allsigma, outfile);
+  for (size_t i = 0; i < fsms.size(); i++) {
+    foma_net_print(fsms[i], outfile);
+  }
   gzclose(outfile);
 }
