@@ -23,10 +23,10 @@
 struct FstPair {
   struct fsm* fst;
   struct apply_handle* ah;
-  /** The sigma of @c fst. Not computed automatically, as not always needed. */
-  std::vector<int> sigma2;
   /* Unordered set at this small element size is SLOWER than the regular set. */
   std::set<int> sigma;
+  /** The sigma of @c fst. Not computed automatically, as not always needed. */
+  std::vector<int> sigma2;
 
   FstPair();
   FstPair(struct fsm* fst, struct apply_handle* ah);

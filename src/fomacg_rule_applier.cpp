@@ -10,8 +10,8 @@
 #include "foma_extra.h"
 
 namespace {
-  std::vector<std::string> split_string(std::string s, const char& delim) {
-    std::vector<std::string> ret;
+  std::deque<std::string> split_string(std::string s, const char& delim) {
+    std::deque<std::string> ret;
     size_t pos = 0;
     while (true) {
       size_t found = s.find(delim, pos);
@@ -89,7 +89,7 @@ Continue:
 
 // TODO: move this to rule_condition_tree
 FstPair* RuleApplier::find_rule(Node* rule,
-                                const std::vector<std::string>& split,
+                                const std::deque<std::string>& split,
                                 bool match) const {
 //  fprintf(stderr, "Testing condition %s...\n", rule->fsa.fst->name);
   if (match || common_detmin_fsa(rule->fsa, allsigma.ah, split)) {
@@ -126,7 +126,7 @@ size_t RuleApplier::apply_rules2(std::string& result,
   while (true) {
 Continue:
     /* The sentence split into symbols. */
-    std::vector<std::string> split = split_string(result, ' ');
+    std::deque<std::string> split = split_string(result, ' ');
     custom_create_sigmatch(allsigma.ah, split);
 
     for (Node* rule = rules; rule != NULL; rule = rule->next) {
@@ -232,8 +232,8 @@ void RuleApplier::load_file_tree() {
   allsigma = fsts[0];
   fsts.pop_front();
   for (size_t i = 0; i < fsts.size(); i++) {
-    fsts[i].fill_sigma();
-//    fsts[i].fill_sigma2(allsigma.ah->sigma_size);
+//    fsts[i].fill_sigma();
+    fsts[i].fill_sigma2(allsigma.ah->sigma_size);
   }
   std::cerr << "Num rules: " << fsts.size() << std::endl;
   for (size_t i = 0; i < fsts.size(); i++) {

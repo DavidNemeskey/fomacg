@@ -265,7 +265,7 @@ void add_output(struct apply_handle* h, char* out_str, int out_len) {
 }
 
 bool custom_detmin_fsa(struct apply_handle* h,
-                       const std::vector<std::string>& sentence) {
+                       const std::deque<std::string>& sentence) {
 ///  h->instring = const_cast<char*>(word.c_str());
 ///  /* Also sets h->current_instring_length. */
 ///  custom_create_sigmatch(h, sentence, static_cast<int>(word.length()));
@@ -301,7 +301,7 @@ bool custom_detmin_fsa(struct apply_handle* h,
 }
 
 bool common_detmin_fsa(FstPair& fst, struct apply_handle* ch,
-                       const std::vector<std::string>& sentence) {
+                       const std::deque<std::string>& sentence) {
 
   struct apply_handle* h = fst.ah;
   h->ptr = 0; h->ipos = 0;
@@ -314,10 +314,10 @@ bool common_detmin_fsa(FstPair& fst, struct apply_handle* ch,
      * replaced by IDENTITY.
      */
     int signum = (ch->sigmatch_array + h->ipos)->signumber;
-    if (fst.sigma.count(signum) == 0) {
-      signum = IDENTITY;
-    }
-//    signum = fst.sigma2[signum];
+//    if (fst.sigma.count(signum) == 0) {
+//      signum = IDENTITY;
+//    }
+    signum = fst.sigma2[signum];
     /* Assumption: FSAs don't support UNKNOWN; detmin FSAs are epsilon-free. */
     if (signum == IDENTITY) {
       struct fsm_state* tr = h->gstates + *(h->statemap + h->ptr);
@@ -347,7 +347,7 @@ bool common_detmin_fsa(FstPair& fst, struct apply_handle* ch,
  * @param inlen the length of the sentence in bytes.
  */
 void custom_create_sigmatch(struct apply_handle *h,
-                            const std::vector<std::string>& sentence) {
+                            const std::deque<std::string>& sentence) {
 ///                            const std::vector<std::string>& sentence,
 ///                            int inlen) {
 //  /* We create a sigmatch array only in case we match against a real string */

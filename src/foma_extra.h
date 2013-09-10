@@ -43,7 +43,7 @@ inline struct fsm_state* find_transition(struct apply_handle* h, int signum);
  * @param[in] length the length of the input.
  */
 bool custom_detmin_fsa(struct apply_handle* h,
-                       const std::vector<std::string>& sentence);
+                       const std::deque<std::string>& sentence);
 
 /**
  * Works on an already segmented input, as does custom_detmin_fsa(). However,
@@ -62,11 +62,11 @@ bool custom_detmin_fsa(struct apply_handle* h,
  * process.
  */
 bool common_detmin_fsa(FstPair& fst, struct apply_handle* ch,
-                       const std::vector<std::string>& sentence);
+                       const std::deque<std::string>& sentence);
 
 /** A create_sigmatch function that works on already segmented input. */
 void custom_create_sigmatch(struct apply_handle *h,
-                            const std::vector<std::string>& sentence);
+                            const std::deque<std::string>& sentence);
 
 /**
  * Merges the sigma of all fsms in @p fsms. Creates an fsm whose sigma is the

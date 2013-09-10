@@ -74,7 +74,7 @@ private:
    *              @c true when we check the last remaining branch under a
    *              matching node.
    */
-  FstPair* find_rule(Node* rule, const std::vector<std::string>& split,
+  FstPair* find_rule(Node* rule, const std::deque<std::string>& split,
                      bool match=false) const;
 
   Converter& converter;
