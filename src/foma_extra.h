@@ -38,9 +38,7 @@ inline struct fsm_state* find_transition(struct apply_handle* h, int signum);
  * already segmented sentence to the method.
  *
  * @param[in,out] h the handle.
- * @param[in] word the input as a character string. 
  * @param[in] sentence the input, segmented.
- * @param[in] length the length of the input.
  */
 bool custom_detmin_fsa(struct apply_handle* h,
                        const std::deque<std::string>& sentence);
@@ -67,6 +65,23 @@ bool common_detmin_fsa(FstPair& fst, struct apply_handle* ch,
 /** A create_sigmatch function that works on already segmented input. */
 void custom_create_sigmatch(struct apply_handle *h,
                             const std::deque<std::string>& sentence);
+
+/**
+ * The FST pair of common_detmin_fsa(). It handles nondeterministic FST as well,
+ * but it presupposes that there is only one valid output for a particular
+ * input.
+ *
+ * @param[in,out] fst the FST.
+ * @param[in] ch the apply_handle of the "universal" FST.
+ * @param[in] sentence the input, segmented.
+ * @param[out] result the output is put here; segmented.
+ * @param[in] all_sigma the alphabet of the "universal" FST.
+ * @return @c true, if @p fst accepted @p sentence; @c false otherwise.
+ */
+bool common_apply_down(FstPair& fst, struct apply_handle* ch,
+                       const std::deque<std::string>& sentence,
+                       std::deque<std::string>& result,
+                       const std::vector<std::string>& all_sigma);
 
 /**
  * Merges the sigma of all fsms in @p fsms. Creates an fsm whose sigma is the

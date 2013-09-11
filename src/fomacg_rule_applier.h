@@ -90,6 +90,8 @@ private:
   FstPair delimiters;
   /** The FSA whose sigma includes all symbols in the grammar. */
   FstPair allsigma;
+  /** ... and its sigma (the "universal" one). */
+  std::vector<std::string> allsigma_sigma;
   /** The >>> cohort. */
   static const std::string begin_cohort;
 };

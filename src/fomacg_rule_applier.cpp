@@ -23,6 +23,15 @@ namespace {
       }
     }
   }
+
+  std::string join_string(std::deque<std::string> c) {
+    std::ostringstream ss;
+    for (std::deque<std::string>::const_iterator it = c.begin(); it != c.end();
+         ++it) {
+      ss << *it;
+    }
+    return ss.str();
+  }
 };
 
 const std::string RuleApplier::begin_cohort =
@@ -121,26 +130,34 @@ size_t RuleApplier::apply_rules2(std::string& result,
    */
   result = begin_cohort + sentence.substr(0, sentence.length() - 8) + "<<<<> " +
            sentence.substr(sentence.length() - 8);
-//  fprintf(stderr, "Input: \n%s\n", sentence.c_str());
+  fprintf(stderr, "Input: \n%s\n", sentence.c_str());
+
+  /* The sentence split into symbols. */
+  std::deque<std::string> split = split_string(result, ' ');
+  custom_create_sigmatch(allsigma.ah, split);
+  std::deque<std::string> res_split;
 
   while (true) {
 Continue:
-    /* The sentence split into symbols. */
-    std::deque<std::string> split = split_string(result, ' ');
-    custom_create_sigmatch(allsigma.ah, split);
-
     for (Node* rule = rules; rule != NULL; rule = rule->next) {
-//      fprintf(stderr, "Trying rule %s...\n", rule->fsa.fst->name);
+      fprintf(stderr, "Trying rule %s...\n", rule->fsa.fst->name);
 //        char* fomacg_result = apply_down(sections[section][rule + 1].ah,
 //                                         result.c_str());
 //        if (fomacg_result != NULL) {
       FstPair* rule_pair = find_rule(rule, split);
       if (rule_pair != NULL) {
-//        fprintf(stderr, "Rule found: %s\n", rule_pair->fst->name);
-        char* fomacg_result = apply_down(rule_pair->ah, result.c_str());
-//          fprintf(stderr, "Applied rule %s, result:\n%s\n",
-//              rule_pair->fst->name, fomacg_result);
-        result = fomacg_result;
+        fprintf(stderr, "Rule found: %s\n", rule_pair->fst->name);
+///        char* fomacg_result = apply_down(rule_pair->ah, result.c_str());
+        if (common_apply_down(*rule_pair, allsigma.ah, split, res_split, allsigma_sigma)) {
+          split.swap(res_split);
+          custom_create_sigmatch(allsigma.ah, split);
+        } else {
+          fprintf(stderr, "Rule %s failed.\n", rule_pair->fst->name);
+        }
+        res_split.clear();
+        fprintf(stderr, "Applied rule %s, result:\n%s\n",
+            rule_pair->fst->name, join_string(split).c_str());
+///        result = fomacg_result;
         applied++;
         goto Continue;
       } else {
@@ -150,8 +167,11 @@ Continue:
     break;
   }
   /* Return the resulting string without the >>> cohort and <<< tags. */
+  std::ostringstream ss;
+  for (size_t i = 0; i < split.size(); i++) ss << split[i];
+  result = ss.str();
   result = result.erase(result.length() - 14, 6).substr(begin_cohort.length());
-//  fprintf(stderr, "Output: %s\n", result.c_str());
+  fprintf(stderr, "Output: %s\n", result.c_str());
   return applied;
 }
 
@@ -231,6 +251,11 @@ void RuleApplier::load_file_tree() {
   fsts.pop_front();  // delimiters
   allsigma = fsts[0];
   fsts.pop_front();
+  /* Fill the universal sigma vector. */
+  allsigma_sigma.resize(allsigma.ah->sigma_size);
+  for (struct sigma* s = allsigma.fst->sigma; s != NULL; s = s->next) {
+    allsigma_sigma[s->number] = s->symbol;
+  }
   for (size_t i = 0; i < fsts.size(); i++) {
 //    fsts[i].fill_sigma();
     fsts[i].fill_sigma2(allsigma.ah->sigma_size);

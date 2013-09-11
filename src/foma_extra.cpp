@@ -29,6 +29,43 @@
  * h->last_net: the (last?) FST
  */
 
+/** Object that emulates a stack for common_apply_down(). */
+struct StackItem {
+  /** The state of the FST. */
+  int state;
+  /** The position in the input. */
+  int ipos;
+  /** The then-current size of the output. */
+  size_t osize;
+  /** The symbol at ipos. */
+  int signum;
+  /** The epsilon move from the state (if any). */
+  struct fsm_state* epsilon_move;
+  /** The unknown move from the state (if any). */
+  struct fsm_state* unknown_move;
+  /** The first regular move where input is @c signum. */
+  struct fsm_state* tr;
+  /** How many arcs are there with the same input? */
+  size_t fork;
+  /** The branch of the fork we took. */
+  size_t branch;
+  size_t ipos2;
+
+  StackItem(int state_, int ipos_, size_t osize_, int signum_,
+            struct fsm_state* epsilon_move_, struct fsm_state* unknown_move_,
+            struct fsm_state* tr_, size_t fork_, size_t branch_, size_t ipos2_)
+    : state(state_), ipos(ipos_), osize(osize_), signum(signum_),
+      epsilon_move(epsilon_move_), unknown_move(unknown_move_), tr(tr_),
+      fork(fork_), branch(branch_), ipos2(ipos2_) {}
+
+  /** Loads the values of the stack item's fields to the reference arguments. */
+  void reload(int& state_, int& ipos_, size_t& branch_) {
+    state_  = state;
+    ipos_   = ipos;
+    branch_ = branch;
+  }
+};
+
 //inline static char* apply_detmin_fst(struct apply_handle *h, const char *word);
 inline static void add_output(struct apply_handle* h, int out_symbol);
 inline static void add_output(struct apply_handle* h, char* out_str, int out_len);
@@ -37,6 +74,15 @@ inline static void add_output(struct apply_handle* h, char* out_str, int out_len
  * method for merge_sigma().
  */
 static void replace_sigma(struct fsm* fsm, std::map<std::string, int> sigmas);
+/**
+ * Finds and returns the basic transitions (EPSILON, UNKNOWN) for a state.
+ * @param[in] h the apply_handle.
+ * @param[out] epsilon_move the pointer to the EPSILON arc.
+ * @param[out] unknown_move the pointer to the UNKNOWN arc.
+ */
+inline static void get_basic_transitions(struct apply_handle* h,
+                                         struct fsm_state** epsilon_move,
+                                         struct fsm_state** unknown_move);
 
 bool apply_detmin_fsa(struct apply_handle *h, const char *word) {
   h->instring = const_cast<char*>(word);
@@ -273,7 +319,7 @@ bool custom_detmin_fsa(struct apply_handle* h,
 
   h->ptr = 0; h->ipos = 0;
 ///  for (; h->ipos < h->current_instring_length;) {
-  for (; h->ipos < sentence.size();) {
+  while (static_cast<size_t>(h->ipos) < sentence.size()) {
     /* Trap state. */
     if (*(h->numlines + h->ptr) == 0) return false;
 
@@ -302,10 +348,9 @@ bool custom_detmin_fsa(struct apply_handle* h,
 
 bool common_detmin_fsa(FstPair& fst, struct apply_handle* ch,
                        const std::deque<std::string>& sentence) {
-
   struct apply_handle* h = fst.ah;
   h->ptr = 0; h->ipos = 0;
-  for (; h->ipos < sentence.size();) {
+  while (static_cast<size_t>(h->ipos) < sentence.size()) {
     /* Trap state. */
     if (*(h->numlines + h->ptr) == 0) return false;
 
@@ -338,6 +383,204 @@ bool common_detmin_fsa(FstPair& fst, struct apply_handle* ch,
   }
 }
 
+bool common_apply_down(FstPair& fst, struct apply_handle* ch,
+                       const std::deque<std::string>& sentence,
+                       std::deque<std::string>& result,
+                       const std::vector<std::string>& all_sigma) {
+  /* h->ipos and result size (~h->opos) stack for ND paths. */
+  std::vector<StackItem> stack;
+
+  struct apply_handle* h = fst.ah;
+  /* Are we returning the state from a failed branch? */
+  bool failed = false;
+  int signum;
+  struct fsm_state* epsilon_move;
+  struct fsm_state* unknown_move;
+  struct fsm_state* tr;
+  /* How many arcs with the same input? */
+  size_t fork;
+  /* Which branch to choose */
+  size_t branch;
+  h->ptr = 0; h->ipos = 0;
+  size_t ipos2 = 0;
+  while (static_cast<size_t>(h->ipos) < sentence.size()) {
+Continue:
+    /* If we are not returning from a failed branch. */
+    if (!failed) {
+      /* Trap state. */
+      if (*(h->numlines + h->ptr) == 0) {
+        std::cerr << "trap" << std::endl;
+        if (stack.size() > 0) {
+          failed = true;
+          continue;
+        } else {
+          return false;
+        }
+      }
+
+      /*
+       * Symbols in the "universal" alphabet, but not in this machine's are
+       * replaced by IDENTITY.
+       */
+      signum = (ch->sigmatch_array + h->ipos)->signumber;
+      signum = fst.sigma2[signum];
+
+      /* Is there an epsilon transition in the current state? */
+      get_basic_transitions(h, &epsilon_move, &unknown_move);
+
+      /* Is there a regular transition with the next symbol of the input? */
+      tr = find_transition(h, signum);
+      if (tr != NULL) {
+//        std::cerr << "XXX signum " << signum << " state " << h->ptr << std::endl;
+        fork = 1;
+        while ((tr - 1)->in == signum) {
+//          std::cerr << "tr - 1 signum " << (tr - 1)->in << " state "
+//                    << (tr - 1)->state_no << std::endl;
+          tr--;  // The first in:* arc
+        }
+        for (size_t i = 1; (tr + i)->in == signum; i++) {
+//          std::cerr << "tr + i signum " << (tr + i)->in << " state "
+//                    << (tr + i)->state_no << std::endl;
+          fork++;  // How many arcs?
+        }
+      }
+      branch = 0;
+      std::cerr << "new step: state " << h->ptr << " ipos " << h->ipos
+                << " (" << ipos2 << ") " << " osize "
+                << result.size() << " signum " << signum << "(" << sentence[h->ipos]
+                << ") fork " << fork << " branch " << branch << std::endl;
+//      std::cerr << "new step: state " << h->ptr << " ipos " << h->ipos << " osize "
+//                << result.size() << " signum " << signum << "(" << sentence[h->ipos]
+//                << ") epsilon_move " << (epsilon_move != NULL)
+//                << " unknown_move " << (unknown_move != NULL) << " tr "
+//                << (tr != NULL) << " fork " << fork << " branch " << branch
+//                << std::endl;
+    } else {
+      /* When we return from a failed branch, we will have already computed
+       * all this. */
+      h->ptr       = stack.back().state;
+      h->ipos      = stack.back().ipos;
+      signum       = stack.back().signum;
+      epsilon_move = stack.back().epsilon_move;
+      unknown_move = stack.back().unknown_move;
+      tr           = stack.back().tr;
+      fork         = stack.back().fork;
+      branch       = stack.back().branch + 1;
+      ipos2        = stack.back().ipos2;
+      result.resize(stack.back().osize);
+      stack.pop_back();
+      failed = false;
+      std::cerr << "returning: state " << h->ptr << " ipos " << h->ipos
+                << " (" << ipos2 << ") "
+                << " osize "
+                << result.size() << " signum " << signum << "(" << sentence[h->ipos]
+                << ") fork " << fork << " branch " << branch << std::endl;
+    }
+
+    if (tr != NULL) {
+      std::cerr << "Regular move" << std::endl;
+      /* For when there are more than one arcs with the same upper symbol. */
+      if (fork > branch + 1) {
+        std::cerr << "forking" << std::endl;
+        stack.push_back(StackItem(h->ptr, h->ipos, result.size(), signum,
+                                  epsilon_move, unknown_move, tr, fork, branch, ipos2));
+      }
+
+      tr += branch;
+      if (tr->out == EPSILON) {
+        std::cerr << "NOT adding EPSILON" << std::endl;
+      } else if (tr->out == IDENTITY) {
+//        std::cout << "Adding " << std::string(h->instring + h->ipos, (h->sigmatch_array + h->ipos)->consumes) << std::endl;
+        std::cerr << "Adding IDENTITY " << sentence[h->ipos] << std::endl;
+        result.push_back(sentence[h->ipos]);
+      } else {
+//        std::cout << "Adding " << ((h->sigs) + tr->out)->symbol << " (" << tr->out << ")" << std::endl;
+        std::cerr << "Adding symbol " << tr->out << ": " << all_sigma[tr->out] << std::endl;
+        result.push_back(all_sigma[tr->out]);
+      }
+      h->ptr = tr->target;
+      ipos2 += sentence[h->ipos].length();
+      h->ipos++;
+    } else if (unknown_move != NULL) {
+      std::cerr << "Unknown move" << std::endl;
+      /* Let's try the joker transition. */
+      h->ptr = unknown_move->target;
+      ipos2 += sentence[h->ipos].length();
+      h->ipos++;
+      std::cerr << "Adding symbol " << unknown_move->out << ": " << all_sigma[unknown_move->out] << std::endl;
+      if (unknown_move->out != EPSILON)
+        result.push_back(all_sigma[unknown_move->out]);
+    } else if (epsilon_move != NULL) {
+      std::cerr << "Epsilon move" << std::endl;
+      /* No regular transitions: follow the epsilon transition. */
+      h->ptr = epsilon_move->target;
+      std::cerr << "Adding symbol " << epsilon_move->out << ": " << all_sigma[epsilon_move->out] << std::endl;
+      if (epsilon_move->out != EPSILON)
+        result.push_back(all_sigma[epsilon_move->out]);
+    } else {
+      /* No transitions: the FST failed to recognize the input. */
+      std::cerr << "no transitions" << std::endl;
+      if (stack.size() > 0) {
+        failed = true;
+        continue;
+      } else {
+        return false;
+      }
+    }
+  }
+
+  /*
+   * Handle the possible epsilon moves after the input has been consumend. If we
+   * hit an accepting state, we return successfully; otherwise, the transduction
+   * fails. We do not allow non-determinism here.
+   */
+  /* Shortcut for the state we end up with the input. */
+  if ((h->gstates+h->ptr)->final_state == 1) {
+    return true;
+  }
+
+  std::set<int> visited;
+  while (true) {
+    if (visited.count(h->ptr) != 0) {
+      if (stack.size() > 0) {
+        failed = true;
+        goto Continue;
+      } else {
+        return false;
+      }
+    } else if ((h->gstates + *(h->statemap + h->ptr))->final_state == 1) {
+      return true;
+    } else {
+      struct fsm_state* epsilon_move = h->gstates + *(h->statemap + h->ptr);
+      if (epsilon_move->in != EPSILON) {
+        if (stack.size() > 0) {
+          failed = true;
+          goto Continue;
+        } else {
+          return false;
+        }
+      } else {
+        visited.insert((h->gstates+h->ptr)->state_no);
+        h->ptr = epsilon_move->target;
+        std::cerr << "Adding symbole " << epsilon_move->out << ": " << all_sigma[epsilon_move->out] << std::endl;
+        if (epsilon_move->out != EPSILON)
+          result.push_back(all_sigma[epsilon_move->out]);
+      }
+    }
+  }
+}
+
+inline static void get_basic_transitions(struct apply_handle* h,
+                                         struct fsm_state** epsilon_move,
+                                         struct fsm_state** unknown_move) {
+  *epsilon_move = *unknown_move = NULL;
+  for (struct fsm_state* p = h->gstates + *(h->statemap + h->ptr);
+       p->in < IDENTITY; p++) {
+    if (p->in == EPSILON) *epsilon_move = p;
+    if (p->in == UNKNOWN) *unknown_move = p;
+  }
+}
+
 /**
  * Variant of apply_create_sigmatch(), tailored to the needs of
  * custom_detmin_fsa(). Each word in sentence is handled as a single IDENTITY
@@ -355,7 +598,7 @@ void custom_create_sigmatch(struct apply_handle *h,
 
 ///  h->current_instring_length = inlen;
 ///  if (inlen >= h->sigmatch_array_size) {
-  if (sentence.size() >= h->sigmatch_array_size) {
+  if (sentence.size() >= static_cast<size_t>(h->sigmatch_array_size)) {
     xxfree(h->sigmatch_array);
     h->sigmatch_array = static_cast<struct apply_handle::sigmatch_array*>(
 ///      xxmalloc(sizeof(struct apply_handle::sigmatch_array)*(inlen)));
