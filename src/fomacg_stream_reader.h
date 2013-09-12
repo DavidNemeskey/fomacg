@@ -10,6 +10,7 @@
  */
 
 #include <string>
+#include <sstream>
 
 class StreamReader {
 public:
@@ -25,6 +26,8 @@ public:
 private:
   /** The input stream. */
   FILE* ins;
+  /** The buffer used by read_cohort(). */
+  std::wstringstream word_ss;
 };
 
 #endif

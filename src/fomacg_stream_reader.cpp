@@ -1,19 +1,17 @@
 #include "fomacg_stream_reader.h"
 
-#include <sstream>
 #include <iostream>
 
 StreamReader::StreamReader(FILE* ins) : ins(ins) {}
 
 // TODO: return bool and use a param[out] for return value
 // TODO: fgetwc_unlocked
-// TODO: escapes: should not drop them.
 std::wstring StreamReader::read_cohort() {
   wchar_t wc;
-  std::wstringstream word_ss;
   bool in_cohort = false;
   bool escape = false;
 
+  word_ss.str(L"");
   while ((wc = fgetwc(ins)) != WEOF) {
     if (!in_cohort) {             // between cohorts: skip everything
       if (wc == L'^') {
