@@ -409,7 +409,7 @@ Continue:
     if (!failed) {
       /* Trap state. */
       if (*(h->numlines + h->ptr) == 0) {
-        std::cerr << "trap" << std::endl;
+//        std::cerr << "trap" << std::endl;
         if (stack.size() > 0) {
           failed = true;
           continue;
@@ -445,10 +445,10 @@ Continue:
         }
       }
       branch = 0;
-      std::cerr << "new step: state " << h->ptr << " ipos " << h->ipos
-                << " (" << ipos2 << ") " << " osize "
-                << result.size() << " signum " << signum << "(" << sentence[h->ipos]
-                << ") fork " << fork << " branch " << branch << std::endl;
+//      std::cerr << "new step: state " << h->ptr << " ipos " << h->ipos
+//                << " (" << ipos2 << ") " << " osize "
+//                << result.size() << " signum " << signum << "(" << sentence[h->ipos]
+//                << ") fork " << fork << " branch " << branch << std::endl;
 //      std::cerr << "new step: state " << h->ptr << " ipos " << h->ipos << " osize "
 //                << result.size() << " signum " << signum << "(" << sentence[h->ipos]
 //                << ") epsilon_move " << (epsilon_move != NULL)
@@ -470,56 +470,54 @@ Continue:
       result.resize(stack.back().osize);
       stack.pop_back();
       failed = false;
-      std::cerr << "returning: state " << h->ptr << " ipos " << h->ipos
-                << " (" << ipos2 << ") "
-                << " osize "
-                << result.size() << " signum " << signum << "(" << sentence[h->ipos]
-                << ") fork " << fork << " branch " << branch << std::endl;
+//      std::cerr << "returning: state " << h->ptr << " ipos " << h->ipos
+//                << " (" << ipos2 << ") "
+//                << " osize "
+//                << result.size() << " signum " << signum << "(" << sentence[h->ipos]
+//                << ") fork " << fork << " branch " << branch << std::endl;
     }
 
     if (tr != NULL) {
-      std::cerr << "Regular move" << std::endl;
+//      std::cerr << "Regular move" << std::endl;
       /* For when there are more than one arcs with the same upper symbol. */
       if (fork > branch + 1) {
-        std::cerr << "forking" << std::endl;
+//        std::cerr << "forking" << std::endl;
         stack.push_back(StackItem(h->ptr, h->ipos, result.size(), signum,
                                   epsilon_move, unknown_move, tr, fork, branch, ipos2));
       }
 
       tr += branch;
       if (tr->out == EPSILON) {
-        std::cerr << "NOT adding EPSILON" << std::endl;
+//        std::cerr << "NOT adding EPSILON" << std::endl;
       } else if (tr->out == IDENTITY) {
-//        std::cout << "Adding " << std::string(h->instring + h->ipos, (h->sigmatch_array + h->ipos)->consumes) << std::endl;
-        std::cerr << "Adding IDENTITY " << sentence[h->ipos] << std::endl;
+//        std::cerr << "Adding IDENTITY " << sentence[h->ipos] << std::endl;
         result.push_back(sentence[h->ipos]);
       } else {
-//        std::cout << "Adding " << ((h->sigs) + tr->out)->symbol << " (" << tr->out << ")" << std::endl;
-        std::cerr << "Adding symbol " << tr->out << ": " << all_sigma[tr->out] << std::endl;
+//        std::cerr << "Adding symbol " << tr->out << ": " << all_sigma[tr->out] << std::endl;
         result.push_back(all_sigma[tr->out]);
       }
       h->ptr = tr->target;
       ipos2 += sentence[h->ipos].length();
       h->ipos++;
     } else if (signum == IDENTITY && unknown_move != NULL) {
-      std::cerr << "Unknown move" << std::endl;
+//      std::cerr << "Unknown move" << std::endl;
       /* Let's try the joker transition. */
       h->ptr = unknown_move->target;
       ipos2 += sentence[h->ipos].length();
       h->ipos++;
-      std::cerr << "Adding symbol " << unknown_move->out << ": " << all_sigma[unknown_move->out] << std::endl;
+//      std::cerr << "Adding symbol " << unknown_move->out << ": " << all_sigma[unknown_move->out] << std::endl;
       if (unknown_move->out != EPSILON)
         result.push_back(all_sigma[unknown_move->out]);
     } else if (epsilon_move != NULL) {
-      std::cerr << "Epsilon move" << std::endl;
+//      std::cerr << "Epsilon move" << std::endl;
       /* No regular transitions: follow the epsilon transition. */
       h->ptr = epsilon_move->target;
-      std::cerr << "Adding symbol " << epsilon_move->out << ": " << all_sigma[epsilon_move->out] << std::endl;
+//      std::cerr << "Adding symbol " << epsilon_move->out << ": " << all_sigma[epsilon_move->out] << std::endl;
       if (epsilon_move->out != EPSILON)
         result.push_back(all_sigma[epsilon_move->out]);
     } else {
       /* No transitions: the FST failed to recognize the input. */
-      std::cerr << "no transitions" << std::endl;
+//      std::cerr << "no transitions" << std::endl;
       if (stack.size() > 0) {
         failed = true;
         continue;

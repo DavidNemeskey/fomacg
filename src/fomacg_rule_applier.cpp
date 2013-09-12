@@ -130,7 +130,7 @@ size_t RuleApplier::apply_rules2(std::string& result,
    */
   result = begin_cohort + sentence.substr(0, sentence.length() - 8) + "<<<<> " +
            sentence.substr(sentence.length() - 8);
-  fprintf(stderr, "Input: \n%s\n", sentence.c_str());
+//  fprintf(stderr, "Input: \n%s\n", sentence.c_str());
 
   /* The sentence split into symbols. */
   std::deque<std::string> split = split_string(result, ' ');
@@ -140,23 +140,23 @@ size_t RuleApplier::apply_rules2(std::string& result,
   while (true) {
 Continue:
     for (Node* rule = rules; rule != NULL; rule = rule->next) {
-      fprintf(stderr, "Trying rule %s...\n", rule->fsa.fst->name);
+//      fprintf(stderr, "Trying rule %s...\n", rule->fsa.fst->name);
 //        char* fomacg_result = apply_down(sections[section][rule + 1].ah,
 //                                         result.c_str());
 //        if (fomacg_result != NULL) {
       FstPair* rule_pair = find_rule(rule, split);
       if (rule_pair != NULL) {
-        fprintf(stderr, "Rule found: %s\n", rule_pair->fst->name);
+//        fprintf(stderr, "Rule found: %s\n", rule_pair->fst->name);
 ///        char* fomacg_result = apply_down(rule_pair->ah, result.c_str());
         if (common_apply_down(*rule_pair, allsigma.ah, split, res_split, allsigma_sigma)) {
           split.swap(res_split);
           custom_create_sigmatch(allsigma.ah, split);
         } else {
-          fprintf(stderr, "Rule %s failed.\n", rule_pair->fst->name);
+//          fprintf(stderr, "Rule %s failed.\n", rule_pair->fst->name);
         }
         res_split.clear();
-        fprintf(stderr, "Applied rule %s, result:\n%s\n",
-            rule_pair->fst->name, join_string(split).c_str());
+//        fprintf(stderr, "Applied rule %s, result:\n%s\n",
+//            rule_pair->fst->name, join_string(split).c_str());
 ///        result = fomacg_result;
         applied++;
         goto Continue;
@@ -171,7 +171,7 @@ Continue:
   for (size_t i = 0; i < split.size(); i++) ss << split[i];
   result = ss.str();
   result = result.erase(result.length() - 14, 6).substr(begin_cohort.length());
-  fprintf(stderr, "Output: %s\n", result.c_str());
+//  fprintf(stderr, "Output: %s\n", result.c_str());
   return applied;
 }
 
