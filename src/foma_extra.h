@@ -7,6 +7,20 @@
 #include <fomalib.h>
 #include "fomacg_common.h"
 
+/** Represents a symbol in the common_* functions. */
+struct Symbol {
+  /** The sigma id. */
+  int number;
+  /** The symbol starts at this position in the sentence string. */
+  size_t pos;
+  /** The length of the symbol. */
+  size_t len;
+
+  Symbol() : number(0), pos(0), len(0) {}
+  Symbol(int number_, size_t pos_=0, size_t len_=0)
+      : number(number_), pos(pos_), len(len_) {}
+};
+
 /** Custom versions of the few relevant foma functions. */
 
 /**
@@ -59,8 +73,20 @@ bool custom_detmin_fsa(struct apply_handle* h,
  * sigma ids only once (via the universal FSA), and save a lot of time in the
  * process.
  */
-bool common_detmin_fsa(FstPair& fst, struct apply_handle* ch,
-                       const std::deque<std::string>& sentence);
+bool common_detmin_fsa(FstPair& fst, const std::vector<Symbol>& sentence);
+
+/**
+ * A create_sigmatch
+ *   1. splits @p sentence into tag strings along spaces
+ *   2. looks up the sigma id of each string
+ *   3. returns a @c deque of <tt>(id, symbol)</tt> pairs.
+ *
+ * Including both the id and the symbol in the returned @c deque ensures that
+ * we won't need to call this method again, even after applying
+ * common_apply_down().
+ */
+std::vector<Symbol> common_create_sigmatch(
+    struct apply_handle* h, const std::string& sentence);
 
 /** A create_sigmatch function that works on already segmented input. */
 void custom_create_sigmatch(struct apply_handle *h,
@@ -78,10 +104,9 @@ void custom_create_sigmatch(struct apply_handle *h,
  * @param[in] all_sigma the alphabet of the "universal" FST.
  * @return @c true, if @p fst accepted @p sentence; @c false otherwise.
  */
-bool common_apply_down(FstPair& fst, struct apply_handle* ch,
-                       const std::deque<std::string>& sentence,
-                       std::deque<std::string>& result,
-                       const std::vector<std::string>& all_sigma);
+bool common_apply_down(FstPair& fst,
+                       const std::vector<Symbol>& sentence,
+                       std::vector<Symbol>& result);
 
 /**
  * Merges the sigma of all fsms in @p fsms. Creates an fsm whose sigma is the

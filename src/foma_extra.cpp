@@ -346,8 +346,7 @@ bool custom_detmin_fsa(struct apply_handle* h,
   }
 }
 
-bool common_detmin_fsa(FstPair& fst, struct apply_handle* ch,
-                       const std::deque<std::string>& sentence) {
+bool common_detmin_fsa(FstPair& fst, const std::vector<Symbol>& sentence) {
   struct apply_handle* h = fst.ah;
   h->ptr = 0; h->ipos = 0;
   while (static_cast<size_t>(h->ipos) < sentence.size()) {
@@ -358,7 +357,7 @@ bool common_detmin_fsa(FstPair& fst, struct apply_handle* ch,
      * Symbols in the "universal" alphabet, but not in this machine's are
      * replaced by IDENTITY.
      */
-    int signum = (ch->sigmatch_array + h->ipos)->signumber;
+    int signum = sentence[h->ipos].number;
 //    if (fst.sigma.count(signum) == 0) {
 //      signum = IDENTITY;
 //    }
@@ -383,10 +382,9 @@ bool common_detmin_fsa(FstPair& fst, struct apply_handle* ch,
   }
 }
 
-bool common_apply_down(FstPair& fst, struct apply_handle* ch,
-                       const std::deque<std::string>& sentence,
-                       std::deque<std::string>& result,
-                       const std::vector<std::string>& all_sigma) {
+bool common_apply_down(FstPair& fst,
+                       const std::vector<Symbol>& sentence,
+                       std::vector<Symbol>& result) {
   /* h->ipos and result size (~h->opos) stack for ND paths. */
   std::vector<StackItem> stack;
 
@@ -422,7 +420,7 @@ Continue:
        * Symbols in the "universal" alphabet, but not in this machine's are
        * replaced by IDENTITY.
        */
-      signum = (ch->sigmatch_array + h->ipos)->signumber;
+      signum = sentence[h->ipos].number;
       signum = fst.sigma2[signum];
 
       /* Is there an epsilon transition in the current state? */
@@ -494,27 +492,27 @@ Continue:
         result.push_back(sentence[h->ipos]);
       } else {
 //        std::cerr << "Adding symbol " << tr->out << ": " << all_sigma[tr->out] << std::endl;
-        result.push_back(all_sigma[tr->out]);
+        result.push_back(Symbol(tr->out));
       }
       h->ptr = tr->target;
-      ipos2 += sentence[h->ipos].length();
+//      ipos2 += sentence[h->ipos].symbol.length();
       h->ipos++;
     } else if (signum == IDENTITY && unknown_move != NULL) {
 //      std::cerr << "Unknown move" << std::endl;
       /* Let's try the joker transition. */
       h->ptr = unknown_move->target;
-      ipos2 += sentence[h->ipos].length();
+//      ipos2 += sentence[h->ipos].symbol.length();
       h->ipos++;
 //      std::cerr << "Adding symbol " << unknown_move->out << ": " << all_sigma[unknown_move->out] << std::endl;
       if (unknown_move->out != EPSILON)
-        result.push_back(all_sigma[unknown_move->out]);
+        result.push_back(Symbol(unknown_move->out));
     } else if (epsilon_move != NULL) {
 //      std::cerr << "Epsilon move" << std::endl;
       /* No regular transitions: follow the epsilon transition. */
       h->ptr = epsilon_move->target;
 //      std::cerr << "Adding symbol " << epsilon_move->out << ": " << all_sigma[epsilon_move->out] << std::endl;
       if (epsilon_move->out != EPSILON)
-        result.push_back(all_sigma[epsilon_move->out]);
+        result.push_back(Symbol(epsilon_move->out));
     } else {
       /* No transitions: the FST failed to recognize the input. */
 //      std::cerr << "no transitions" << std::endl;
@@ -560,9 +558,9 @@ Continue:
       } else {
         visited.insert((h->gstates+h->ptr)->state_no);
         h->ptr = epsilon_move->target;
-        std::cerr << "Adding symbole " << epsilon_move->out << ": " << all_sigma[epsilon_move->out] << std::endl;
+//        std::cerr << "Adding symbole " << epsilon_move->out << ": " << all_sigma[epsilon_move->out].symbol << std::endl;
         if (epsilon_move->out != EPSILON)
-          result.push_back(all_sigma[epsilon_move->out]);
+          result.push_back(Symbol(epsilon_move->out));
       }
     }
   }
@@ -576,6 +574,42 @@ inline static void get_basic_transitions(struct apply_handle* h,
        p->in < IDENTITY; p++) {
     if (p->in == EPSILON) *epsilon_move = p;
     if (p->in == UNKNOWN) *unknown_move = p;
+  }
+}
+
+std::vector<Symbol> common_create_sigmatch(
+    struct apply_handle* h, const std::string& sentence) {
+  std::vector<Symbol> ret;
+  size_t pos = 0;
+  while (true) {
+    size_t found = sentence.find(' ', pos);
+    if (found != std::string::npos) {
+      struct apply_handle::sigma_trie *st = h->sigma_trie;
+      int signum = IDENTITY;
+
+      for (size_t i = pos; i <= found; i++) {
+        st += (unsigned char)sentence[i];
+        if (i == found) {
+          if (st->signum != 0) {
+            signum = st->signum;
+          }
+        } else if (st->next != NULL) {
+          st = st->next;
+        } else {
+          break;
+        }
+      }  // for i
+
+      if (signum != IDENTITY) {
+        ret.push_back(Symbol(signum));
+      } else {
+        ret.push_back(Symbol(IDENTITY, pos, found - pos + 1));
+      }
+
+      pos = found + 1;
+    } else {
+      return ret;
+    }
   }
 }
 

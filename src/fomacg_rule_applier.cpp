@@ -98,10 +98,10 @@ Continue:
 
 // TODO: move this to rule_condition_tree
 FstPair* RuleApplier::find_rule(Node* rule,
-                                const std::deque<std::string>& split,
+                                const std::vector<Symbol>& split,
                                 bool match) const {
 //  fprintf(stderr, "Testing condition %s...\n", rule->fsa.fst->name);
-  if (match || common_detmin_fsa(rule->fsa, allsigma.ah, split)) {
+  if (match || common_detmin_fsa(rule->fsa, split)) {
     if (rule->left == NULL) {  // Leaf node -- just return the rule
  //     fprintf(stderr, "Leaf rule: returning %s / %s...\n", rule->fsa.fst->name, rule->fst.fst->name);
       return &rule->fst;
@@ -133,9 +133,8 @@ size_t RuleApplier::apply_rules2(std::string& result,
 //  fprintf(stderr, "Input: \n%s\n", sentence.c_str());
 
   /* The sentence split into symbols. */
-  std::deque<std::string> split = split_string(result, ' ');
-  custom_create_sigmatch(allsigma.ah, split);
-  std::deque<std::string> res_split;
+  std::vector<Symbol> split = common_create_sigmatch(allsigma.ah, result);
+  std::vector<Symbol> res_split;
 
   while (true) {
 Continue:
@@ -148,9 +147,8 @@ Continue:
       if (rule_pair != NULL) {
 //        fprintf(stderr, "Rule found: %s\n", rule_pair->fst->name);
 ///        char* fomacg_result = apply_down(rule_pair->ah, result.c_str());
-        if (common_apply_down(*rule_pair, allsigma.ah, split, res_split, allsigma_sigma)) {
+        if (common_apply_down(*rule_pair, split, res_split)) {
           split.swap(res_split);
-          custom_create_sigmatch(allsigma.ah, split);
         } else {
 //          fprintf(stderr, "Rule %s failed.\n", rule_pair->fst->name);
         }
@@ -168,7 +166,12 @@ Continue:
   }
   /* Return the resulting string without the >>> cohort and <<< tags. */
   std::ostringstream ss;
-  for (size_t i = 0; i < split.size(); i++) ss << split[i];
+  for (size_t i = 0; i < split.size(); i++) {
+    if (split[i].number == IDENTITY)
+      ss << result.substr(split[i].pos, split[i].len);
+    else
+      ss << allsigma_sigma[split[i].number];
+  }
   result = ss.str();
   result = result.erase(result.length() - 14, 6).substr(begin_cohort.length());
 //  fprintf(stderr, "Output: %s\n", result.c_str());

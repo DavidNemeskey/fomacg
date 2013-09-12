@@ -23,6 +23,7 @@
 
 #include "fomacg_common.h"
 #include "rule_condition_tree.h"
+#include "foma_extra.h"
 
 class Converter;
 
@@ -74,7 +75,7 @@ private:
    *              @c true when we check the last remaining branch under a
    *              matching node.
    */
-  FstPair* find_rule(Node* rule, const std::deque<std::string>& split,
+  FstPair* find_rule(Node* rule, const std::vector<Symbol>& split,
                      bool match=false) const;
 
   Converter& converter;

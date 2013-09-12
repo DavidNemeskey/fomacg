@@ -25,7 +25,12 @@ struct FstPair {
   struct apply_handle* ah;
   /* Unordered set at this small element size is SLOWER than the regular set. */
   std::set<int> sigma;
-  /** The sigma of @c fst. Not computed automatically, as not always needed. */
+  /**
+   * Sigma mapping for @c fst. Maps sigma ids to themselves, if they are part of
+   * the alphabet of @c fst; to IDENTITY otherwise.
+   *
+   * Not computed automatically, as not always needed.
+   */
   std::vector<int> sigma2;
 
   FstPair();
