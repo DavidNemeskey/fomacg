@@ -501,7 +501,7 @@ Continue:
       h->ptr = tr->target;
       ipos2 += sentence[h->ipos].length();
       h->ipos++;
-    } else if (unknown_move != NULL) {
+    } else if (signum == IDENTITY && unknown_move != NULL) {
       std::cerr << "Unknown move" << std::endl;
       /* Let's try the joker transition. */
       h->ptr = unknown_move->target;
