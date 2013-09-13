@@ -57,13 +57,6 @@ struct StackItem {
     : state(state_), ipos(ipos_), osize(osize_), signum(signum_),
       epsilon_move(epsilon_move_), unknown_move(unknown_move_), tr(tr_),
       fork(fork_), branch(branch_), ipos2(ipos2_) {}
-
-  /** Loads the values of the stack item's fields to the reference arguments. */
-  void reload(int& state_, int& ipos_, size_t& branch_) {
-    state_  = state;
-    ipos_   = ipos;
-    branch_ = branch;
-  }
 };
 
 //inline static char* apply_detmin_fst(struct apply_handle *h, const char *word);

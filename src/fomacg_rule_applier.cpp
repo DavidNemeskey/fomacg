@@ -9,31 +9,6 @@
 #include "fomacg_converter.h"
 #include "foma_extra.h"
 
-namespace {
-  std::deque<std::string> split_string(std::string s, const char& delim) {
-    std::deque<std::string> ret;
-    size_t pos = 0;
-    while (true) {
-      size_t found = s.find(delim, pos);
-      if (found != std::string::npos) {
-        ret.push_back(s.substr(pos, found - pos + 1));
-        pos = found + 1;
-      } else {
-        return ret;
-      }
-    }
-  }
-
-  std::string join_string(std::deque<std::string> c) {
-    std::ostringstream ss;
-    for (std::deque<std::string>::const_iterator it = c.begin(); it != c.end();
-         ++it) {
-      ss << *it;
-    }
-    return ss.str();
-  }
-};
-
 const std::string RuleApplier::begin_cohort =
     std::string("$0$ \">>>\" #BOC# | #0# \">>>\" <>>>> | #EOC# ");
 
