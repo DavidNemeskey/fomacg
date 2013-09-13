@@ -106,7 +106,7 @@ bool apply_detmin_fsa(struct apply_handle *h, const char *word) {
 //  }
 
   h->ptr = 0; h->ipos = 0;
-  for (; h->ipos < h->current_instring_length;) {
+  while (h->ipos < h->current_instring_length) {
 //    if (debug) fprintf(stderr, "State %d, ipos: %d, symbol: %d(%.*s)\n",
 //        h->ptr, h->ipos, (h->sigmatch_array + h->ipos)->signumber,
 //        (h->sigs+(h->sigmatch_array + h->ipos)->signumber)->length,
@@ -184,17 +184,13 @@ char* apply_detmin_fst_down(struct apply_handle *h, const char *word) {
 
   h->ptr = 0; h->ipos = 0; h->opos = 0;
 
+  /*
+   * If we hit the end of the input: exit the loop, and follow only epsilon
+   * moves from now on.
+   */
 //  std::cout << "length: " << h->current_instring_length << std::endl;
-  while (true) {
+  while (h->ipos < h->current_instring_length) {
 //    std::cout << "h->ipos = " << h->ipos << ", state: " << h->ptr << std::endl;
-    /*
-     * If we hit the end of the input: exit the loop, and follow only epsilon
-     * moves from now on.
-     */
-    if (h->ipos == h->current_instring_length) {
-//      std::cout << "Input consumed in state " << h->ptr << std::endl;
-      break;
-    }
 
     /* We have not yet consumed the input, yet we are trapped in a state: failure. */
     if (*(h->numlines + h->ptr) == 0) return NULL;
