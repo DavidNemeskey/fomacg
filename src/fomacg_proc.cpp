@@ -14,6 +14,8 @@
 
 #include <time.h>
 
+#include <valgrind/callgrind.h>
+
 void test_converter(Converter* conv) {
   std::string fomacg = conv->apertium_to_fomacg(
 //      L"^Volt/van<vbser><past>/volt<n><sg><nom>$^ebed/eb<n><sg><px2ss><nom>$^?/?<sent>$");
@@ -47,7 +49,7 @@ void do_it(StreamReader& reader, Converter& conv, RuleApplier& applier) {
     sentence << cohort_fomacg;
     if (applier.is_delimiter(cohort_fomacg)) {
       std::string result;
-      applier.apply_rules2(result, sentence.str());
+      applier.apply_rules(result, sentence.str());
       std::wcout << conv.fomacg_to_apertium(result) << std::endl;
       //size_t applied = applier.apply_rules(result, sentence.str());
       //std::wcout << L"Applied " << applied << " rules to get: "
@@ -79,10 +81,12 @@ int main(int argc, char* argv[]) {
   //test_converter(conv);
   StreamReader reader(stdin);
   //test_reader(reader);
-  RuleApplier applier = RuleApplier::get(*conv, grammar_file);
+  RuleApplier applier = RuleApplier::get(grammar_file);
 
   clock_gettime(CLOCK_REALTIME, &start);
+  CALLGRIND_START_INSTRUMENTATION;
   do_it(reader, *conv, applier);
+  CALLGRIND_STOP_INSTRUMENTATION;
   clock_gettime(CLOCK_REALTIME, &end);
   double init_elapsed = start.tv_sec - init.tv_sec +
                         (start.tv_nsec - init.tv_nsec) / 1000000000.0;

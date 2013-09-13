@@ -42,7 +42,7 @@ public:
    * @todo Decide if it should return a pointer.
    * @todo max_section
    */
-  static RuleApplier get(Converter& converter, const std::string& fst_file)
+  static RuleApplier get(const std::string& fst_file)
     throw (std::invalid_argument, std::length_error);
 
   /** Tells if the @p cohort is a delimiter. */
@@ -58,16 +58,12 @@ public:
    * @return the number of rules applied.
    */
   size_t apply_rules(std::string& result, const std::string& sentence) const;
-  size_t apply_rules2(std::string& result, const std::string& sentence) const;
-  size_t apply_rules3(std::string& result, const std::string& sentence) const;
 
 private:
   /** Private constructor. */
-  RuleApplier(Converter& converter, const std::string& fst_file);
-  /** Loads the FST file. */
-  void load_file();
+  RuleApplier();
   /** Loads the FSTs into trees. */
-  void load_file_tree();
+  void load_file_tree(const std::string& fst_file);
   /**
    * Finds a rule recursively that can be applied to @p sentence in @p rule.
    * @param match if @c true, we assume that the condition is fulfilled and the
@@ -78,13 +74,8 @@ private:
   FstPair* find_rule(Node* rule, const std::vector<Symbol>& split,
                      bool match=false) const;
 
-  Converter& converter;
-  std::string fst_file;
-
   /* ==== fomacg stuff ==== */
 
-  /** The rules by sections. */
-  std::vector<FstVector> sections;
   /** The rule trees. */
   Node* rules;
   /** The delimiters rule. */
