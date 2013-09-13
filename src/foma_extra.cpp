@@ -347,10 +347,7 @@ bool common_detmin_fsa(FstPair& fst, const std::vector<Symbol>& sentence) {
      * replaced by IDENTITY.
      */
     int signum = sentence[h->ipos].number;
-//    if (fst.sigma.count(signum) == 0) {
-//      signum = IDENTITY;
-//    }
-    signum = fst.sigma2[signum];
+    signum = fst.sigma[signum];
     /* Assumption: FSAs don't support UNKNOWN; detmin FSAs are epsilon-free. */
     if (signum == IDENTITY) {
       struct fsm_state* tr = h->gstates + *(h->statemap + h->ptr);
@@ -410,7 +407,7 @@ Continue:
        * replaced by IDENTITY.
        */
       signum = sentence[h->ipos].number;
-      signum = fst.sigma2[signum];
+      signum = fst.sigma[signum];
 
       /* Is there an epsilon transition in the current state? */
       get_basic_transitions(h, &epsilon_move, &unknown_move);

@@ -229,14 +229,15 @@ void RuleApplier::load_file_tree() {
   fsts.pop_front();  // delimiters
   allsigma = fsts[0];
   fsts.pop_front();
+
   /* Fill the universal sigma vector. */
   allsigma_sigma.resize(allsigma.ah->sigma_size);
   for (struct sigma* s = allsigma.fst->sigma; s != NULL; s = s->next) {
     allsigma_sigma[s->number] = s->symbol;
   }
+  /* And the mappings for all FSTs. */
   for (size_t i = 0; i < fsts.size(); i++) {
-//    fsts[i].fill_sigma();
-    fsts[i].fill_sigma2(allsigma.ah->sigma_size);
+    fsts[i].fill_sigma(allsigma.ah->sigma_size);
   }
   std::cerr << "Num rules: " << fsts.size() << std::endl;
   for (size_t i = 0; i < fsts.size(); i++) {

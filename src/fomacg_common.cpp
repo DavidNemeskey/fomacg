@@ -7,21 +7,13 @@
 FstPair::FstPair() : fst(NULL), ah(NULL) {}
 FstPair::FstPair(struct fsm* fst, struct apply_handle* ah) : fst(fst), ah(ah) {}
 
-void FstPair::fill_sigma() {
+void FstPair::fill_sigma(size_t sigma_size) {
   if (fst != NULL) {
+    sigma.resize(sigma_size, IDENTITY);
+    sigma[EPSILON] = sigma[EPSILON];
+    sigma[UNKNOWN] = sigma[UNKNOWN];
     for (struct sigma* s = fst->sigma; s != NULL; s = s->next) {
-      sigma.insert(s->number);
-    }
-  }
-}
-
-void FstPair::fill_sigma2(size_t sigma_size) {
-  if (fst != NULL) {
-    sigma2.resize(sigma_size, IDENTITY);
-    sigma2[EPSILON] = sigma2[EPSILON];
-    sigma2[UNKNOWN] = sigma2[UNKNOWN];
-    for (struct sigma* s = fst->sigma; s != NULL; s = s->next) {
-      sigma2[s->number] = s->number;
+      sigma[s->number] = s->number;
     }
   }
 }
