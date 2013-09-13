@@ -1,35 +1,47 @@
 #include "fomacg_stream_reader.h"
 
+#include <cstdlib>
 #include <iostream>
 
-StreamReader::StreamReader(FILE* ins) : ins(ins) {}
+StreamReader::StreamReader(FILE* ins) : ins(ins), arr_size(1000) {
+  arr = new wchar_t[arr_size];
+}
+StreamReader::~StreamReader() {
+  delete[] arr;
+}
 
 // TODO: return bool and use a param[out] for return value
-// TODO: fgetwc_unlocked
 std::wstring StreamReader::read_cohort() {
   wchar_t wc;
   bool in_cohort = false;
   bool escape = false;
+  size_t i = 0;
 
-  word_ss.str(L"");
-  while ((wc = fgetwc(ins)) != WEOF) {
+  //while ((wc = fgetwc(ins)) != WEOF) {
+  while ((wc = fgetwc_unlocked(ins)) != WEOF) {
+    if (i == arr_size) {
+      arr = static_cast<wchar_t*>(realloc(arr, 2 * arr_size * sizeof(wchar_t)));
+      arr_size *= 2;
+    }
     if (!in_cohort) {             // between cohorts: skip everything
       if (wc == L'^') {
-        word_ss << wc;
+        arr[i++] = wc;
         in_cohort = true;
       }
     } else {                      // in a cohort
       if (escape) {
-        word_ss << wc;
+        arr[i++] = wc;
+        in_cohort = true;
         escape = false;
       } else if (wc == L'\\') {
         escape = true;
       } else if (wc == L'$') {
-        word_ss << wc;
-        return word_ss.str();
+        arr[i++] = wc;
+        in_cohort = true;
+        return std::wstring(arr, i);
       } else {
         if (!iswspace(wc)) {  // Might not be needed, or not everywhere
-          word_ss << wc;
+          arr[i++] = wc;
         }
       }
     }

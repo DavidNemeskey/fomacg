@@ -19,15 +19,18 @@ public:
    * @param ins[in] the input stream.
    */
   StreamReader(FILE* ins);
+  ~StreamReader();
 
-  /** Reads a cohort from @c ins. */
+  /** Reads a cohort from @c ins <b>without locking</b>. */
   std::wstring read_cohort();
 
 private:
   /** The input stream. */
   FILE* ins;
   /** The buffer used by read_cohort(). */
-  std::wstringstream word_ss;
+  wchar_t* arr;
+  /** And its size. It grows by the powers of two. */
+  size_t arr_size;
 };
 
 #endif
