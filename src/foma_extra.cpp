@@ -229,7 +229,7 @@ char* apply_detmin_fst_down(struct apply_handle *h, const char *word) {
    * fails.
    */
   /* Shortcut for the state we end up with the input. */
-  if ((h->gstates+h->ptr)->final_state == 1) {
+  if ((h->gstates + *(h->statemap + h->ptr))->final_state == 1) {
 //    return sstream_to_chars(h, ret);
     return h->outstring;
   }
@@ -250,7 +250,7 @@ char* apply_detmin_fst_down(struct apply_handle *h, const char *word) {
         return NULL;
       } else {
 //        std::cout << "Epsilon move " << h->ptr << std::endl;
-        visited.insert((h->gstates+h->ptr)->state_no);
+        visited.insert(h->ptr);
         h->ptr = epsilon_move->target;
         add_output(h, epsilon_move->out);
       }
@@ -431,8 +431,9 @@ Continue:
       branch = 0;
 //      std::cerr << "new step: state " << h->ptr << " ipos " << h->ipos
 //                << " (" << ipos2 << ") " << " osize "
-//                << result.size() << " signum " << signum << "(" << sentence[h->ipos]
-//                << ") fork " << fork << " branch " << branch << std::endl;
+//                << result.size() << " signum " << signum
+//                << " fork " << fork << " branch " << branch
+//                << " stack size: " << stack.size() << std::endl;
 //      std::cerr << "new step: state " << h->ptr << " ipos " << h->ipos << " osize "
 //                << result.size() << " signum " << signum << "(" << sentence[h->ipos]
 //                << ") epsilon_move " << (epsilon_move != NULL)
@@ -457,8 +458,8 @@ Continue:
 //      std::cerr << "returning: state " << h->ptr << " ipos " << h->ipos
 //                << " (" << ipos2 << ") "
 //                << " osize "
-//                << result.size() << " signum " << signum << "(" << sentence[h->ipos]
-//                << ") fork " << fork << " branch " << branch << std::endl;
+//                << result.size() << " signum " << signum
+//                << " fork " << fork << " branch " << branch << std::endl;
     }
 
     if (tr != NULL) {
@@ -474,10 +475,10 @@ Continue:
       if (tr->out == EPSILON) {
 //        std::cerr << "NOT adding EPSILON" << std::endl;
       } else if (tr->out == IDENTITY) {
-//        std::cerr << "Adding IDENTITY " << sentence[h->ipos] << std::endl;
+//        std::cerr << "Adding IDENTITY " << sentence[h->ipos].number << std::endl;
         result.push_back(sentence[h->ipos]);
       } else {
-//        std::cerr << "Adding symbol " << tr->out << ": " << all_sigma[tr->out] << std::endl;
+//        std::cerr << "Adding symbol " << tr->out << std::endl;
         result.push_back(Symbol(tr->out));
       }
       h->ptr = tr->target;
@@ -489,14 +490,14 @@ Continue:
       h->ptr = unknown_move->target;
 //      ipos2 += sentence[h->ipos].symbol.length();
       h->ipos++;
-//      std::cerr << "Adding symbol " << unknown_move->out << ": " << all_sigma[unknown_move->out] << std::endl;
+//      std::cerr << "Adding symbol " << unknown_move->out << std::endl;
       if (unknown_move->out != EPSILON)
         result.push_back(Symbol(unknown_move->out));
     } else if (epsilon_move != NULL) {
 //      std::cerr << "Epsilon move" << std::endl;
       /* No regular transitions: follow the epsilon transition. */
       h->ptr = epsilon_move->target;
-//      std::cerr << "Adding symbol " << epsilon_move->out << ": " << all_sigma[epsilon_move->out] << std::endl;
+//      std::cerr << "Adding symbol " << epsilon_move->out << std::endl;
       if (epsilon_move->out != EPSILON)
         result.push_back(Symbol(epsilon_move->out));
     } else {
@@ -511,19 +512,28 @@ Continue:
     }
   }
 
+//  std::cerr << "Read input, in state " << h->ptr << " ipos " << h->ipos
+//              << " (" << ipos2 << ") " << " osize "
+//              << result.size() << " signum " << signum
+//              << " fork " << fork << " branch " << branch
+//              << " stack size: " << stack.size() << std::endl;
+
   /*
    * Handle the possible epsilon moves after the input has been consumend. If we
    * hit an accepting state, we return successfully; otherwise, the transduction
    * fails. We do not allow non-determinism here.
-   */
+     */
   /* Shortcut for the state we end up with the input. */
-  if ((h->gstates+h->ptr)->final_state == 1) {
+  if ((h->gstates + *(h->statemap + h->ptr))->final_state == 1) {
+//    std::cerr << "State " << h->ptr << " is a final state. Returning true..."
+//              << std::endl;
     return true;
   }
 
   std::set<int> visited;
   while (true) {
     if (visited.count(h->ptr) != 0) {
+//      std::cerr << "Already visited state " << h->ptr << "." << std::endl;
       if (stack.size() > 0) {
         failed = true;
         goto Continue;
@@ -531,6 +541,8 @@ Continue:
         return false;
       }
     } else if ((h->gstates + *(h->statemap + h->ptr))->final_state == 1) {
+//      std::cerr << "State " << h->ptr << " is a final state. Returning true..."
+//                << std::endl;
       return true;
     } else {
       struct fsm_state* epsilon_move = h->gstates + *(h->statemap + h->ptr);
@@ -542,9 +554,9 @@ Continue:
           return false;
         }
       } else {
-        visited.insert((h->gstates+h->ptr)->state_no);
+        visited.insert(h->ptr);
         h->ptr = epsilon_move->target;
-//        std::cerr << "Adding symbole " << epsilon_move->out << ": " << all_sigma[epsilon_move->out].symbol << std::endl;
+//        std::cerr << "Adding symbole " << epsilon_move->out << std::endl;
         if (epsilon_move->out != EPSILON)
           result.push_back(Symbol(epsilon_move->out));
       }
