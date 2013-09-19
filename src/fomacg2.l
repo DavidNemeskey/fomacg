@@ -159,7 +159,7 @@ void cg_init(void) {
   CG_DEF_ConstrainR = fsm_read_binary_file("data/cg_ConstrainR.foma");
   CG_DEF_Rollback = fsm_read_binary_file("data/cg_Rollback.foma");  // = invCR
   CG_DEF_Cleanup = fsm_read_binary_file("data/cg_Cleanup.foma");
-  CG_DEF_InitialFilter = fsm_read_binary_file("data/cg_InitialFilter.foma");
+  CG_DEF_InitialFilter = fsm_read_binary_file("data/cg_InitialFilter_deleteX.foma");
   CG_DEF_MWFPROLOG = fsm_read_binary_file("data/cg_MWFPROLOG.foma");
   CG_DEF_MWFEPILOG = fsm_read_binary_file("data/cg_MWFEPILOG.foma");
   CG_DEF_ANYCOHORT = fsm_read_binary_file("data/cg_ANYCOHORT.foma");
@@ -329,6 +329,14 @@ struct fsm *cg_match_cohort(struct fsm *net) {
                  fsm_copy(CG_DEF_MATCHCOHORT2))));
 }
 
+/*
+ * Patterns with "#X# ":
+ * - cg_Cleanup       : introduces instead of "#2# "
+ * - cg_DEAD          : only the function below uses it
+ * - cg_DeleteX       : deletes it after the end: this should let us rid of it
+ * - cg_InitialFilter : deleted from the regex, not from sigma
+ */
+
 struct fsm *cg_match_cohort_careful(struct fsm *net) {
   struct fsm *A,*B,*Center,*Pre,*Post,*result;
   /* ~$"#BOC# " "#BOC# " [[DEL DEAD \DEL*]* [DEL ALIVE \DEL* "DET " \DEL*] [DEL DEAD \DEL*]*]+ DEL "#EOC# " ~$"#BOC# " */
@@ -363,6 +371,38 @@ struct fsm *cg_match_cohort_careful(struct fsm *net) {
   result = fsm_minimize(fsm_concat(Pre, fsm_concat(Center, Post)));
   fsm_destroy(A);
   fsm_destroy(B);
+  return(result);
+}
+
+/**
+ * Variant of cg_match_cohort_careful that works with deleteX rules, where the
+ * filtered readings are deleted instead of "#X# "'ed. Here, a careful condition
+ * specifies that there is only one reading, and that contains the tag.
+ */
+struct fsm *cg_match_cohort_careful_deleteX(struct fsm *net) {
+  struct fsm *B,*Center,*Pre,*Post,*result;
+  /* A below is not needed. */
+  /* ~$"#BOC# " "#BOC# " [[DEL DEAD \DEL*]* [DEL ALIVE \DEL* "DET " \DEL*] [DEL DEAD \DEL*]*]+ DEL "#EOC# " ~$"#BOC# " */
+  /* Pre                   A                 B                              A                  Post */
+  /* Pre [A B A]+ Post */
+
+  Pre = fsm_concat(
+            fsm_complement(fsm_contains(fsm_symbol("#BOC# "))),
+            fsm_symbol("#BOC# "));
+  Post = fsm_concat(
+             fsm_symbol("| "),  // TODO: replace with CG_DEF_DEL
+             fsm_concat(
+                 fsm_symbol("#EOC# "),
+                 fsm_complement(fsm_contains(fsm_symbol("#BOC# ")))));
+  B = fsm_concat(
+          fsm_copy(CG_DEF_DEL),
+          fsm_concat(
+              fsm_copy(CG_DEF_ALIVE),
+              fsm_concat(
+                  fsm_copy(CG_DEF_NODEL),
+                  fsm_concat(net, fsm_copy(CG_DEF_NODEL)))));
+  Center = fsm_kleene_plus(B);
+  result = fsm_minimize(fsm_concat(Pre, fsm_concat(Center, Post)));
   return(result);
 }
 
@@ -507,7 +547,7 @@ void cg_compile_rule() {
 
         /* Normal / safe matching. */
         if (linkrule->scope_mode & MODE_CAREFUL) {
-          match = cg_match_cohort_careful(fsm_copy(linkrule->condition));
+          match = cg_match_cohort_careful_deleteX(fsm_copy(linkrule->condition));
         } else {
           match = cg_match_cohort(fsm_copy(linkrule->condition));
         }
@@ -1153,7 +1193,7 @@ int save_rules_fsm(char *filename) {
   /* Return to the original rule order. */
   reverse_rule_order();
 
-  SmallestFirstTreeMerger merger;
+  SortedFixLevelTreeMerger merger(2);
 
   struct Node* trees = merger.merge(cg_rules, total_rules);
   size_t num_rules;
