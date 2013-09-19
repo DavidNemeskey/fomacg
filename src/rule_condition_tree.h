@@ -56,9 +56,16 @@ struct Node {
   struct Node* next;
 };
 
+/** The sorting order for rules and trees. */
+enum SortOrder {
+  SORT_NAME,
+  SORT_SIZE
+};
+
 /** The ancestor of all classes the merge conditions. */
 class ConditionMerger {
 public:
+  ConditionMerger(SortOrder order=SORT_SIZE);
   /**
    * Serializes @p tree. Called by fomacg when it writes the rules to file.
    *
@@ -86,16 +93,29 @@ public:
 
 protected:
   /**
-   * Comparison function for qsort() that sorts the rules first by section, then
+   * Comparison function for sort() that sorts the rules first by section, then
    * by size.
    */
-  static bool rule_compare(const struct cg_rules* rule1,
-                           const struct cg_rules* rule2);
+  static bool rule_statecount_compare(const struct cg_rules* rule1,
+                                      const struct cg_rules* rule2);
+  /**
+   * Comparison function for sort() that sorts the rules first by section, then
+   * by name.
+   */
+  static bool rule_name_compare(const struct cg_rules* rule1,
+                                const struct cg_rules* rule2);
+
+  /** Unions the two FSTs. */
+  struct fsm* union_trees(struct fsm* fst1, struct fsm* fst2);
+
+  /** The sorting order. */
+  SortOrder order;
 };
 
 /** A merger that returns binary trees. */
 class TreeConditionMerger : public ConditionMerger {
 public:
+  TreeConditionMerger(SortOrder order=SORT_SIZE);
   /**
    * The FSTs are in prefix order (root, left, leftleft, ..., leftright, ...,
    * right, ...). The intermediate nodes (whose name does not start with "R" or
@@ -119,8 +139,9 @@ protected:
   virtual struct Node* build_section_tree(std::vector<struct cg_rules* >& rules,
                                           size_t begin, size_t length)=0;
 
-  /** Comparison function for qsort() that sorts the tree(-node)s by size. */
-  static bool tree_compare(const struct Node* tree1, const struct Node* tree2);
+  /** Comparison function for sort() that sorts the tree(-node)s by size. */
+  static bool tree_compare_size(
+      const struct Node* tree1, const struct Node* tree2);
 
 private:
   /**
@@ -190,6 +211,28 @@ public:
    * @param levels the height of the trees. The default is three.
    */
   FixLevelTreeMerger(int levels=3);
+
+protected:
+  struct Node* build_section_tree(std::vector<struct cg_rules*>& rules,
+                                  size_t begin, size_t length);
+
+private:
+  int levels;
+};
+
+/**
+ * Sorts rules by their name and creates trees of a previously fixed level.
+ *
+ * @warning Be careful and do not set the number of levels too high (>3 ...), or
+ *          the <tt>fsm_union()</tt> operation may freeze your machine.
+ */
+class SortedFixLevelTreeMerger : public TreeConditionMerger {
+public:
+  /**
+   * Constructor.
+   * @param levels the height of the trees. The default is three.
+   */
+  SortedFixLevelTreeMerger(int levels=3);
 
 protected:
   struct Node* build_section_tree(std::vector<struct cg_rules*>& rules,
