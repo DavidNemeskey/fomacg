@@ -1,0 +1,26 @@
+State(
+  False,  // final
+  [       // deter
+    (1, State(
+          True,  // final
+          [],    // deter
+          [      // choices
+            (
+              [3],      // word
+               Path[1]  // address
+            )
+          ]
+    ));
+    (2, State(
+          True,  // final
+          [],    // deter
+          [
+            (
+              [3],      // word
+              Path [2]  // address
+            )
+          ]
+    ))
+  ],
+  []       // choices
+) ;
