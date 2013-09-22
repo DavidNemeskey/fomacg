@@ -124,12 +124,12 @@ class Automaton(object):
      set. In that case, we may still represent faithfully the non-deterministic
      automaton by considering a forest of trees, rather than a single tree."
     """
-    def __init__(self, states, initial):
+    def __init__(self, forest, initial):
         """
         @param states The state forest of the automaton.
         @param initial The index of the initial state in @c states.
         """
-        self._states  = states
+        self._forest  = forest
         self._initial = initial
 
 class PathError(Exception):
@@ -140,6 +140,7 @@ def access(state, letter):
     """
     Reads @p letter in @p state and returns the new state, or @c None, if no
     such transition exists.
+    @todo To ExecutionState, if everything works?
     """
     return state._deter.get(letter)
 
@@ -152,6 +153,7 @@ def push(word, state, states):
     @return the new values of @p state and @p states as a tuple.
     @todo Returns (state, states) if @p word causes a loop AND if @p word is not
           a valid input; FIX IT.
+    @todo To ExecutionState, if everything works.
     """
     new_stack = []
     for letter in word:
@@ -172,20 +174,35 @@ def pop(n, state, states):
     @param states the state stack.
     @return the new values of @p state and @p states as a tuple.
     @todo Remove @p state from the list of arguments.
+    @todo To ExecutionState, if everything works.
     """
     if len(states) < n:
         raise PathError
     return (states[-n], states[:-n])
 
-def transition(address, state, states, forest):
-    """Executes a transition defined by its address argument."""
-    if isinstance(address, Global):
-        # Jump to the n'th tree in the forest, and apply the path on it
-        push(address.word(), forest[address.num()], [])
-    else:
-        # Move around in the current tree
-        state, states = pop(address.num(), state, states)
-        push(address.word(), state, states)
+class ExecutionState(object):
+    """
+    Not to be confused with automaton states, this class represents the status
+    of the matching process being currently executed.
+    """
+    def __init__(self, automaton):
+        self._automaton = automaton
+        self._state     = automaton._forest[automaton._initial]
+        self._states    = []
+
+    def transition(self, address):
+        """
+        Executes a transition defined by its address argument.
+        @todo What happens if @p address is not valid?
+        """
+        if isinstance(address, Global):
+            # Jump to the n'th tree in the forest, and apply the path on it
+            self._state, self._states = push(
+                    address.word(), self._automaton._forest[address.num()], [])
+        else:
+            # Move around in the current tree
+            state, states = pop(address.num(), self._state, self._states)
+            self._state, self._states = push(address.word(), state, states)
 
 def test_trie():
     trie = Trie(False, {1: Trie(False, {2: Trie(True)}),
