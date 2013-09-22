@@ -7,7 +7,6 @@
  */
 
 #include "automata_mista.h"
-#include <cstdlib>
 #include <iostream>
 
 Trie::Trie(bool final_, const ArcMap& arcs_)
@@ -34,3 +33,12 @@ bool Trie::mem(Word w) {
   }
   return curr->final;
 }
+
+Address::Address() {}
+Address::Address(size_t tree_, const Path& path_) : tree(tree_), path(path_) {}
+
+State::State(bool final_, const DeterMap& deter_, const ChoicesMap& choices_)
+  : final(final_), deter(deter_), choices(choices_) {}
+
+State::State(bool final_) : final(final_) {}
+

@@ -36,5 +36,20 @@ int main(int argc, char* argv[]) {
   w3.push_back(3);
   std::cout << "123 in trie: " << t1->mem(w3) << std::endl;
   delete t1;
+
+  /* State-based implementation in the unique tree setting. */
+  DeterMap dm2;
+  ChoicesMap cm2;
+  cm2[Word(1, 3)] = Address(0, Path(1, 1));
+  State* s2 = new State(true, dm2, cm2);
+  DeterMap dm3;
+  ChoicesMap cm3;
+  cm3[Word(1, 3)] = Address(0, Path(1, 2));  // should be Path(1, 1) for sharing
+  State* s3 = new State(true, dm3, cm3);
+  DeterMap dm1;
+  ChoicesMap cm1;
+  dm1[1] = s2;
+  dm1[2] = s3;
+  State s1 = State(false, dm1, cm1);
 }
 

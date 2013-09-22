@@ -8,6 +8,8 @@
  * @author David Mark Nemeskey
  */
 
+#include <cstdlib>
+
 #include <vector>
 #include <map>
 
@@ -42,17 +44,35 @@ struct Trie {
 };
 
 /** Address of a trie. */
-typedef Word Address;
+typedef Word Path;
 
-class State;
+struct Address {
+  /**
+   * The index of the tree in the automaton forest.
+   * @see Automaton
+   */
+  size_t tree;
+  /** The path in the tree. */
+  Path path;
+
+  Address();
+  Address(size_t tree, const Path& path);
+};
+
+struct State;
 
 typedef std::map<Letter, State*> DeterMap;
+typedef std::map<Word, Address> ChoicesMap;
 
 /** A ... state of the FSA? */
 struct State {
   bool final;
   DeterMap deter;
-  // TODO: add choices; I haven't the faintest idea what should come here.
+  ChoicesMap choices;
+
+  State(bool final, const DeterMap& deter, const ChoicesMap& choices);
+  /** Default constructor. */
+  State(bool final_=false);
 };
 
 /** Automaton: an array (forest) of addresses. */
