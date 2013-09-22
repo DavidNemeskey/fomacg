@@ -204,6 +204,20 @@ class ExecutionState(object):
             state, states = pop(address.num(), self._state, self._states)
             self._state, self._states = push(address.word(), state, states)
 
+def prefix(u, v):
+    """
+    Service routine that checks the prefix relation between words.
+    @return @c True if @p u is a prefix of (or IS) @p v; @c False otherwise.
+    """
+    return u == v[:len(u)]
+
+def advance(n, word):
+    """Service routine that advances the input tape by @p n characters."""
+    if n >= len(word):
+        return []
+    else:
+        return word[n:]
+
 def test_trie():
     trie = Trie(False, {1: Trie(False, {2: Trie(True)}),
                         2: Trie(True,  {2: Trie(True),
