@@ -89,7 +89,10 @@ class Delta(object):
                                    ''.join(str(e) for e in self._w2))
 
 class Local(Address, Delta):
-    """Local addresses are really just Deltas."""
+    """
+    Local addresses are really just Deltas; they move around in the current
+    @b deterministic tree.
+    """
     def __init__(self, len_w1, w2):
         Delta.__init__(self, len_w1, w2)
 
@@ -173,6 +176,16 @@ def pop(n, state, states):
     if len(states) < n:
         raise PathError
     return (states[-n], states[:-n])
+
+def transition(address, state, states, forest):
+    """Executes a transition defined by its address argument."""
+    if isinstance(address, Global):
+        # Jump to the n'th tree in the forest, and apply the path on it
+        push(address.word(), forest[address.num()], [])
+    else:
+        # Move around in the current tree
+        state, states = pop(address.num(), state, states)
+        push(address.word(), state, states)
 
 def test_trie():
     trie = Trie(False, {1: Trie(False, {2: Trie(True)}),
