@@ -12,7 +12,10 @@ from collections import namedtuple
 # arcs = list/map(Letter x Trie)
 #Trie = namedtuple('Trie', ['final', 'arcs'])
 
+############ Start trie
+
 class Trie(object):
+    num_tries = 0
     """A node in the trie."""
     def __init__(self, final=False, arcs={}):
         """
@@ -21,9 +24,14 @@ class Trie(object):
         """
         self._final = final
         self._arcs = arcs
+        self._trid = Trie.num_tries
+        Trie.num_tries += 1
 
     def __repr__(self):
-        return "Trie({0}, {1})".format(self._final, self._arcs)
+        return "Trie[{2}]({0}, {1})".format(self._final, self._arcs, self._trid)
+
+    def __eq__(self, other):
+        return self._final == other._final and self._arcs == other._arcs
 
 def trie_of(w):
     """Returns the singleton trie containing @p c."""
@@ -82,12 +90,79 @@ def mem(trie, word):
             return False
     return curr._final
 
+############ End trie
+
+############ Start sharing
+
+# A { key : bucket } dict
+memo = {}
+
+def share(element, key):
+    """
+    Looks in k-th bucket and returns y in it such that y = x if it exists,
+    otherwise returns x memorized in the new k-th bucket [x :: e].
+    """
+    bucket = memo.get(key)
+    if bucket is None:
+        bucket = []
+        memo[key] = bucket
+    try:
+        return bucket[bucket.index(element)]
+    except ValueError:
+        bucket.append(element)
+        return element
+
+hash0 = 1
+hash_max = 150
+
+# The hash functions.
+def hash1(letter, key, sum):
+    return sum + letter * key
+
+def hash(final, num_arcs):
+    return (num_arcs + 1 if final else 0) % hash_max
+
+def traverse(lookup, trie):
+    def travel(trie):
+#        print "travel({0}) start".format(trie)
+        final, arcs = trie._final, trie._arcs
+        def f(tries_span, n_t):  # WTF?
+#            print "AHA"
+            tries, span = tries_span
+            n, t        = n_t
+#            print "f1([tries={0}, span={1}], [n={2}, t={3}])".format(
+#                    tries, span, n, t)
+            t0, k       = travel(t)
+#            print "f2([tries={0}, span={1}], [n={2}, t={3}]): t0={4}, k={5}".format(
+#                    tries, span, n, t, t0, k)
+#            print "f3([tries={0}, span={1}], [n={2}, t={3}]): t0={4}, k={5}, f={6}".format(
+#                    tries, span, n, t, t0, k, ([(n, t0)] + tries, hash1(n, k, span)))
+            return ([(n, t0)] + tries, hash1(n, k, span))
+#        print "reducing with {0}, {1}".format(([], hash0), list(arcs.iteritems()))
+        arcs0, span = reduce(f, arcs.iteritems(), ([], hash0))
+#        print "After reduce: {0}/{1}, {2}/{3}".format(type(arcs0), arcs0,
+#                                                      type(span), span)
+        key = hash(final, span)
+#        print "Key: {0}".format(key)
+#        print "travel({0}) end".format(trie)
+        return ( lookup(Trie(final, dict(arcs0)), key), key )
+    return travel(trie)
+
+def minimize(trie):
+    dag, _ = traverse(share, trie)
+    return dag
+
+############ End sharing
+
 def test_trie():
     trie = Trie(False, {1: Trie(False, {2: Trie(True, {})}),
                         2: Trie(True,  {2: Trie(True, {}),
                                         3: Trie(True, {})})})
     print trie
-    print enter(enter(enter(enter(trie_of([2, 2]), [1, 2]), [2, 3]), [2]), [2])
+    trie2 = enter(enter(enter(enter(enter(trie_of([2, 2]), [1, 2]), [2, 3]), [2]), [2, 2, 2]), [1, 2, 2])
+
+    trie_min = minimize(trie2)
+    print "min trie\n{0}\n\n".format(trie_min)
 
     t = make_lex(['abc', 'def', 'ab', 'defg'])
     print t
