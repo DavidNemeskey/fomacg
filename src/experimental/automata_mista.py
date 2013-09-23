@@ -206,9 +206,14 @@ class ReactiveEngine(object):
         @param states the state stack.
         @return the new resumption stack.
         """
-        b, det, choices = state._final, state._deter, state._choices
+        final, det, choices = state._final, state._deter, state._choices
 
         def deter(cont):
+            """
+            Reads an input letter and calls react() if there is a transition
+            with the letter from the current state; otherwise, backtracks.
+            """
+            # TODO: to outside
             if len(input) == 0:
                 return self.backtrack(cont)
             else:
@@ -227,7 +232,7 @@ class ReactiveEngine(object):
             # TODO: append?
             new_res = [BackTrack(input, state, states, choices)] + res
 
-        if b and len(input) == 0:
+        if final and len(input) == 0:
             return new_res  # Solution
         else:
             return deter(new_res)
@@ -235,8 +240,9 @@ class ReactiveEngine(object):
     def backtrack(self, cont):
         """
         As its name implies. Backtracks to the last decision point.
-        @param cont res.
+        @param cont the resumption stack.
         @return the new resumption stack.
+        @throw Finished if the resumption stack is empty.
         """
         if len(cont) == 0:
             raise Finished()
@@ -246,6 +252,21 @@ class ReactiveEngine(object):
             return self.choose(bt.input, res, bt.state, bt.states, bt.choices)
 
     def choose(self, input, res, state, states, choices):
+        """
+        Called by backtrack, which by this time has popped the topmost BackTrack
+        object from the resumption stack. Takes the next choice from the list of
+        choices the state provides, and pushes the record back to the resumption
+        set (with the currently examined choice deleted). Then, if the word
+        "guarding" the choice is a prefix of the input, acts on it; otherwise,
+        backtracks.
+
+        @todo This is insane. We are jumping back and forth between choose() and
+              backtrack(), all the while keeping an ever-decreasing list in
+              memory, when all we had to do was to store the index of the
+              current choice.
+              Not to mention this method is very stack-unfriendly, as Python
+              doesn't eliminate tail recursion.
+        """
         if len(choices) == 0:
             return self.backtrack(res)
         else:
