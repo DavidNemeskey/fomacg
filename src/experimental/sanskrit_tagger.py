@@ -152,6 +152,10 @@ def minimize(trie):
     dag, _ = traverse(share, trie)
     return dag
 
+def memo_size():
+    """Returns the size of @c memo."""
+    return sum(len(bucket) for bucket in memo.values())
+
 ############ End sharing
 
 def test_trie():
@@ -160,9 +164,11 @@ def test_trie():
                                         3: Trie(True, {})})})
     print trie
     trie2 = enter(enter(enter(enter(enter(trie_of([2, 2]), [1, 2]), [2, 3]), [2]), [2, 2, 2]), [1, 2, 2])
+    print trie2
 
     trie_min = minimize(trie2)
     print "min trie\n{0}\n\n".format(trie_min)
+    print memo_size()
 
     t = make_lex(['abc', 'def', 'ab', 'defg'])
     print t
