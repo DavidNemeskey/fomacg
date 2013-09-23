@@ -72,6 +72,16 @@ def contents(trie):
     traverse(trie, [])
     return ret
 
+def mem(trie, word):
+    curr = trie
+    for letter in word:
+        next = curr._arcs.get(letter)
+        if next is not None:
+            curr = next
+        else:
+            return False
+    return curr._final
+
 def test_trie():
     trie = Trie(False, {1: Trie(False, {2: Trie(True, {})}),
                         2: Trie(True,  {2: Trie(True, {}),
@@ -82,8 +92,8 @@ def test_trie():
     t = make_lex(['abc', 'def', 'ab', 'defg'])
     print t
     print contents(t)
-#    for w in [[1, 2], [2, 2], [2, 1], [1, 2, 3]]:
-#        print "{0} in trie: {1}".format(''.join(str(i) for i in w), trie.mem(w))
+    for w in [[1, 2], [2, 2], [2, 1], [1, 2, 3]]:
+        print "{0} in trie: {1}".format(''.join(str(i) for i in w), mem(trie, w))
 
 if __name__ == '__main__':
     test_trie()
