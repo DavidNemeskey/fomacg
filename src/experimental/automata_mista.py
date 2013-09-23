@@ -1,6 +1,8 @@
 # typedef int Letter
 # typedef tuple(Letter) Word
 
+from collections import namedtuple
+
 class Trie(object):
     """A node in the trie."""
     def __init__(self, final=False, arcs={}):
@@ -124,13 +126,15 @@ class Automaton(object):
      set. In that case, we may still represent faithfully the non-deterministic
      automaton by considering a forest of trees, rather than a single tree."
     """
-    def __init__(self, forest, initial):
+    def __init__(self, forest, init_root, init_path):
         """
         @param states The state forest of the automaton.
-        @param initial The index of the initial state in @c states.
+        @param init_root The index of the initial state in @c states.
+        @param init_path The path of the initial state in @c forest[init_root].
         """
-        self._forest  = forest
-        self._initial = initial
+        self._forest    = forest
+        self._init_root = init_root
+        self._init_path = init_path
 
 class PathError(Exception):
     """Thrown for illegal path operations."""
@@ -180,29 +184,112 @@ def pop(n, state, states):
         raise PathError
     return (states[-n], states[:-n])
 
-class ExecutionState(object):
-    """
-    Not to be confused with automaton states, this class represents the status
-    of the matching process being currently executed.
-    """
-    def __init__(self, automaton):
-        self._automaton = automaton
-        self._state     = automaton._forest[automaton._initial]
-        self._states    = []
+class Finished(Exception):
+    """Thrown when we don't accept the input."""
+    pass
 
-    def transition(self, address):
+class ReactiveEngine(object):
+    """The Reactive Engine that executes the matching process."""
+
+    # Backtrack type
+    BackTrack = namedtuple('BackTrack', ['input', 'state', 'states', 'choices'])
+
+    def __init__(self, automaton):
+        self._automaton  = automaton
+
+    def react(self, input, res, state, states):
+        """
+        Does the main work in reacting to an input.
+        @param input the current input
+        @param res the resumption stack.
+        @param state the current state.
+        @param states the state stack.
+        @return the new resumption stack.
+        """
+        b, det, choices = state._final, state._deter, state._choices
+
+        def deter(cont):
+            if len(input) == 0:
+                return self.backtrack(cont)
+            else:
+                letter, rest = input[0], input[1:]
+                try:
+                    new_state  = det[letter]
+                    # TODO: append?
+                    new_states = [state] + states
+                    return self.react(rest, cont, new_state, new_states)
+                except KeyError:
+                    return self.backtrack(cont)
+
+        if len(choices) == 0:
+            new_res = res
+        else:
+            # TODO: append?
+            new_res = [BackTrack(input, state, states, choices)] + res
+
+        if b and len(input) == 0:
+            return new_res  # Solution
+        else:
+            return deter(new_res)
+
+    def backtrack(self, cont):
+        """
+        As its name implies. Backtracks to the last decision point.
+        @param cont res.
+        @return the new resumption stack.
+        """
+        if len(cont) == 0:
+            raise Finished()
+        else:
+            # TODO: -append?
+            bt, res = cont[0], cont[1:]
+            return self.choose(bt.input, res, bt.state, bt.states, bt.choices)
+
+    def choose(self, input, res, state, states, choices):
+        if len(choices) == 0:
+            return self.backtrack(res)
+        else:
+            # TODO: -append?
+            w, addr = choices[0]
+            # TODO: What is choices anyway?
+            ch      = choices[1:]
+
+            # TODO: append?
+            new_res = [BackTrack(input, state, states, ch)] + res
+            if prefix(w, input):
+                new_input = input[len(w):]
+                new_state, new_states = self.transition(state, states, addr)
+                return self.react(new_input, new_res, new_state, new_states)
+            else:
+                return self.backtrack(new_res)
+
+    def transition(self, state, states, address):
         """
         Executes a transition defined by its address argument.
+        @return The new value of state and states.
         @todo What happens if @p address is not valid?
         """
         if isinstance(address, Global):
             # Jump to the n'th tree in the forest, and apply the path on it
-            self._state, self._states = push(
-                    address.word(), self._automaton._forest[address.num()], [])
+            return push(address.word(), self._automaton._forest[address.num()],
+                        [])
         else:
             # Move around in the current tree
-            state, states = pop(address.num(), self._state, self._states)
-            self._state, self._states = push(address.word(), state, states)
+            s, ls = pop(address.num(), state, states)
+            return push(address.word(), s, ls)
+
+    def recognize(self, w):
+        """
+        The main method of the engine: tells whether the automaton recognized
+        the input @p w.
+        """
+        init_state, init_states = push(
+                self._automaton._init_path, self._automaton._init_root, [])
+        try:
+            self.react(w, [], init_state, init_states)
+            return True
+        except Finished:
+            return False
 
 def prefix(u, v):
     """
