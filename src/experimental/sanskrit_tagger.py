@@ -158,17 +158,27 @@ def memo_size():
 
 ############ End sharing
 
+def count_unique(trie):
+    """Counts the unique Trie objects in @p trie."""
+    visited = set()
+    def __count_unique(trie):
+        visited.add(trie)
+        for next in trie._arcs.values():
+            if next not in visited:
+                __count_unique(next)
+    __count_unique(trie)
+    return len(visited)
+
 def test_trie():
     trie = Trie(False, {1: Trie(False, {2: Trie(True, {})}),
                         2: Trie(True,  {2: Trie(True, {}),
                                         3: Trie(True, {})})})
     print trie
     trie2 = enter(enter(enter(enter(enter(trie_of([2, 2]), [1, 2]), [2, 3]), [2]), [2, 2, 2]), [1, 2, 2])
-    print trie2
+    print trie2, count_unique(trie2)
 
     trie_min = minimize(trie2)
-    print "min trie\n{0}\n\n".format(trie_min)
-    print memo_size()
+    print "min trie\n{0}".format(trie_min), count_unique(trie_min)
 
     t = make_lex(['abc', 'def', 'ab', 'defg'])
     print t
@@ -176,5 +186,19 @@ def test_trie():
     for w in [[1, 2], [2, 2], [2, 1], [1, 2, 3]]:
         print "{0} in trie: {1}".format(''.join(str(i) for i in w), mem(trie, w))
 
+def test_word_list(word_file):
+    print "Reading file..."
+    with open(word_file, 'r') as inf:
+        words = [word.strip() for word in inf.readlines()]
+    print "Making trie..."
+    trie = make_lex(words)
+    print "Minimizing..."
+    min_trie = minimize(trie)
+    print "Number of words: {0}, {1} raw: {2}, minimized: {3}\n".format(
+            len(contents(trie)), len(contents(min_trie)),
+            count_unique(trie), count_unique(min_trie))
+
 if __name__ == '__main__':
-    test_trie()
+#    test_trie()
+    import sys
+    test_word_list(sys.argv[1])
