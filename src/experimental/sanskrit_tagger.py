@@ -22,16 +22,34 @@ class Trie(object):
         @param final Final state?
         @param arcs The arcs: a {Letter : Trie} dict.
         """
-        self._final = final
-        self._arcs = arcs
-        self._trid = Trie.num_tries
+        self.final = final
+        self.arcs = arcs
+        self.trid = Trie.num_tries
+        self.__hash = id(self)
         Trie.num_tries += 1
 
+    def compute_hash(self):
+        """
+        Computes the hash for this Trie (and recursively all tries under it).
+        Execute once before the hash values are needed; the values will be
+        valid until @c arcs is modified.
+
+        @todo This method only works for tries with no cycles in them, so it
+              won't work on a regular FSA!
+        """
+        self.__hash = hash(tuple(sorted((k, v.compute_hash())
+                           for k, v in self.arcs.iteritems())))
+        self.__hash = 3 * self.__hash + self.final
+        return self.__hash
+
     def __repr__(self):
-        return "Trie[{2}]({0}, {1})".format(self._final, self._arcs, self._trid)
+        return "Trie[{2}]({0}, {1})".format(self.final, self.arcs, self.trid)
 
     def __eq__(self, other):
-        return self._final == other._final and self._arcs == other._arcs
+        return self.final == other.final and self.arcs == other.arcs
+
+    def __hash__(self):
+        return self.__hash
 
 def trie_of(w):
     """Returns the singleton trie containing @p c."""
@@ -52,12 +70,12 @@ def enter(t, w):
         curr = t
         for c in w:
             try:
-                curr = curr._arcs[c]
+                curr = curr.arcs[c]
             except KeyError:
                 next = Trie(False, {})
-                curr._arcs[c] = next
+                curr.arcs[c] = next
                 curr = next
-        curr._final = True
+        curr.final = True
         return t
 
 def make_lex(words):
@@ -73,9 +91,9 @@ def contents(trie):
     """Lists the contents of a trie in lexicographic order."""
     ret = []
     def traverse(trie, word):
-        if trie._final:
+        if trie.final:
             ret.append(''.join(chr(c) for c in word))
-        for letter, next in trie._arcs.iteritems():
+        for letter, next in sorted(trie.arcs.iteritems()):
             traverse(next, word + [letter])
     traverse(trie, [])
     return ret
@@ -83,78 +101,34 @@ def contents(trie):
 def mem(trie, word):
     curr = trie
     for letter in word:
-        next = curr._arcs.get(letter)
+        next = curr.arcs.get(letter)
         if next is not None:
             curr = next
         else:
             return False
-    return curr._final
+    return curr.final
 
 ############ End trie
 
 ############ Start sharing
 
-# A { key : bucket } dict
-memo = {}
-
-def share(element, key):
-    """
-    Looks in k-th bucket and returns y in it such that y = x if it exists,
-    otherwise returns x memorized in the new k-th bucket [x :: e].
-    """
-    bucket = memo.get(key)
-    if bucket is None:
-        bucket = []
-        memo[key] = bucket
-    try:
-        return bucket[bucket.index(element)]
-    except ValueError:
-        bucket.append(element)
-        return element
-
-hash0 = 1
-hash_max = 150
-
-# The hash functions.
-def hash1(letter, key, sum):
-    return sum + letter * key
-
-def hash(final, num_arcs):
-    return (num_arcs + 1 if final else 0) % hash_max
-
-def traverse(lookup, trie):
-    def travel(trie):
-#        print "travel({0}) start".format(trie)
-        final, arcs = trie._final, trie._arcs
-        def f(tries_span, n_t):  # WTF?
-#            print "AHA"
-            tries, span = tries_span
-            n, t        = n_t
-#            print "f1([tries={0}, span={1}], [n={2}, t={3}])".format(
-#                    tries, span, n, t)
-            t0, k       = travel(t)
-#            print "f2([tries={0}, span={1}], [n={2}, t={3}]): t0={4}, k={5}".format(
-#                    tries, span, n, t, t0, k)
-#            print "f3([tries={0}, span={1}], [n={2}, t={3}]): t0={4}, k={5}, f={6}".format(
-#                    tries, span, n, t, t0, k, ([(n, t0)] + tries, hash1(n, k, span)))
-            return ([(n, t0)] + tries, hash1(n, k, span))
-#        print "reducing with {0}, {1}".format(([], hash0), list(arcs.iteritems()))
-        arcs0, span = reduce(f, arcs.iteritems(), ([], hash0))
-#        print "After reduce: {0}/{1}, {2}/{3}".format(type(arcs0), arcs0,
-#                                                      type(span), span)
-        key = hash(final, span)
-#        print "Key: {0}".format(key)
-#        print "travel({0}) end".format(trie)
-        return ( lookup(Trie(final, dict(arcs0)), key), key )
-    return travel(trie)
-
 def minimize(trie):
-    dag, _ = traverse(share, trie)
-    return dag
-
-def memo_size():
-    """Returns the size of @c memo."""
-    return sum(len(bucket) for bucket in memo.values())
+    """
+    A much faster minimization method than the one in the paper that uses the
+    built-in hash map.
+    """
+    trie.compute_hash()
+    # A { key : bucket } dict
+    memo = {}
+    def __minimize(trie):
+        if trie not in memo:
+            min_trie = Trie(trie.final)
+            min_trie.arcs = dict((k, __minimize(v)) for k, v in trie.arcs.iteritems())
+            memo[trie] = min_trie
+        else:
+            min_trie = memo[trie]
+        return min_trie
+    return __minimize(trie)
 
 ############ End sharing
 
@@ -162,9 +136,9 @@ def count_unique(trie):
     """Counts the unique Trie objects in @p trie."""
     visited = set()
     def __count_unique(trie):
-        visited.add(trie)
-        for next in trie._arcs.values():
-            if next not in visited:
+        visited.add(id(trie))
+        for next in trie.arcs.values():
+            if id(next) not in visited:
                 __count_unique(next)
     __count_unique(trie)
     return len(visited)
@@ -197,6 +171,8 @@ def test_word_list(word_file):
     print "Number of words: {0}, {1} raw: {2}, minimized: {3}\n".format(
             len(contents(trie)), len(contents(min_trie)),
             count_unique(trie), count_unique(min_trie))
+#    for word in contents(min_trie):
+#        print word
 
 if __name__ == '__main__':
 #    test_trie()
