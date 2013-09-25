@@ -43,7 +43,10 @@ class Trie(object):
         return self.__hash
 
     def __repr__(self):
-        return "Trie[{2}]({0}, {1})".format(self.final, self.arcs, self.trid)
+        #return "Trie[{2}]({0}, {1})".format(self.final, self.arcs, self.trid)
+        map_str = ", ".join("['{0}']: {1}".format(
+            "', '".join(chr(kk) for kk in k) if type(k) == tuple else chr(k), v) for k, v in self.arcs.iteritems())
+        return "Trie[{0}]({1}, {{{2}}})".format(self.trid, self.final, map_str)
 
     def __eq__(self, other):
         return self.final == other.final and self.arcs == other.arcs
@@ -93,10 +96,10 @@ def contents(trie):
     def traverse(trie, word):
         if trie.final:
             ret.append(''.join(chr(c) for c in word))
-        for letter, next in sorted(trie.arcs.iteritems()):
-            traverse(next, word + [letter])
+        for letter, next in trie.arcs.iteritems():
+            traverse(next, word + (list(letter) if type(letter) == tuple else [letter]))
     traverse(trie, [])
-    return ret
+    return sorted(ret)
 
 def mem(trie, word):
     curr = trie
@@ -131,6 +134,66 @@ def minimize(trie):
     return __minimize(trie)
 
 ############ End sharing
+
+############ Start compression
+
+def find_collapsible(trie):
+    """
+    Returns a representation of collapsible nodes -- i.e. those that have only
+    one inbound and one outgoing edge, and are not final.
+    """
+    in_one  = {}
+    out_one = set()
+    visited = set()
+
+    def __count_out_one(trie):
+        visited.add(trie)
+        if len(trie.arcs) == 1:
+            out_one.add(trie)
+        for next in trie.arcs.values():
+            if not next in visited:
+                __count_out_one(next)
+
+    def __count_in_one(trie):
+        for next in trie.arcs.values():
+            if next not in in_one:
+                in_one[next] = set([trie])
+                __count_in_one(next)
+            else:
+                in_one[next].add(trie)
+
+    trie.compute_hash()
+    __count_out_one(trie)
+    __count_in_one(trie)
+    collapsible = set(t for t, s in in_one.iteritems() if len(s) == 1 and not t.final) & out_one
+    return collapsible
+
+def collapse_trie(trie):
+    """Collapses all collapsible nodes (see find_collapsible())."""
+    collapsible = find_collapsible(trie)
+    visited = set()
+
+    def __collapse_trie(trie):
+        visited.add(trie)
+        found_collapsible = True
+        while found_collapsible:
+            for input, next in trie.arcs.iteritems():
+                if next in collapsible:
+                    if type(input) == tuple:
+                        new_input = tuple(list(input) + next.arcs.keys())  # Only 1
+                    else:
+                        new_input = tuple([input, next.arcs.keys()[0]])
+                    del trie.arcs[input]
+                    trie.arcs[new_input] = next.arcs.values()[0]
+                    break
+            else:
+                found_collapsible = False
+        for next in trie.arcs.values():
+            __collapse_trie(next)
+
+    __collapse_trie(trie)
+
+############ End compression
 
 def count_unique(trie):
     """Counts the unique Trie objects in @p trie."""
@@ -168,11 +231,17 @@ def test_word_list(word_file):
     trie = make_lex(words)
     print "Minimizing..."
     min_trie = minimize(trie)
+#    print min_trie
     print "Number of words: {0}, {1} raw: {2}, minimized: {3}\n".format(
             len(contents(trie)), len(contents(min_trie)),
             count_unique(trie), count_unique(min_trie))
-#    for word in contents(min_trie):
-#        print word
+#    print "Collapsible: {0}".format(len(find_collapsible(min_trie)))
+#    collapse_trie(min_trie)
+#    print min_trie
+    print count_unique(min_trie)
+
+    for word in contents(min_trie):
+        print word
 
 if __name__ == '__main__':
 #    test_trie()
