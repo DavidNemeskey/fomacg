@@ -335,6 +335,13 @@ struct fsm *cg_match_cohort(struct fsm *net) {
  * - cg_DEAD          : only the function below uses it
  * - cg_DeleteX       : deletes it after the end: this should let us rid of it
  * - cg_InitialFilter : deleted from the regex, not from sigma
+ *
+ * Patterns with "| ":
+ * - cg_DeleteX
+ * - cg_DEL (obviously)
+ * - cg_NODEL
+ * - cg_InitialFilter
+ * - cg_MatchCohort1
  */
 
 struct fsm *cg_match_cohort_careful(struct fsm *net) {
@@ -1193,7 +1200,7 @@ int save_rules_fsm(char *filename) {
   /* Return to the original rule order. */
   reverse_rule_order();
 
-  SortedFixLevelTreeMerger merger(2);
+  SortedFixLevelTreeMerger merger(3);
 
   struct Node* trees = merger.merge(cg_rules, total_rules);
   size_t num_rules;
