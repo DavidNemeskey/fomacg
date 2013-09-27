@@ -4,4 +4,5 @@ define DEL   "| ";
 define ALIVE ["#0# " | "#1# " | "#2# "];
 define DEAD  "#X# ";
 
-read regex [\"#BOC# "* "#BOC# " \"#EOC# "* DEL ALIVE \DEL*];
+#read regex [\"#BOC# "* "#BOC# " \"#EOC# "* DEL ALIVE \DEL*];
+read regex [\"#BOC# "* "#BOC# " ~$["#EOC# " | "#BOC# "] DEL ALIVE ~$[DEL | "#EOC# " | "#BOC# "]];
