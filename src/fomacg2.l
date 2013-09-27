@@ -154,22 +154,22 @@ void cg_parse_scope(char *string, struct cg_rule_complex *cgr) {
 void cg_init(void) {
   printf("Loading auxiliary networks...\n");
   /* Consumes everything. */
-  CG_DEF_NODEL = fsm_read_binary_file("data/cg_NODEL.foma");
-  CG_DEF_ConstrainS = fsm_read_binary_file("data/cg_ConstrainS.foma");
-  CG_DEF_ConstrainR = fsm_read_binary_file("data/cg_ConstrainR.foma");
-  CG_DEF_Rollback = fsm_read_binary_file("data/cg_Rollback.foma");  // = invCR
-  CG_DEF_Cleanup = fsm_read_binary_file("data/cg_Cleanup.foma");
-  CG_DEF_InitialFilter = fsm_read_binary_file("data/cg_InitialFilter_deleteX.foma");
-  CG_DEF_MWFPROLOG = fsm_read_binary_file("data/cg_MWFPROLOG.foma");
-  CG_DEF_MWFEPILOG = fsm_read_binary_file("data/cg_MWFEPILOG.foma");
-  CG_DEF_ANYCOHORT = fsm_read_binary_file("data/cg_ANYCOHORT.foma");
-  CG_DEF_MATCHCOHORT1 = fsm_read_binary_file("data/cg_MATCHCOHORT1.foma");
-  CG_DEF_MATCHCOHORT2 = fsm_read_binary_file("data/cg_MATCHCOHORT2.foma");
-  CG_DEF_DEAD = fsm_read_binary_file("data/cg_DEAD.foma");
-  CG_DEF_ALIVE = fsm_read_binary_file("data/cg_ALIVE.foma");
-  CG_DEF_DEL = fsm_read_binary_file("data/cg_DEL.foma");
-  CG_DEF_DeleteX = fsm_read_binary_file("data/cg_DeleteX.foma");
-  CG_DEF_Modified = fsm_read_binary_file("data/cg_Modified.foma");
+  CG_DEF_NODEL = fsm_read_binary_file("data/cg_NODEL.fst");
+  CG_DEF_ConstrainS = fsm_read_binary_file("data/cg_ConstrainS.fst");
+  CG_DEF_ConstrainR = fsm_read_binary_file("data/cg_ConstrainR.fst");
+  CG_DEF_Rollback = fsm_read_binary_file("data/cg_Rollback.fst");  // = invCR
+  CG_DEF_Cleanup = fsm_read_binary_file("data/cg_Cleanup.fst");
+  CG_DEF_InitialFilter = fsm_read_binary_file("data/cg_InitialFilter_deleteX.fst");
+  CG_DEF_MWFPROLOG = fsm_read_binary_file("data/cg_MWFPROLOG.fst");
+  CG_DEF_MWFEPILOG = fsm_read_binary_file("data/cg_MWFEPILOG.fst");
+  CG_DEF_ANYCOHORT = fsm_read_binary_file("data/cg_ANYCOHORT.fst");
+  CG_DEF_MATCHCOHORT1 = fsm_read_binary_file("data/cg_MATCHCOHORT1.fst");
+  CG_DEF_MATCHCOHORT2 = fsm_read_binary_file("data/cg_MATCHCOHORT2.fst");
+  CG_DEF_DEAD = fsm_read_binary_file("data/cg_DEAD.fst");
+  CG_DEF_ALIVE = fsm_read_binary_file("data/cg_ALIVE.fst");
+  CG_DEF_DEL = fsm_read_binary_file("data/cg_DEL.fst");
+  CG_DEF_DeleteX = fsm_read_binary_file("data/cg_DeleteX.fst");
+  CG_DEF_Modified = fsm_read_binary_file("data/cg_Modified.fst");
   cg_rule_complex =
   cg_rule_complex_current =
   cg_rule_complex_current_head = (struct cg_rule_complex*)calloc(1,sizeof(struct cg_rule_complex));
