@@ -25,7 +25,7 @@ void FstPair::cleanup() {
   }
 }
 
-FstPair load_fst(const std::string& fst_file)
+FstPair load_fst(const std::string& fst_file, bool delete_sigma)
     throw (std::invalid_argument, std::runtime_error) {
   struct fsm* fst = fsm_read_binary_file(fst_file.c_str());
   if (fst == NULL) {
@@ -36,6 +36,11 @@ FstPair load_fst(const std::string& fst_file)
 //    std::cerr << "Sorting " << fst->name << std::endl;
     fsm_sort_arcs(fst, 1);
   }
+  if (delete_sigma) {
+    /* Delete the sigma for fsts that don't need it (conditions, rules). */
+    fsm_sigma_destroy(fst->sigma);
+    fst->sigma = NULL;
+  }
   struct apply_handle* ah = apply_init(fst);
   if (ah == NULL) {
     fsm_destroy(fst);
@@ -44,19 +49,25 @@ FstPair load_fst(const std::string& fst_file)
   return FstPair(fst, ah);
 }
 
-FstVector load_fsts(const std::string& fst_file) throw (std::invalid_argument) {
+FstVector load_fsts(const std::string& fst_file, size_t delete_sigma_from)
+  throw (std::invalid_argument) {
   FstVector ret;
   fsm_read_binary_handle fsrh;
   if ((fsrh = fsm_read_binary_file_multiple_init(fst_file.c_str())) == NULL) {
     throw std::invalid_argument("Could not open FST file " + fst_file);
   }
 
+  size_t fsms_read = 0;
   struct fsm* net;
   while ((net = fsm_read_binary_file_multiple(fsrh)) != NULL) {
     /* Should be sorted already by fomacg. */
     if (!net->arcs_sorted_in) {
 //      std::cerr << "Sorting " << net->name << std::endl;
       fsm_sort_arcs(net, 1);
+    }
+    if (delete_sigma_from <= fsms_read) {
+      fsm_sigma_destroy(net->sigma);
+      net->sigma = NULL;
     }
     struct apply_handle* ah = apply_init(net);
     if (ah == NULL) {
@@ -67,7 +78,9 @@ FstVector load_fsts(const std::string& fst_file) throw (std::invalid_argument) {
 //    if (strcmp(net->name, "Cond_1_198") == 0) {
 //      apply_print_sigma(net);
 //    }
+    fsms_read++;
   }
+
   return ret;
 }
 
