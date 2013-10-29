@@ -126,7 +126,7 @@ std::wstring Converter::fomacg_to_apertium(const std::string& str) {
 Converter::~Converter() {
   a2f.cleanup();
   f2a.cleanup();
-  delete utf_8_input;
-  delete woutput;
+  delete[] utf_8_input;
+  delete[] woutput;
 }
 
