@@ -303,21 +303,25 @@ void cg_add_rule_to_chain(struct fsm *rule, struct fsm *conditions) {
   sprintf(rulename, "C_%d_%i", section_no, lineno_begin_rule);
   strcpy(conditions->name, rulename);
 
-  newrule = (struct cg_rules*)malloc(sizeof(struct cg_rules));
-  if (cg_rules == NULL) {
-    cg_rules = newrule;
-    cg_rules->next = NULL;
+  if (rule->statecount == 1 || conditions->statecount == 1) {
+    printf("Could not compile rule %s -- statecount == 1.\n", rule->name);
   } else {
-    newrule->next = cg_rules;
-    cg_rules = newrule;
+    newrule = (struct cg_rules*)malloc(sizeof(struct cg_rules));
+    if (cg_rules == NULL) {
+      cg_rules = newrule;
+      cg_rules->next = NULL;
+    } else {
+      newrule->next = cg_rules;
+      cg_rules = newrule;
+    }
+    cg_rules->rule = rule;
+    cg_rules->conditions = conditions;
+    cg_rules->lineno = lineno_begin_rule;
+    cg_rules->section_no = section_no;
+    total_states += rule->statecount;
+    total_arcs += rule->arccount;
+    total_rules++;
   }
-  cg_rules->rule = rule;
-  cg_rules->conditions = conditions;
-  cg_rules->lineno = lineno_begin_rule;
-  cg_rules->section_no = section_no;
-  total_states += rule->statecount;
-  total_arcs += rule->arccount;
-  total_rules++;
 }
 
 struct fsm *cg_match_cohort(struct fsm *net) {
@@ -1200,7 +1204,7 @@ int save_rules_fsm(char *filename) {
   /* Return to the original rule order. */
   reverse_rule_order();
 
-  SortedFixLevelTreeMerger merger(3);
+  FixLevelTreeMerger merger(2);
 
   struct Node* trees = merger.merge(cg_rules, total_rules);
   size_t num_rules;
