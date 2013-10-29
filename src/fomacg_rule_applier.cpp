@@ -102,21 +102,29 @@ Continue:
 }
 
 void RuleApplier::load_file_tree(const std::string& fst_file) {
-  FstVector fsts = load_fsts(fst_file);
-  delimiters = fsts[0];
-  fsts.pop_front();  // delimiters
-  allsigma = fsts[0];
-  fsts.pop_front();
+  RuleSetLoader loader(fst_file);  // throws exception
+
+  loader.load_fst(delimiters);  // TODO: check return value
+  loader.load_fst(allsigma);    // TODO: check return value
 
   /* Fill the universal sigma vector. */
   allsigma_sigma.resize(allsigma.ah->sigma_size);
   for (struct sigma* s = allsigma.fst->sigma; s != NULL; s = s->next) {
     allsigma_sigma[s->number] = s->symbol;
   }
-  /* And the mappings for all FSTs. */
-  for (size_t i = 0; i < fsts.size(); i++) {
-    fsts[i].fill_sigma(allsigma.ah->sigma_size);
+
+  /* Now load all the rule conditions and FSTs ... */
+  FstVector fsts;
+  FstPair fst;
+  while (loader.load_fst(fst)) {
+    /* ... and the sigma mappings for the FST. */
+    fst.fill_sigma(allsigma.ah->sigma_size);
+    /* And now we can delete the sigma structures to save space. */
+    fsm_sigma_destroy(fst.fst);
+    apply_sigma_clear(fst.ah);
+    fsts.push_back(fst);
   }
+
   std::cerr << "Num rules: " << fsts.size() << std::endl;
   for (size_t i = 0; i < fsts.size(); i++) {
     std::cerr << "Rule " << fsts[i].fst->name << " det: "

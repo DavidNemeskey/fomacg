@@ -50,21 +50,34 @@ typedef std::deque<FstPair> FstVector;
 /**
  * Loads an FST from a file.
  * @param fst_file the file from the FST is read.
- * @param delete_sigma if @c true, the sigma of the FST is deleted.
  * @throws std::invalid_argument if @p fst_file doesn't exist.
  * @throws std::runtime_error if the apply handle could not be initialized.
  */
-FstPair load_fst(const std::string& fst_file, bool delete_sigma=false)
+FstPair load_fst(const std::string& fst_file)
   throw (std::invalid_argument, std::runtime_error);
 /**
  * Loads all FSTs from a file.
  * @param fst_file the file from the FSTs is read.
- * @param delete_sigma_from delete the sigma of all FSTs from this index: 0
- *        means the sigma of all FSTs read from the file is deleted; -1 (the
- *        default) means that all FSTs are left intact.
  * @throws std::invalid_argument if @p fst_file doesn't exist.
  */
-FstVector load_fsts(const std::string& fst_file, size_t delete_sigma_from=-1)
-  throw (std::invalid_argument);
+FstVector load_fsts(const std::string& fst_file) throw (std::invalid_argument);
+
+/** Loads a rule set. Basically a generator version of load_fsts(). */
+struct RuleSetLoader {
+  /** @throws std::invalid_argument if @p fst_file doesn't exist. */
+  RuleSetLoader(const std::string& fst_file) throw (std::invalid_argument);
+
+  /**
+   * Loads the next FST to @p fst.
+   * @return @c true on success and @c false on failure. In the latter case,
+   *         there are no more FSTs in the file.
+   * @throws std::runtime_error if the FST could not be initialized.
+   */
+  bool load_fst(FstPair& fst) throw (std::runtime_error);
+
+private:
+  /** The handle to the foma file reader. */
+  fsm_read_binary_handle fsrh;
+};
 
 #endif
