@@ -4,13 +4,15 @@ CXX = g++
 LINKFOMA = -lfoma
 LINKALL  = $(LINKFOMA) -lz
 LEX = flex
-all: fomacg fomacg_proc
 
-fomacg:
-	cd src; $(LEX) -8 fomacg2.l ; $(CXX) $(CPPFLAGS) -o ../fomacg2 lex.yy.c rule_condition_tree.cpp foma_extra.cpp $(LINKALL); cd ..
+SUBDIRS = src
 
-fomacg_proc:
-	cd src; $(CXX) $(CPPFLAGS) *.cpp -o ../fomacg_proc $(LINKFOMA) -lrt ; cd ..
+.PHONY: subdirs $(SUBDIRS)
+     
+subdirs: $(SUBDIRS)
+     
+$(SUBDIRS):
+	$(MAKE) -C $@
 
 clean:
 	rm fomacg2 fomacg_proc
