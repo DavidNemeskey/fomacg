@@ -42,9 +42,29 @@ E-03080 Alacant\\
 \maketitle\vspace*{-10mm}
 
 \begin{abstract}
+  In recent years, the problem of finite state Constraint Grammar~(CG) parsing has
+  received renewed attention. Both \shortscite{Hulden:2011} and
+  \shortcite{Peltonen:2011} presented compilers that convert CG rules to finite
+  state transducers. While these formalisms serve their purpose as proofs of the
+  concept, their performance lags behind other implementations.  %TODO implementionS?
+  % TODO I am not talking about compilation, but application
+  
+  In this paper, we argue that fault lies with using generic finite state
+  libraries, and not with the formalisms themselves. We present an open-source
+  implementation that capitalizes on the characteristics of CG rule
+  application to improve execution time. The implementation achieves performance
+  comparable to the current open-source state of the art.
+  % TODO OMG this is horrible
 \end{abstract}
 
 \section{Introduction}
+Outline:
+- CG
+- FST implementations
+- slow or no performance measures
+- generic library, implementation can matter
+- why we chose Hulden and not Peltonen (application + composition vs intersection)
+- 
 % TODO: related work: Mans (not really "related"), 
 
 \section{Bridging the Gaps}
@@ -56,13 +76,53 @@ E-03080 Alacant\\
 
 \section{Evaluation}
 \label{sec:evaluation}
+
+\subsection{Methodology}
+% TDOO fomacg_proc vs fomacg-proc
+The performance of \texttt{fomacg\_proc} has been measured against that of
+\texttt{cg-proc}, VISL-GC's rule applier. The programs were run on three
+Apertium CG grammars: the toy Hungarian grammar used for development, the Breton
+grammar from the \texttt{br-fr} language pair and the version of the Finnish
+grammar due to Karlsson in the \texttt{sme-fin} pair. % TODO: what is sme? Citations!
+% TODO: the corpora we run the grammars on
+The tests were conducted on a consumer-grade laptop with a 2.2GHz Core2Duo CPU
+and 4GB RAM, running Linux.
+
+Since VISL-GC uses CG-3, and fomacg only supports CG-2, a one-to-one comparison
+with the grammars above was infeasible. Therefore, we extracted the subset of
+rules from each that compiled under fomacg, and carried out the tests on these
+subsets. Table~\ref{tab:grammar-size} shows the number of rules in the original
+and the CG-2 grammars.
+
+In the following, we are mainly concerned with the time required for rule
+application. However, while we could separate the initialization and execution
+times for \texttt{fomacg\_proc}, we could not do the same for \texttt{cg-proc},
+and therefore we decided to compare the rule application time of
+\texttt{fomacg\_proc} with the full running time of \texttt{cg-proc}.
+While this may seem unfair, initialization is a one-time cost and gets
+proportionally smaller as the input grows; furthermore, the size of the VISL-GC
+grammar binaries is so small that the loading time is negligible.
+
+- table of the grammars: %TODO: VISL-GC grammar binary size?
+  hun | | 35 
+  br  | | 226
+  fin | | 1176
+
+\subsection{Results}
 % TODO: AND scalability, or should it be a separate section?
 
 \section{Conclusions}
 \label{sec:conclusion}
-% TODO: We've made some real advances on the state-of-the-art free/open-source
-%        FST implementations of CG. 
-% TODO: Here we need to describe how we are going to reduce the size problem.
+Outline:
+- Implementation matters.
+- We've made some real advances on the state-of-the-art free/open-source
+  FST implementations of CG. 
+- Here we need to describe how we are going to reduce the size problem.
+
+
+\section*{Acknowledgements}
+This research was conducted under the Google Summer of Code 2013 project
+Rule-based finite-state disambiguation\footnote{https://google-melange.appspot.com/gsoc/project/google/gsoc2013/davidnemeskey/14002}.
 
 % TODO: citations:
 \cite{Karlsson:1990} % Karlsson:1990: the Finnish grammar
