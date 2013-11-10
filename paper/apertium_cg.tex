@@ -92,7 +92,7 @@ and 4GB RAM, running Linux.
 Since VISL-GC uses CG-3, and fomacg only supports CG-2, a one-to-one comparison
 with the grammars above was infeasible. Therefore, we extracted the subset of
 rules from each that compiled under fomacg, and carried out the tests on these
-subsets. Table~\ref{tab:grammar-size} shows the number of rules in the original
+subsets. Table~\ref{tab:grammar_size} shows the number of rules in the original
 and the CG-2 grammars.
 
 In the following, we are mainly concerned with the time required for rule
@@ -111,6 +111,43 @@ grammar binaries is so small that the loading time is negligible.
 
 \subsection{Results}
 % TODO: AND scalability, or should it be a separate section?
+
+\begin{table*}[h]
+  \centering
+  \caption{Grammar sizes with the running time and binary size of the respective
+           VISL-GC grammars}
+  \label{tab:grammar_size}
+  \begin{tabular}{ | l | r | r | r | r | }
+  \hline
+  \textbf{Language} & \textbf{Rules} & \textbf{CG-2 rules} &
+  \textbf{Binary} & \textbf{Time} \\
+  \hline
+  Hungarian & &   35 &   8kB & 0.3s \\
+  Breton    & &  226 &  36kB & 0.8s \\
+  Finnish   & & 1172 & 184kB & - \\    % TODO: test sme-fin for running time!!!
+  \hline
+  \end{tabular}
+\end{table*}
+
+\begin{table}[h]
+  \centering
+  \caption{Improvements in memory usage due to removing the sigma trie. Memory
+           consumption is measured as a percentage of the 4GB system memory}
+           % TODO: explain what Lx means HERE?
+  \label{tab:sigma_memory}
+  \begin{tabular}{ | l | r | r | r | }
+  \hline
+  \textbf{Language} & \textbf{Before} & \textbf{After} & \textbf{Reduction} \\
+  \hline
+  hun L1 & 0.5\% & 0.1\% & 80\% \\
+  hun L3 & 2.1\% & 1.5\% & 28.57\% \\
+  br L1 & 5.1\% & 1.3\% & 74.5\% \\
+  br L2 & 9.6\% & 4.4\% & 54.16\% \\
+  fin L1 & 21\% & 4.1\% & 80.47\% \\
+  fin L2 & 32.3\% & 8.9\% & 72.44\% \\
+  \hline
+  \end{tabular}
+\end{table}
 
 \section{Conclusions}
 \label{sec:conclusion}
