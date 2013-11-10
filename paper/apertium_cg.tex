@@ -42,6 +42,7 @@ E-03080 Alacant\\
 \maketitle\vspace*{-10mm}
 
 \begin{abstract}
+  % TODO Add Yli-Jyra:2011
   In recent years, the problem of finite state Constraint Grammar~(CG) parsing has
   received renewed attention. Both \shortcite{Hulden:2011} and
   \shortcite{Peltonen:2011} presented compilers that convert CG rules to finite
@@ -114,11 +115,16 @@ grammar binaries is so small that the loading time is negligible.
 \section{Conclusions}
 \label{sec:conclusion}
 Outline:
-- Implementation matters.
-- We've made some real advances on the state-of-the-art free/open-source
+\begin{itemize}
+\item Implementation matters.
+\item We've made some real advances on the state-of-the-art free/open-source
   FST implementations of CG. 
-- Here we need to describe how we are going to reduce the size problem.
-
+\item Here we need to describe how we are going to reduce the size problem.
+\end{itemize}
+% TODO: Read and add Yli-Jyra:2011 -- a different method (I also was thinking
+%       about a two-step method, where the first level converts cohorts to 
+%       some representation (the sets it contains, etc.), and the second level
+%       does something else).
 
 \section*{Acknowledgements}
 This research was conducted under the Google Summer of Code 2013 project
