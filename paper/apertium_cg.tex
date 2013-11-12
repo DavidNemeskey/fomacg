@@ -95,14 +95,12 @@ rules from each that compiled under fomacg, and carried out the tests on these
 subsets. Table~\ref{tab:grammar_size} shows the number of rules in the original
 and the CG-2 grammars.
 
-In the following, we are mainly concerned with the time required for rule
-application. However, while we could separate the initialization and execution
-times for \texttt{fomacg\_proc}, we could not do the same for \texttt{cg-proc},
-and therefore we decided to compare the rule application time of
-\texttt{fomacg\_proc} with the full running time of \texttt{cg-proc}.
-While this may seem unfair, initialization is a one-time cost and gets
-proportionally smaller as the input grows; furthermore, the size of the VISL-GC
-grammar binaries is so small that the loading time is negligible.
+We record both initialization and rule application time for the two programs,
+via instrumentation in case of \texttt{fomacg\_proc} and by running the grammar
+first on an empty file and then on the test corpus in case of \texttt{cg-proc}.
+However, as initialization is one-time cost, in the following we are mainly
+concerned with the time required for applying rules.
+% TODO rewrite this a bit
 
 - table of the grammars: %TODO: VISL-GC grammar binary size?
   hun | | 35 
