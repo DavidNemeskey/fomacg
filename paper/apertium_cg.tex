@@ -66,46 +66,85 @@ Outline:
 - generic library, implementation can matter
 - why we chose Hulden and not Peltonen (application + composition vs intersection)
 - 
-% TODO: related work: Mans (not really "related"), 
+% TODO: related work: Mans (not really "related"), Peltonen, Yli-Jyra
+In the rest of the paper, we present our optimizations in a way that mirrors the
+actual development process. We start out with a simple rule engine based on
+foma, and improve it step-by-step, benchmarking its performance after each
+modification, instead of a single evaluation chapter. We start in
+section~\ref{sec:methodology} by describing our evaluation methodology.
+Section~\ref{sec:speed} follows the evolution of the rule engine, as it improves
+in terms of speed. Section~\ref{sec:idea} introduces an idea that theoretically
+allows us to improve the $\mathcal{O}(Gn^2k^2)$ worst-case asymptotic bound.
+Section~\ref{sec:memory} demonstrates how memory savings can be saved from the
+steps taken in section~\ref{sec:speed}. Finally, section \ref{sec:conclusion}
+contains our conclusions and lists the problems that remain for future work.
 
-\section{Bridging the Gaps}
-\label{sec:bridging}
-% TODO: what Mans did not cover in his paper (IFF, delimiters)?
+%\section{Bridging the Gaps}
+%\label{sec:bridging}
+%% TODO: what Mans did not cover in his paper (IFF, delimiters)?
 
-\section{Implementation}
-\label{sec:implementation}
+\section{Evaluation Methodology}
+\label{sec:methodology}
+% TODO mention the Hungarian grammar before this paragraph!
+The performance of \texttt{fomacg-proc} has been measured against that of
+\texttt{cg-proc}, VISL-GC's rule applier. The programs were benchmarked with
+three Apertium CG grammars: the toy Hungarian grammar mentioned earlier, the
+Breton grammar from the \texttt{br-fr} language pair and the version of the
+Finnish grammar due to Karlsson in the \texttt{sme-fin} pair. % TODO: what is sme? Citations!
 
-\section{Evaluation}
-\label{sec:evaluation}
+Each grammar was run on a test corpus. For Breton, we used the corpus
+in the \texttt{br-fr} language pair, which consists of 1,161 sentences. There are
+no Finnish and Hungarian corpora in Apertium; for the former, we used a
+1,620-sentence excerpt from the 2013-Nov-14 snapshot of the Finnish Wikipedia,
+while for the latter, the short test corpus used for grammar development. Since
+the latter contains a mere 11 sentences, it was repeated 1024 times to produce
+a corpus similar in size to the other two.
 
-\subsection{Methodology}
-% TDOO fomacg_proc vs fomacg-proc
-The performance of \texttt{fomacg\_proc} has been measured against that of
-\texttt{cg-proc}, VISL-GC's rule applier. The programs were run on three
-Apertium CG grammars: the toy Hungarian grammar used for development, the Breton
-grammar from the \texttt{br-fr} language pair and the version of the Finnish
-grammar due to Karlsson in the \texttt{sme-fin} pair. % TODO: what is sme? Citations!
-% TODO: the corpora we run the grammars on
-The tests were conducted on a consumer-grade laptop with a 2.2GHz Core2Duo CPU
-and 4GB RAM, running Linux.
+CG parsers expect morphologically analyzed input. The Breton and Finnish corpora
+were tagged by Apertium's morphological analyzer tool. As Hungarian is not
+properly supported by Apertium yet, we used Hunmorph\cite{Tron:2005}, and
+translated the tags to the Apertium tagset with a transducer in \texttt{foma}.
 
-Since VISL-GC uses CG-3, and fomacg only supports CG-2, a one-to-one comparison
-with the grammars above was infeasible. Therefore, we extracted the subset of
-rules from each that compiled under fomacg, and carried out the tests on these
-subsets. Table~\ref{tab:grammar_size} shows the number of rules in the original
-and the CG-2 grammars.
+Since VISL-GC implements CG-3, and fomacg only supports CG-2, a one-to-one
+comparison with the grammars above was infeasible. Therefore, we extracted the
+subset of rules from each that compiled under fomacg, and carried out the tests
+on these subsets. Table~\ref{tab:grammar_size} shows the number of rules in the
+original and the CG-2 grammars.
 
-We record both initialization and rule application time for the two programs,
-via instrumentation in case of \texttt{fomacg\_proc} and by running the grammar
+We recorded both initialization and rule application time for the two programs,
+via instrumentation in case of \texttt{fomacg-proc} and by running the grammar
 first on an empty file and then on the test corpus in case of \texttt{cg-proc}.
 However, as initialization is one-time cost, in the following we are mainly
-concerned with the time required for applying rules.
+concerned with the time required for applying rules. The tests were conducted on
+a consumer-grade laptop with a 2.2GHz Core2Duo CPU and 4GB RAM, running Linux.
 % TODO rewrite this a bit
 
-- table of the grammars: %TODO: VISL-GC grammar binary size?
-  hun | | 35 
-  br  | | 226
-  fin | | 1176
+\section{Performance Optimizations}
+\label{sec:speed}
+
+\section{Beyond the $\mathcal{O}(Gn^2k^2)$ Bound}
+\label{sec:idea}
+
+\section{Memory Savings}
+\label{sec:memory}
+
+The transition from text to integer representation of the $\Sigma$ alphabet
+has also opened a way to decrease the storage space requirements of the grammar.
+Once again, the improvement stems not from theoretical, but practical
+considerations, and it concerns the conversion of text into tokens in $\Sigma$.
+Usually this step is taken for granted in the literature, but implementations
+must allocate resources to tackle this task in their own way.
+
+In \texttt{foma}, token matching is performed by a trie built from the symbols
+in the automaton's alphabet. Depending on the number and length of the symbols
+in bytes, this trie may be responsible for a considerable portion of the memory
+footprint of an automaton. Given the number of rules in an average CG grammar,
+it is easy to see how this trivial sub-task may affect the memory consumption of
+the application, as well as the size of the grammar binary, substantially.
+
+% TODO What we could do
+
+% TODO
 
 \subsection{Results}
 % TODO: AND scalability, or should it be a separate section?
