@@ -128,26 +128,27 @@ a consumer-grade laptop with a 2.2GHz Core2Duo CPU and 4GB RAM, running Linux.
 \section{Memory Savings}
 \label{sec:memory}
 
+\subsection{Token Matching}
+\label{sec:sub_token}
+
 The transition from text to integer representation of the $\Sigma$ alphabet
 has also opened a way to decrease the storage space requirements of the grammar.
 Once again, the improvement stems not from theoretical, but practical
 considerations, and it concerns the conversion of text into tokens in $\Sigma$.
 Usually this step is taken for granted in the literature, but implementations
-must allocate resources to tackle this task in their own way.
+must allocate resources to tackle this task.  % in their own way.
 
+% TODO describe the trie (e.g. byte-based, 256-way, etc.)
 In \texttt{foma}, token matching is performed by a trie built from the symbols
 in the automaton's alphabet. Depending on the number and length of the symbols
 in bytes, this trie may be responsible for a considerable portion of the memory
 footprint of an automaton. Given the number of rules in an average CG grammar,
 it is easy to see how this trivial sub-task may affect the memory consumption of
-the application, as well as the size of the grammar binary, substantially.
+the application, as well as the size of the grammar binary.
 
 % TODO What we could do
 
-% TODO
-
-\subsection{Results}
-% TODO: AND scalability, or should it be a separate section?
+% TODO delete conditions on the right branches in condition trees
 
 \begin{table*}[h]
   \centering
