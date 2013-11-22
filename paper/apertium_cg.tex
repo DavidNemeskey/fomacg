@@ -146,10 +146,51 @@ footprint of an automaton. Given the number of rules in an average CG grammar,
 it is easy to see how this trivial sub-task may affect the memory consumption of
 the application, as well as the size of the grammar binary.
 
-% TODO What we could do
+Since in our system, the job of token matching has been delegated to the symbol
+automaton (see section \ref{}), there is no need to maintain separate tries for
+all individual FSAs. 
+% TODO: to not even save them? grammar binary size?
 
+Table \ref{tab:sigma_memory} presents the resulting memory savings.
+We report numbers for the raw grammars (L1), as well as for two- and three-level
+condition trees (L2-3). It is not surprising that the raw grammars see the
+largest improvements; here the tries accounted for 70-80\% of the memory
+usage. As the trees get higher, the number of states and edges grows more
+rapidly than do the number of tries and the savings become more modest; however,
+the approximately 30\% achieved for a three-level condition tree is still
+substantial.  % TODO: what?
+
+\subsection{Economizing Condition Trees}
+
+% TODO lots of -> ???
+As already mentioned in section \ref{sec:idea}, while conditions trees speed up
+rule matching, they also take up lots of space. The main reason is, as we have
+seen, the pace with which the size of the merged condition FSAs grow. There is,
+however, another factor at work here: each tree contains a condition FSA in each
+of its nodes. For a tree of $L$ levels, this translates to $2^L - 1$ automata.
+Of course, the FSAs lower in the tree are much -- possibly exponentially --
+smaller than the ones at the top, but in practice their contribution is not
+negligible.
+
+On closer inspection, however, we can see that it is not necessary to have a
+condition check in each node. If we are at a non-leaf node $N$ with children
+$L$ and $R$ that matches the condition, it is enough to check if the FSA in
+$L$ accepts the sentence; if not, we can automatically assume that $R$ does.
+Hence, we removed the condition automata in the right branches of all non-leaf
+nodes, thereby decreasing the number of condition FSAs to $2^{L-1}$. To maximize
+the effect, if the condition FSA on the left branch was bigger than the one on
+the right, the branches were swapped.
+
+Table \ref{tab:XXX} shows the results. 
 % TODO delete conditions on the right branches in condition trees
 
+\subsection{FSA Compression}
+
+% TODO: Huet, HFST: only works for lexicons
+% TODO: Yli-Jyra: didn't try
+% TODO: FSA memory report -- I think foma's memory layout already complies
+
+% TODO move these tables to where they should be
 \begin{table*}[h]
   \centering
   \caption{Grammar sizes with the running time and binary size of the respective
@@ -171,7 +212,6 @@ the application, as well as the size of the grammar binary.
   \centering
   \caption{Improvements in memory usage due to removing the sigma trie. Memory
            consumption is measured as a percentage of the 4GB system memory}
-           % TODO: explain what Lx means HERE?
   \label{tab:sigma_memory}
   \begin{tabular}{ | l | r | r | r | }
   \hline
