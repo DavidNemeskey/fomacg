@@ -181,11 +181,23 @@ nodes, thereby decreasing the number of condition FSAs to $2^{L-1}$. To maximize
 the effect, if the condition FSA on the left branch was bigger than the one on
 the right, the branches were swapped.
 
-Table \ref{tab:XXX} shows the results. 
-% TODO delete conditions on the right branches in condition trees
+Table \ref{tab:XXX} shows the results.
+% TODO: apparently I haven't implemented this yet! :)
 
 \subsection{FSA Compression}
 
+Although the memory saving techniques described in the last two sections help to
+keep the memory consumption of the grammar in control, the potentially
+exponential increase in size of the merged rule condition FSAs still prohibits
+the building of arbitrary large trees, and thereby prevents us from reaching
+the theoretical bound $\mathcal{O}(log_2(G)n^2k^2)$. Therefore, to make the idea
+in section \ref{sec:idea} feasible, an algorithm that can compress FSAs
+aggressively is required. % TODO word order
+In this section, we survey the literature in order to find such a method.
+
+There are two approaches we are aware of that offer massive compressions:
+Automata Mista, due to Huet \shortcite{Huet:2004, Huet:2005}, and the method of
+XXX.
 % TODO: Huet, HFST: only works for lexicons
 % TODO: Yli-Jyra: didn't try
 % TODO: FSA memory report -- I think foma's memory layout already complies
