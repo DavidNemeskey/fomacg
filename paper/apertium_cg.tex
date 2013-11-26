@@ -191,16 +191,45 @@ keep the memory consumption of the grammar in control, the potentially
 exponential increase in size of the merged rule condition FSAs still prohibits
 the building of arbitrary large trees, and thereby prevents us from reaching
 the theoretical bound $\mathcal{O}(log_2(G)n^2k^2)$. Therefore, to make the idea
-in section \ref{sec:idea} feasible, an algorithm that can compress FSAs
+in section~\ref{sec:idea} feasible, an algorithm that can compress FSAs
 aggressively is required. % TODO word order
 In this section, we survey the literature in order to find such a method.
 
-There are two approaches we are aware of that offer massive compressions:
-Automata Mista, due to Huet \shortcite{Huet:2004, Huet:2005}, and the method of
-XXX.
-% TODO: Huet, HFST: only works for lexicons
+- drastic speed penalty
+Both:
+- for mainly deterministic (lexicon) and non-branching FSAs -- not the case here
+- sparsity here too?
+
+Automata Mista, due to Huet~\shortcite{Huet:2004,Huet:2005}, is an applicative
+method for describing finite state machines. It represents the FSA or FST as
+a forest of tries, each corresponding to a deterministic subset of the paths in
+the state space. Non-deterministic transitions and loops are handled by
+"jumping" to an arbitrary node in the forest, which is located via a global or a
+local addressing scheme. The trie format supports compression in two ways: it
+facilitates path sharing and the compact representation can further shrink the
+state space by merging non-branching paths. This technique managed to decrease
+the size of a Sanskrit lexicon by 87.1\%~\cite{Huet:2005}.
+
+XXX et al.~\shortcite{XXX:2014} present an algorithm for lossless
+hyperminimisation of lexical transducers using automatically induced flag
+diacritics. The idea behind the algorithm is to replace rightward continuations
+with setting the corresponding flag. The authors report savings between
+12.6--96.6\%.
+
+% TODO: analyzer or analyser? minimi[sz]ation?
+The above methods have similar characteristics that prevent us to apply them to
+our case. First, both are aimed at optimizing mostly deterministic, loop-free
+automata, such as those created for morphological analyzers. Second, both rely
+on techniques that are beyond the power of the simple automaton interpreter
+we are using (tries for Automata Mista and flag diacritics for XXX), and which
+may incur significant runtime costs; indeed, the hyperminimized transducers run
+12-200 times slower than the original ones~\cite{XXX:2014}. 
+
+While
+
 % TODO: Yli-Jyra: didn't try
 % TODO: FSA memory report -- I think foma's memory layout already complies
+% TODO: compute the sparsity of our FSAs.
 
 % TODO move these tables to where they should be
 \begin{table*}[h]
@@ -252,6 +281,7 @@ Outline:
 %       about a two-step method, where the first level converts cohorts to 
 %       some representation (the sets it contains, etc.), and the second level
 %       does something else).
+While our experiments may have concluded in a negative tone, ...
 
 \section*{Acknowledgements}
 This research was conducted under the Google Summer of Code 2013 project
