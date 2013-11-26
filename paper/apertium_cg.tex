@@ -190,15 +190,13 @@ Although the memory saving techniques described in the last two sections help to
 keep the memory consumption of the grammar in control, the potentially
 exponential increase in size of the merged rule condition FSAs still prohibits
 the building of arbitrary large trees, and thereby prevents us from reaching
-the theoretical bound $\mathcal{O}(log_2(G)n^2k^2)$. Therefore, to make the idea
-in section~\ref{sec:idea} feasible, an algorithm that can compress FSAs
-aggressively is required. % TODO word order
+the theoretical bound $\mathcal{O}(log_2(G)n^2k^2)$. The foma library already
+implements some storage compression methods, such as representing the transition
+matrix in row-indexed form, similarly to the method in Kiraz~\shortcite{Kiraz:2001}.
+Therefore, to make the idea in section~\ref{sec:idea} feasible, an algorithm that
+can compress FSAs aggressively is required. % TODO word order
 In this section, we survey the literature in order to find such a method.
-
-- drastic speed penalty
-Both:
-- for mainly deterministic (lexicon) and non-branching FSAs -- not the case here
-- sparsity here too?
+% TODO: compute the sparsity of our FSAs? (Kiraz)
 
 Automata Mista, due to Huet~\shortcite{Huet:2004,Huet:2005}, is an applicative
 method for describing finite state machines. It represents the FSA or FST as
@@ -225,11 +223,18 @@ we are using (tries for Automata Mista and flag diacritics for XXX), and which
 may incur significant runtime costs; indeed, the hyperminimized transducers run
 12-200 times slower than the original ones~\cite{XXX:2014}. 
 
-While
+A task-specific framework, one based on inward deterministic automata has
+been proposed for CG parsing~\cite{Yli-Jyra:2011}. The paper reports a binary
+size similar to the original grammar size. However, as the framework breaks away
+from the practice of direct rule application followed in this paper and
+in~\cite{Hulden:2011,Peltonen:2011}, closer inspection remains for future work. 
 
-% TODO: Yli-Jyra: didn't try
-% TODO: FSA memory report -- I think foma's memory layout already complies
-% TODO: compute the sparsity of our FSAs.
+% TODO: read
+%       Reducing memory requirements in reachability-based finite automata operations (http://onlinelibrary.wiley.com/doi/10.1002/spe.561/abstract)
+%       On the state complexity of semi-quantum finite automata (http://arxiv.org/abs/1307.2499)
+%       State Complexity Research and Approximation (http://link.springer.com/chapter/10.1007/978-3-642-22321-1_5)
+%       State Complexity: Recent Results and Open Problems (http://iospress.metapress.com/content/veemqfxm6n48cpxn/)
+%       Experiments with Automata Compression (http://link.springer.com/chapter/10.1007/3-540-44674-5_8)
 
 % TODO move these tables to where they should be
 \begin{table*}[h]
