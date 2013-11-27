@@ -93,7 +93,7 @@ disambiguation in Apertium, they are also too big and complex to be easily used
 for the early stages of parser development. Therefore, we have written a small
 Hungarian CG, aimed to fully disambiguate a short Hungarian story, which was used
 as the development corpus. Since Hungarian is not properly supported by Apertium
-yet, morphological analysis was carried out by Hunmorph\cite{Tron:2005}, and
+yet, morphological analysis was carried out by Hunmorph~\cite{Tron:2005}, and
 the tags were translated to the Apertium tagset with a transducer in \texttt{foma}.
 
 The performance of \texttt{fomacg-proc} has been measured against that of
@@ -106,8 +106,8 @@ development, results for the other two languages are reported only for the later
 steps.
 
 Each grammar was run on a test corpus. For Breton, we used the corpus
-in the \texttt{br-fr} language pair, which consists of 1,161 sentences. There are
-no Finnish and Hungarian corpora in Apertium; for the former, we used a
+in the \texttt{br-fr} language pair, which consists of 1,161 sentences. There
+are no Finnish and Hungarian corpora in Apertium; for the former, we used a
 1,620-sentence excerpt from the 2013-Nov-14 snapshot of the Finnish Wikipedia,
 while for the latter, the short test corpus used for grammar development. Since
 the latter contains a mere 11 sentences, it was repeated 1024 times to produce
@@ -128,14 +128,49 @@ concerned with the time required for applying rules. The tests were conducted on
 a consumer-grade laptop with a 2.2GHz Core2Duo CPU and 4GB RAM, running Linux.
 % TODO rewrite this a bit
 
+%TODO: delete the While's, However's, etc.
 \section{Performance Optimizations}
 \label{sec:speed}
 
-\section{Beyond the $\mathcal{O}(Gn^2k^2)$ Bound}
+\section{Beyond the $\mathcal{O}(n^3k^2G)$ Bound}
 \label{sec:idea}
+
+Tapanainen~\shortcite{Tapanainen:1999} proves that the worst-case time complexity
+for disambiguating a sentence in his CG-2 parser is $\mathcal{O}(n^3k^2G)$,
+where $n$ is the length of the sentence, $k$ is the maximum number of readings
+per word, and the grammar consists of $G$ rules. The explanation is as follows:
+testing a cohort with a single rule can be done in $\mathcal{O}(nk)$; 
+the whole sentence in $\mathcal{O}(n^2k)$. This process must be repeated for
+each rule, yielding $\mathcal{O}(n^2kG)$. Finally, in the worst case, a rule
+only removes a single reading, so it takes $n(k - 1)$ rounds to disambiguate the
+sentence, resulting in the aforementioned bound.
+
+% TODO: reported speech?
+Hulden~\shortcite{Hulden:2011} claims that if the rules are compiled to FSTs,
+the complexity decreases to $\mathcal{O}(n^2k^2G)$, due to the fact that a
+transducer can be applied to a sentence of $nk$ tokens in $\mathcal{O}(nk)$
+(linear) time, instead of the $\mathcal{O}(n^2k)$ suggested by Tapanainen.
+Unfortunately, we have to refute this claim. It is true that deterministic
+finite-state machines run in time linear in the length of the input, but a FST
+representation of a CG rule is necessarily non-deterministic. Application of
+such a transducer may require extensive backtracking, making any claim of
+linearity unsupportable. Therefore, the worst-case complexity of Hulden's (and
+consequently, our) system remains $\mathcal{O}(n^3k^2G)$.
+
+This work improves on 
+the condition automata, unlike FST, are deterministic, and can indeed by applied
+in $\mathcal{O}(nk)$ time.
+
+% TODO: Anssi
+% TODO: SuperTagger -> prefiltering Finite State to the Rescue (Extended Finite
+%       State Models of Language)
+
+and second, decrease the constant 
 
 \section{Memory Savings}
 \label{sec:memory}
+
+% TODO introduction here?
 
 \subsection{Token Matching}
 \label{sec:sub_token}
@@ -201,7 +236,7 @@ exponential increase in size of the merged rule condition FSAs still prohibits
 the building of arbitrary large trees, and thereby prevents us from reaching
 the theoretical bound $\mathcal{O}(log_2(G)n^2k^2)$. The foma library already
 implements some storage compression methods, such as representing the transition
-matrix in row-indexed form, similarly to the method in Kiraz~\shortcite{Kiraz:2001}.
+matrix in row-indexed form, similarly to the method described in Kiraz~\shortcite{Kiraz:2001}.
 Therefore, to make the idea in section~\ref{sec:idea} feasible, an algorithm that
 can compress FSAs aggressively is required. % TODO word order
 In this section, we survey the literature in order to find such a method.
