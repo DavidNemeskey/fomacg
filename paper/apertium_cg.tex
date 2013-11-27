@@ -75,7 +75,7 @@ section~\ref{sec:methodology} by describing our evaluation methodology.
 Section~\ref{sec:speed} follows the evolution of the rule engine, as it improves
 in terms of speed. Section~\ref{sec:idea} introduces an idea that theoretically
 allows us to improve the $\mathcal{O}(Gn^2k^2)$ worst-case asymptotic bound.
-Section~\ref{sec:memory} demonstrates how memory savings can be saved from the
+Section~\ref{sec:memory} demonstrates how memory savings can be derived from the
 steps taken in section~\ref{sec:speed}. Finally, section \ref{sec:conclusion}
 contains our conclusions and lists the problems that remain for future work.
 
@@ -83,14 +83,27 @@ contains our conclusions and lists the problems that remain for future work.
 %\label{sec:bridging}
 %% TODO: what Mans did not cover in his paper (IFF, delimiters)?
 
-\section{Evaluation Methodology}
+\section{Methodology}
 \label{sec:methodology}
-% TODO mention the Hungarian grammar before this paragraph!
+
+Apertium includes Constraint Grammars for several
+languages\footnote{http://wiki.apertium.org/wiki/Constraint\_grammar}. While
+most of these are proper grammars, and are being actually used for morphological
+disambiguation in Apertium, they are also too big and complex to be easily used
+for the early stages of parser development. Therefore, we have written a small
+Hungarian CG, aimed to fully disambiguate a short Hungarian story, which was used
+as the development corpus. Since Hungarian is not properly supported by Apertium
+yet, morphological analysis was carried out by Hunmorph\cite{Tron:2005}, and
+the tags were translated to the Apertium tagset with a transducer in \texttt{foma}.
+
 The performance of \texttt{fomacg-proc} has been measured against that of
 \texttt{cg-proc}, VISL-GC's rule applier. The programs were benchmarked with
 three Apertium CG grammars: the toy Hungarian grammar mentioned earlier, the
 Breton grammar from the \texttt{br-fr} language pair and the version of the
 Finnish grammar due to Karlsson in the \texttt{sme-fin} pair. % TODO: what is sme? Citations!
+Seeing that in the early phases, only the Hungarian grammar was used for
+development, results for the other two languages are reported only for the later
+steps.
 
 Each grammar was run on a test corpus. For Breton, we used the corpus
 in the \texttt{br-fr} language pair, which consists of 1,161 sentences. There are
@@ -98,12 +111,8 @@ no Finnish and Hungarian corpora in Apertium; for the former, we used a
 1,620-sentence excerpt from the 2013-Nov-14 snapshot of the Finnish Wikipedia,
 while for the latter, the short test corpus used for grammar development. Since
 the latter contains a mere 11 sentences, it was repeated 1024 times to produce
-a corpus similar in size to the other two.
-
-CG parsers expect morphologically analyzed input. The Breton and Finnish corpora
-were tagged by Apertium's morphological analyzer tool. As Hungarian is not
-properly supported by Apertium yet, we used Hunmorph\cite{Tron:2005}, and
-translated the tags to the Apertium tagset with a transducer in \texttt{foma}.
+a corpus similar in size to the other two. The Breton and Finnish corpora
+were tagged by Apertium's morphological analyzer tools.
 
 Since VISL-GC implements CG-3, and fomacg only supports CG-2, a one-to-one
 comparison with the grammars above was infeasible. Therefore, we extracted the
@@ -114,7 +123,7 @@ original and the CG-2 grammars.
 We recorded both initialization and rule application time for the two programs,
 via instrumentation in case of \texttt{fomacg-proc} and by running the grammar
 first on an empty file and then on the test corpus in case of \texttt{cg-proc}.
-However, as initialization is one-time cost, in the following we are mainly
+However, as initialization is a one-time cost, in the following we are mainly
 concerned with the time required for applying rules. The tests were conducted on
 a consumer-grade laptop with a 2.2GHz Core2Duo CPU and 4GB RAM, running Linux.
 % TODO rewrite this a bit
