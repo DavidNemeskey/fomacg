@@ -38,6 +38,16 @@ E-03080 Alacant\\
 
 \date{}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Submit to:
+%   - AFL14    (http://www.inf.u-szeged.hu/afl2014/) -- Mar 14
+%   - CIAA2014 (http://www.informatik.uni-giessen.de/ciaa2014/) -- Mar 9
+%   - CICLing 15th (http://www.cicling.org/2014/) -- Dec 31 / Jan 7
+%   - FSMNLP 2014 (?) -- ??
+%
+%   Nothing on EACL this year :(
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \begin{document}
 \maketitle\vspace*{-10mm}
 
@@ -183,9 +193,9 @@ It must be noted that ... % TODO: if a rule applies, the round ends
 \label{sec:idea}
 
 Here we present an idea, due to Mans Hulden, that allows the system to
-theoretically overcome the $\mathcal{O}(n^2k^2G)$ average complexity bound. In
-this section, we first describe the method, then evaluate it on our grammars and
-investigate its feasibility.
+theoretically overcome the $\mathcal{O}(n^2k^2G)$ average complexity bound.
+This section describes the method, and investigates its feasibility; the
+next section contains the evaluation.
 
 The idea is based on the fact that regular languages are closed under the union
 operator. If there are two automata, $FSA_{G_a}$ and $FSA_{G_b}$ that test the
@@ -200,7 +210,7 @@ testing if any of the two rules match a sentence with only the original
 automata requires a check with both. Instead, we can apply $FSA_{G_{ab}}$ first.
 If neither rule is applicable, the automaton will not accept the sentence, and
 no further testing is required. If one of the rules is, $FSA_{G_a}$ (or
-equivalently, $FSA_{G_a}$) must be run against the sentence to see which. In
+equivalently, $FSA_{G_b}$) must be run against the sentence to see which. In
 practice, if we pick two rules from a CG in random, we shall find that the
 majority of the sentences will not match either, hence the number of tests may
 be reduced substantially.
@@ -214,11 +224,25 @@ single test if a sentence does not match any of the rules, or find the matching
 rule in $logG + 1$ tests, if one does. Accordingly, in theory this method
 allows us to improve the average- and best-case complexity bounds of the system
 to $\mathcal{O}(n^2k^2logG)$ and $\mathcal{O}(nk)$, respectively.  % TODO: rewrite this
-(Clearly, due to the prioritized nature of CG rules, instead of a single tree,
-each section in the grammar will have its own; however, this does not affect
-the reasoning above.)  % TODO: reasoning?
+(Clearly, for grammars with several sections, instead of a single tree that
+contains all rules, one tree must be built for each section to preserve rule
+priorities. However, this does not affect the reasoning above.)  % TODO: reasoning?
 
-% TODO: evaluation, memory
+The bottleneck in this method is memory consumption. The size of the FSA
+resulting from a non-deterministic union operation is simply the sum of the
+sizes of the original automata. However, to achieve the speed-up described above,
+the rule checking automata must be determinized, which may blow up their size
+exponentially. Therefore, building a single tree from all rules is infeasible.
+A compromise solution is to construct a forest of 2--4 level trees, which still
+fits into the memory and provides the same benefit as a single tree, though to
+a smaller extent.
+
+\subsection{Evaluation}
+
+The trees can be assembled in several ways; we experimented with two simple
+methods that start out with a list of rule testing automatons and output a
+forest of trees. 
+% TODO: evaluation
 
 \section{Memory Savings}
 \label{sec:memory}
