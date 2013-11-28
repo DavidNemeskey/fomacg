@@ -132,8 +132,10 @@ a consumer-grade laptop with a 2.2GHz Core2Duo CPU and 4GB RAM, running Linux.
 \section{Performance Optimizations}
 \label{sec:speed}
 
-\section{Beyond the $\mathcal{O}(n^3k^2G)$ Bound}
-\label{sec:idea}
+\section{YYY}
+
+\subsection{Complexity Analysis}
+\label{sec:complex}
 
 Tapanainen~\shortcite{Tapanainen:1999} proves that the worst-case time complexity
 for disambiguating a sentence in his CG-2 parser is $\mathcal{O}(n^3k^2G)$,
@@ -146,6 +148,7 @@ only removes a single reading, so it takes $n(k - 1)$ rounds to disambiguate the
 sentence, resulting in the aforementioned bound.
 
 % TODO: reported speech?
+% TODO: too many 'claim's
 Hulden~\shortcite{Hulden:2011} claims that if the rules are compiled to FSTs,
 the complexity decreases to $\mathcal{O}(n^2k^2G)$, due to the fact that a
 transducer can be applied to a sentence of $nk$ tokens in $\mathcal{O}(nk)$
@@ -156,16 +159,33 @@ representation of a CG rule is necessarily non-deterministic. Application of
 such a transducer may require extensive backtracking, making any claim of
 linearity unsupportable. Therefore, the worst-case complexity of Hulden's (and
 consequently, our) system remains $\mathcal{O}(n^3k^2G)$.
+% TODO: proof? (-1#)
 
-This work improves on 
-the condition automata, unlike FST, are deterministic, and can indeed by applied
-in $\mathcal{O}(nk)$ time.
+This work have improved on two aspects of the complexity, however. First, the
+constant in the $\mathcal{O}$ has been decreased as a result of extensive
+optimization. Second, rule testing automata have been introduced which, being
+deterministic, can indeed by applied in $\mathcal{O}(nk)$ time.
+While the worst-case complexity is unaffected, average- and best-case benefit
+from the change. Assume that in a round $G_a$ rules can be applied to the
+sentence and $G_u$ cannot, $G_a + G_u = G$. With deterministic automata for
+rule testing the round finishes in $\mathcal{O}(nkG + n^2kG_a)$. Usually
+$G_a << G$, and the complexity converges to $\mathcal{O}(nkG)$; in the best
+case, when no rule is applicable, the whole disambiguation process finishes in
+that time.
 
 % TODO: Anssi
 % TODO: SuperTagger -> prefiltering Finite State to the Rescue (Extended Finite
 %       State Models of Language)
 
-and second, decrease the constant 
+\subsection{Beyond the $\mathcal{O}(n^3k^2G)$ Bound}
+\label{sec:idea}
+
+Here we present an idea, due to Mans Hulden, that allows the system to
+theoretically overcome the $\mathcal{O}(n^3k^2G)$ complexity bound. In this
+section, we first describe the method, then evaluate it on our grammars and
+investigate its feasibility.
+
+
 
 \section{Memory Savings}
 \label{sec:memory}
@@ -335,7 +355,8 @@ While our experiments may have concluded in a negative tone, ...
 \section*{Acknowledgements}
 This research was conducted under the Google Summer of Code 2013 project
 Rule-based finite-state disambiguation\footnote{https://google-melange.appspot.com/gsoc/project/google
-/gsoc2013/davidnemeskey/14002}.
+/gsoc2013/davidnemeskey/14002}. The authors would like to thank Mans Hulden for
+his insights.
 
 % TODO: citations:
 \cite{Karlsson:1990} % Karlsson:1990: the Finnish grammar
