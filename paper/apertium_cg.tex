@@ -153,39 +153,72 @@ Hulden~\shortcite{Hulden:2011} claims that if the rules are compiled to FSTs,
 the complexity decreases to $\mathcal{O}(n^2k^2G)$, due to the fact that a
 transducer can be applied to a sentence of $nk$ tokens in $\mathcal{O}(nk)$
 (linear) time, instead of the $\mathcal{O}(n^2k)$ suggested by Tapanainen.
-Unfortunately, we have to refute this claim. It is true that deterministic
-finite-state machines run in time linear in the length of the input, but a FST
-representation of a CG rule is necessarily non-deterministic. Application of
-such a transducer may require extensive backtracking, making any claim of
-linearity unsupportable. Therefore, the worst-case complexity of Hulden's (and
-consequently, our) system remains $\mathcal{O}(n^3k^2G)$.
+Unfortunately, we have to refute this claim. It is true that a deterministic,
+minimal finite-state machines run in time linear in the length of the input,
+but a FST representation of a CG rule is necessarily non-deterministic.
+Application of such a transducer may require extensive backtracking, making any
+claim of linearity unsupportable. Therefore, the worst-case complexity of
+Hulden's (and consequently, our) system remains $\mathcal{O}(n^3k^2G)$.
 % TODO: proof? (-1#)
 
-This work have improved on two aspects of the complexity, however. First, the
+This work has improved on two aspects of the complexity, however. First, the
 constant in the $\mathcal{O}$ has been decreased as a result of extensive
 optimization. Second, rule testing automata have been introduced which, being
 deterministic, can indeed by applied in $\mathcal{O}(nk)$ time.
 While the worst-case complexity is unaffected, average- and best-case benefit
 from the change. Assume that in a round $G_a$ rules can be applied to the
-sentence and $G_u$ cannot, $G_a + G_u = G$. With deterministic automata for
+sentence and $G_u$ cannot, $G_a + G_u = G$. With minimal automata for
 rule testing the round finishes in $\mathcal{O}(nkG + n^2kG_a)$. Usually
-$G_a << G$, and the complexity converges to $\mathcal{O}(nkG)$; in the best
-case, when no rule is applicable, the whole disambiguation process finishes in
-that time.
+$G_a << G$, and the complexity converges to $\mathcal{O}(nkG)$ for a round
+and $\mathcal{O}(n^2k^2G)$ for the whole process; in the best case, when no rule
+is applicable, disambiguation finishes in $\mathcal{O}(nkG)$.
+
+It must be noted that ... % TODO: if a rule applies, the round ends
 
 % TODO: Anssi
 % TODO: SuperTagger -> prefiltering Finite State to the Rescue (Extended Finite
 %       State Models of Language)
 
-\subsection{Beyond the $\mathcal{O}(n^3k^2G)$ Bound}
+\subsection{Beyond the $\mathcal{O}(n^2k^2G)$ Bound}
 \label{sec:idea}
 
 Here we present an idea, due to Mans Hulden, that allows the system to
-theoretically overcome the $\mathcal{O}(n^3k^2G)$ complexity bound. In this
-section, we first describe the method, then evaluate it on our grammars and
+theoretically overcome the $\mathcal{O}(n^2k^2G)$ average complexity bound. In
+this section, we first describe the method, then evaluate it on our grammars and
 investigate its feasibility.
 
+The idea is based on the fact that regular languages are closed under the union
+operator. If there are two automata, $FSA_{G_a}$ and $FSA_{G_b}$ that test the
+rules $G_a$ and $G_b$, respectively, then it follows that their union,
+$FSA_{G_{ab}}$ accepts a sentence iff either $G_a$ or $G_b$ is applicable to it.
+If $FSA_{G_{ab}}$ is minimized, it runs in $\mathcal{O}(nk)$ time, the same as
+$FSA_{G_a}$ and $FSA_{G_b}$.
 
+% TODO: allows us -> enables decreasing?
+The union FSA allows us to decrease the number of rule checks. In this example,
+testing if any of the two rules match a sentence with only the original
+automata requires a check with both. Instead, we can apply $FSA_{G_{ab}}$ first.
+If neither rule is applicable, the automaton will not accept the sentence, and
+no further testing is required. If one of the rules is, $FSA_{G_a}$ (or
+equivalently, $FSA_{G_a}$) must be run against the sentence to see which. In
+practice, if we pick two rules from a CG in random, we shall find that the
+majority of the sentences will not match either, hence the number of tests may
+be reduced substantially.
+
+There is no need to stop here: we can take two union automata, and merge them
+again. It is easy to see that if we represent the rule testing automata in a
+graph, where an FSA is a node, and two nodes are connected iff one was created
+from the other via union, then we get a binary tree. For a grammar of $G$ rules,
+a binary tree of $logG$ levels can be built. Such a tree can confirm with a
+single test if a sentence does not match any of the rules, or find the matching
+rule in $logG + 1$ tests, if one does. Accordingly, in theory this method
+allows us to improve the average- and best-case complexity bounds of the system
+to $\mathcal{O}(n^2k^2logG)$ and $\mathcal{O}(nk)$, respectively.  % TODO: rewrite this
+(Clearly, due to the prioritized nature of CG rules, instead of a single tree,
+each section in the grammar will have its own; however, this does not affect
+the reasoning above.)  % TODO: reasoning?
+
+% TODO: evaluation, memory
 
 \section{Memory Savings}
 \label{sec:memory}
