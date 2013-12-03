@@ -11,6 +11,8 @@
 \usepackage[all]{xy}
 \usepackage{dblfloatfix}
 \usepackage{tikz}
+\usepackage{caption}
+\captionsetup{justification=centering}
 %\setlength\titlebox{6.5cm}    % You can expand the title box if you
 % really have to
 % \textheight 685pt 
@@ -68,6 +70,13 @@ E-03080 Alacant\\
   % TODO OMG this is horrible
 \end{abstract}
 
+% TODO: Mans's quadratic claim stands only if bimachine factorization had been
+%       performed!
+% TODO: Bimanchine factorization, measurements
+
+% TODO: describe Mans's method
+% TODO: Apertium stream format, wchar_t vs. char
+
 \section{Introduction}
 Outline:
 - CG
@@ -76,6 +85,15 @@ Outline:
 - generic library, implementation can matter
 - why we chose Hulden and not Peltonen (application + composition vs intersection)
 - 
+
+Our research aims to fill the niche left by the lack of openly accessible finite
+state CG implementations.
+
+The 
+"VISL CG-3 was 1 500 times faster"
+
+
+
 % TODO: related work: Mans (not really "related"), Peltonen, Yli-Jyra
 In the rest of the paper, we present our optimizations in a way that mirrors the
 actual development process. We start out with a simple rule engine based on
@@ -83,8 +101,9 @@ foma, and improve it step-by-step, benchmarking its performance after each
 modification, instead of a single evaluation chapter. We start in
 section~\ref{sec:methodology} by describing our evaluation methodology.
 Section~\ref{sec:speed} follows the evolution of the rule engine, as it improves
-in terms of speed. Section~\ref{sec:idea} introduces an idea that theoretically
-allows us to improve the $\mathcal{O}(Gn^2k^2)$ worst-case asymptotic bound.
+in terms of speed. Section~\ref{sec:complex_idea} contains a complexity analysis
+and introduces an idea that theoretically allows us to improve the average- and
+best-case asymptotic bound.
 Section~\ref{sec:memory} demonstrates how memory savings can be derived from the
 steps taken in section~\ref{sec:speed}. Finally, section \ref{sec:conclusion}
 contains our conclusions and lists the problems that remain for future work.
@@ -120,7 +139,7 @@ in the \texttt{br-fr} language pair, which consists of 1,161 sentences. There
 are no Finnish and Hungarian corpora in Apertium; for the former, we used a
 1,620-sentence excerpt from the 2013-Nov-14 snapshot of the Finnish Wikipedia,
 while for the latter, the short test corpus used for grammar development. Since
-the latter contains a mere 11 sentences, it was repeated 1024 times to produce
+the latter contains a mere 11 sentences, it was repeated 32 times to produce
 a corpus similar in size to the other two. The Breton and Finnish corpora
 were tagged by Apertium's morphological analyzer tools.
 
@@ -142,7 +161,39 @@ a consumer-grade laptop with a 2.2GHz Core2Duo CPU and 4GB RAM, running Linux.
 \section{Performance Optimizations}
 \label{sec:speed}
 
+\subsection{Naïve Implementation}
+\label{sec:speed_naive}
+
+\subsection{Deletion of Discarded Readings}
+\label{sec:speed_deletex}
+
+\subsection{FSA-based Rule Testing}
+\label{sec:speed_fsa}
+
+\subsection{Custom FSA/FST Application}
+\label{sec:speed_custom}
+
+\subsection{One-time Conversion}
+\label{sec:speed_convert}
+
+\begin{table}[h]
+  \centering
+  \caption{Effects of the optimizations on the running time}
+  \label{tab:trees}
+  \begin{tabular}{ | l | r | r | }
+  \hline
+  \textbf{Section} & \textbf{Hungarian} & \textbf{Breton} \\
+  \hline
+  \ref{sec:speed_naive}   &  &  \\
+  \ref{sec:speed_deletex} &  &  \\
+  \ref{sec:speed_custom}  &  &  \\
+  \ref{sec:speed_convert} &  &  \\
+  \hline
+  \end{tabular}
+\end{table}
+
 \section{YYY}
+\label{sec:complex_idea}
 
 \subsection{Complexity Analysis}
 \label{sec:complex}
@@ -163,7 +214,7 @@ Hulden~\shortcite{Hulden:2011} claims that if the rules are compiled to FSTs,
 the complexity decreases to $\mathcal{O}(n^2k^2G)$, due to the fact that a
 transducer can be applied to a sentence of $nk$ tokens in $\mathcal{O}(nk)$
 (linear) time, instead of the $\mathcal{O}(n^2k)$ suggested by Tapanainen.
-Unfortunately, we have to refute this claim. It is true that a deterministic,
+Unfortunately, we have to refute this claim. It is true that deterministic,
 minimal finite-state machines run in time linear in the length of the input,
 but a FST representation of a CG rule is necessarily non-deterministic.
 Application of such a transducer may require extensive backtracking, making any
@@ -200,7 +251,7 @@ next section contains the evaluation.
 The idea is based on the fact that regular languages are closed under the union
 operator. If there are two automata, $FSA_{G_a}$ and $FSA_{G_b}$ that test the
 rules $G_a$ and $G_b$, respectively, then it follows that their union,
-$FSA_{G_{ab}}$ accepts a sentence iff either $G_a$ or $G_b$ is applicable to it.
+$FSA_{G_{ab}}$, accepts a sentence iff either $G_a$ or $G_b$ is applicable to it.
 If $FSA_{G_{ab}}$ is minimized, it runs in $\mathcal{O}(nk)$ time, the same as
 $FSA_{G_a}$ and $FSA_{G_b}$.
 
@@ -217,7 +268,7 @@ be reduced substantially.
 
 There is no need to stop here: we can take two union automata, and merge them
 again. It is easy to see that if we represent the rule testing automata in a
-graph, where an FSA is a node, and two nodes are connected iff one was created
+graph, where a node is a FSA, and two nodes are connected iff one was created
 from the other via union, then we get a binary tree. For a grammar of $G$ rules,
 a binary tree of $logG$ levels can be built. Such a tree can confirm with a
 single test if a sentence does not match any of the rules, or find the matching
@@ -230,7 +281,7 @@ priorities. However, this does not affect the reasoning above.)  % TODO: reasoni
 
 The bottleneck in this method is memory consumption. The size of the FSA
 resulting from a non-deterministic union operation is simply the sum of the
-sizes of the original automata. However, to achieve the speed-up described above,
+sizes of the original automata. To achieve the speed-up described above, however,
 the rule checking automata must be determinized, which may blow up their size
 exponentially. Therefore, building a single tree from all rules is infeasible.
 A compromise solution is to construct a forest of 2--4 level trees, which still
@@ -239,9 +290,20 @@ a smaller extent.
 
 \subsection{Evaluation}
 
-The trees can be assembled in several ways; we experimented with two simple
-methods. Both take as input a list of rule testing automatons sorted by size.
-% TODO: evaluation
+The forest can be assembled in several ways; we experimented with two simple
+algorithms. Both take as input a list of rule testing automata, which are
+encapsulated into single-node trees. Before each step, the trees are sorted by
+the size of the FSA in their roots.  % TODO FSAs?
+
+The first algorithm, \textit{SmallestFirst}, unifies the two smallest trees in
+each step, until the root FSA in each tree is above a size limit (1000 states in
+our case).
+The second, \textit{FixedLevel}, aims to create full, balanced binary trees:
+in a single step, it unifies the smallest tree with the largest, the second
+smallest with the second largest, etc, and repeats the process until the trees
+reach a predefined height.
+
+Table~\ref{tab:trees}
 
 \section{Memory Savings}
 \label{sec:memory}
@@ -271,12 +333,13 @@ automaton (see section \ref{}), there is no need to maintain separate tries for
 all individual FSAs. 
 % TODO: to not even save them? grammar binary size?
 
+% TODO: number of: singular or plural?
 Table \ref{tab:sigma_memory} presents the resulting memory savings.
 We report numbers for the raw grammars (L1), as well as for two- and three-level
 condition trees (L2-3). It is not surprising that the raw grammars see the
 largest improvements; here the tries accounted for 70-80\% of the memory
 usage. As the trees get higher, the number of states and edges grows more
-rapidly than do the number of tries and the savings become more modest; however,
+rapidly than does the number of tries and the savings become more modest; however,
 the approximately 30\% achieved for a three-level condition tree is still
 substantial.  % TODO: what?
 
@@ -285,12 +348,12 @@ substantial.  % TODO: what?
 % TODO lots of -> ???
 As already mentioned in section \ref{sec:idea}, while conditions trees speed up
 rule matching, they also take up lots of space. The main reason is, as we have
-seen, the pace with which the size of the merged condition FSAs grow. There is,
-however, another factor at work here: each tree contains a condition FSA in each
-of its nodes. For a tree of $L$ levels, this translates to $2^L - 1$ automata.
-Of course, the FSAs lower in the tree are much -- possibly exponentially --
-smaller than the ones at the top, but in practice their contribution is not
-negligible.
+seen, the pace with which the size of the merged rule testing automata grows.
+There is, however, another factor at work here: each tree contains a
+FSA in each of its nodes. For a tree of $L$ levels, this translates to $2^L - 1$
+automata. Of course, the automata lower in the tree are much -- possibly
+exponentially -- smaller than the ones at the top, but in practice their
+contribution is not negligible.
 
 On closer inspection, however, we can see that it is not necessary to have a
 condition check in each node. If we are at a non-leaf node $N$ with children
@@ -310,7 +373,7 @@ Although the memory saving techniques described in the last two sections help to
 keep the memory consumption of the grammar in control, the potentially
 exponential increase in size of the merged rule condition FSAs still prohibits
 the building of arbitrary large trees, and thereby prevents us from reaching
-the theoretical bound $\mathcal{O}(log_2(G)n^2k^2)$. The foma library already
+the theoretical bound $\mathcal{O}(n^2k^2logG)$. The foma library already
 implements some storage compression methods, such as representing the transition
 matrix in row-indexed form, similarly to the method described in Kiraz~\shortcite{Kiraz:2001}.
 Therefore, to make the idea in section~\ref{sec:idea} feasible, an algorithm that
@@ -367,9 +430,33 @@ in~\cite{Hulden:2011,Peltonen:2011}, closer inspection remains for future work.
   \textbf{Language} & \textbf{Rules} & \textbf{CG-2 rules} &
   \textbf{Binary} & \textbf{Time} \\
   \hline
-  Hungarian & &   35 &   8kB & 0.3s \\
-  Breton    & &  226 &  36kB & 0.8s \\
-  Finnish   & & 1172 & 184kB & - \\    % TODO: test sme-fin for running time!!!
+  Hungarian & &   35 &   8kB & 0.284s \\
+  Breton    & &  226 &  36kB & 0.77s \\
+  Finnish   & & 1172 & 184kB & 1.78s \\    % TODO: test sme-fin for running time!!!
+  \hline
+  \end{tabular}
+\end{table*}
+
+\begin{table*}[h]
+  \centering
+  \caption{Performance and storage requirements of rule testing trees\\
+           \textsuperscript{*}State count limit was 500\hspace{3em}
+           \textsuperscript{+}Did not fit into memory}
+  \label{tab:trees}
+  \begin{tabular}{ | l | r | r | r | r | r | }
+  \hline
+  \textbf{Language} & \textbf{Algorithm} & \textbf{Initialization} &
+  \textbf{Disambiguation} & \textbf{Memory} & \textbf{File Size} \\
+  \hline
+  Hungarian & (flat) & 0.028s & 0.32s & 0.5\% & 60kB \\
+  Hungarian & FixedLevel(3) & 0.77s & 0.235s & 2.1\% & 7.1MB \\
+  Hungarian & Smallest First & 0.62s & 0.234s & 1.9\% & 5.9MB \\
+  Breton    & (flat) & 0.5s & 1.55s & 5.1\% & 1.5MB \\
+  Breton    & FixedLevel(2) & 2.278s & 1.49s & 9.6\% & 7.4MB \\
+  Breton    & Smallest First & 11.14s & 1.05s & 28.7\% & 60MB \\
+  Finnish   & (flat) & 1.5s & 22.87s & 21.8\% & 7.2MB \\
+  Finnish   & FixedLevel(2) & 3.64s & 13.28s & 32.3\% & 28MB \\
+  Finnish   & SmallestFirst\textsuperscript{*} & 20.75s & 9.95s & --\textsuperscript{+} & 198MB \\
   \hline
   \end{tabular}
 \end{table*}
