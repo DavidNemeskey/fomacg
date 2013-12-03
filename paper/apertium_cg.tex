@@ -178,16 +178,18 @@ a consumer-grade laptop with a 2.2GHz Core2Duo CPU and 4GB RAM, running Linux.
 
 \begin{table}[h]
   \centering
-  \caption{Effects of the optimizations on the running time}
+  \caption{Effects of the optimizations on running time}
   \label{tab:trees}
   \begin{tabular}{ | l | r | r | }
   \hline
-  \textbf{Section} & \textbf{Hungarian} & \textbf{Breton} \\
+  \textbf{Version} & \textbf{Hungarian} & \textbf{Breton} \\
   \hline
-  \ref{sec:speed_naive}   &  &  \\
-  \ref{sec:speed_deletex} &  &  \\
-  \ref{sec:speed_custom}  &  &  \\
-  \ref{sec:speed_convert} &  &  \\
+  Naïve (\ref{sec:speed_naive})                 & 6.4s   & -- \\
+  Delete Readings (\ref{sec:speed_deletex})     & 5.9s   & -- \\
+  FSA Rule Testing (\ref{sec:speed_fsa})        & 10s    & -- \\
+  Custom FSA Runner (\ref{sec:speed_custom})    & 1.47s  &       \\
+  Custom FST Runner (\ref{sec:speed_custom})    & 0.388s & 1.235s \\
+  One-time Conversion (\ref{sec:speed_convert}) & 0.32s  & 1.09s  \\
   \hline
   \end{tabular}
 \end{table}
@@ -452,7 +454,7 @@ in~\cite{Hulden:2011,Peltonen:2011}, closer inspection remains for future work.
   Hungarian & FixedLevel(3) & 0.77s & 0.235s & 2.1\% & 7.1MB \\
   Hungarian & Smallest First & 0.62s & 0.234s & 1.9\% & 5.9MB \\
   Breton    & (flat) & 0.5s & 1.55s & 5.1\% & 1.5MB \\
-  Breton    & FixedLevel(2) & 2.278s & 1.49s & 9.6\% & 7.4MB \\
+  Breton    & FixedLevel(2) & 1.8s & 1.09s & 9.6\% & 7.4MB \\
   Breton    & Smallest First & 11.14s & 1.05s & 28.7\% & 60MB \\
   Finnish   & (flat) & 1.5s & 22.87s & 21.8\% & 7.2MB \\
   Finnish   & FixedLevel(2) & 3.64s & 13.28s & 32.3\% & 28MB \\
