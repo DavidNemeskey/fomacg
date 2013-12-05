@@ -92,9 +92,12 @@ state CG implementations.
 The 
 "VISL CG-3 was 1 500 times faster"
 
-
-
 % TODO: related work: Mans (not really "related"), Peltonen, Yli-Jyra
+
+\subsection{fomacg}
+% TODO: describe fomacg
+The rule transducers act as identity for sentences that 
+
 In the rest of the paper, we present our optimizations in a way that mirrors the
 actual development process. We start out with a simple rule engine based on
 foma, and improve it step-by-step, benchmarking its performance after each
@@ -161,17 +164,84 @@ a consumer-grade laptop with a 2.2GHz Core2Duo CPU and 4GB RAM, running Linux.
 \section{Performance Optimizations}
 \label{sec:speed}
 
+Our implementation, much like that of \texttt{fomacg} (and indeed, all recent
+work on finite state CG) is based on the \texttt{foma} library. We started out
+with a naïve implementation that used solely stock \texttt{foma} functions. Most
+of the improvements below stem from the fact that we have replaced these
+functions with custom versions that run much faster. The final implementation
+abandons \texttt{foma} entirely, but for the data structures. In the future, we
+plan to discard those as well, making our code self-contained.
+
+% TODO: declare that it is called fomacg-proc
+The program loads the transducers produced by \texttt{fomacg} and applies them
+to the text. The input is in the Apertium stream
+format\footnote{http://wiki.apertium.org/wiki/Apertium\_stream\_format}
+and it is read cohort-by-cohort. A \texttt{foma} FST is used to convert each
+cohort to the format expected by the rule transducers, and to convert the final
+result back.
+
+To tokenize the text to sentences, we modified \texttt{fomacg} to compile the
+\texttt{DELIMITERS} set and emit it as the first FSA in the binary representation
+of the grammar. \texttt{fomacg-proc} reads the input until a cohort matches this
+set and then sends the accumulated sentence to the rule applier engine.
+
+The rules are tested one-by-one, section-by-section, to see if any of them can
+be applied to the text. Once such a rule is found, the associated FST is
+executed on the text. As it is possible that a rule that was not applicable to
+the original text would run on the modified one, testing is restarted from the
+first section after each rule application. The process ends when no more
+applicable rules are found.
+
 \subsection{Naïve Implementation}
 \label{sec:speed_naive}
+
+The first version of the program used the \texttt{apply\_down()} \texttt{foma}
+function both for rule application and format conversion. As \texttt{fomacg}
+generated a single FST for a rule, rule testing and execution was done in the
+same step, by applying the FST. Whether the rule was actually applied or not was
+decided by comparing the original sentence to the one returned by the function.
+
+The first row in table~\ref{tab:evaluation} shows the running time for the
+Hungarian grammar. At 6.4s, the naïve implementation runs more than 20 times
+slower than VISL-GC (see table~\ref{tab:grammar_size}). Luckily a far cry from
+the 1,500 reported by Peltonen, but clearly too slow to be of practical use.
 
 \subsection{Deletion of Discarded Readings}
 \label{sec:speed_deletex}
 
+The original transducers replace the \texttt{#0#} in front of discarded readings
+with \texttt{#X#}. Our first optimization comes from the observation that
+deleting these readings instead would not make the transducers any more complex,
+but would shorten the resulting sentence, making subsequent tests faster.
+Moreover, it allows the engine to recognize actual rule application by simply
+testing the length of the output to the input sentence, an operation slightly
+faster than byte-for-byte comparison.
+
+Table~\ref{tab:evaluation} reports an approximately 8\% improvement. While not
+self-evident, this benefit remained in effect after our subsequent optimizations.
+
 \subsection{FSA-based Rule Testing}
 \label{sec:speed_fsa}
 
+Theoretically, further speed-ups could be achieved by separating rule testing
+and application, using finite state automata for the former. Automata are faster
+than transducers for two reasons: first, there is no need to assemble an output;
+and second, a FSA can be determinized, while \texttt{foma} can only make a FST
+deterministic by treating it as a FSA with an alphabet of the original
+input:output pairs, which does not entail determinism in the input.
+
+As the third row in table~\ref{tab:evaluation} shows, the idea does not
+translate well to practice. The fault lies with the \texttt{apply\_down()}
+function, which, being the only method of running a finite state machine in
+\texttt{foma}, was designed to support all features of the library with the same
+interface. It treats automata as identity transducers, and fails to capitalize
+on the aforementioned advantage of the former. To realize the benefits of
+FSA-based testing then, a custom function is required.
+
 \subsection{Custom FSA/FST Application}
 \label{sec:speed_custom}
+
+no indexing
 
 \subsection{One-time Conversion}
 \label{sec:speed_convert}
@@ -179,17 +249,18 @@ a consumer-grade laptop with a 2.2GHz Core2Duo CPU and 4GB RAM, running Linux.
 \begin{table}[h]
   \centering
   \caption{Effects of the optimizations on running time}
-  \label{tab:trees}
+  \label{tab:evaluation}
   \begin{tabular}{ | l | r | r | }
   \hline
   \textbf{Version} & \textbf{Hungarian} & \textbf{Breton} \\
   \hline
   Naïve (\ref{sec:speed_naive})                 & 6.4s   & -- \\
-  Delete Readings (\ref{sec:speed_deletex})     & 5.9s   & -- \\
-  FSA Rule Testing (\ref{sec:speed_fsa})        & 10s    & -- \\
-  Custom FSA Runner (\ref{sec:speed_custom})    & 1.47s  &       \\
-  Custom FST Runner (\ref{sec:speed_custom})    & 0.388s & 1.235s \\
-  One-time Conversion (\ref{sec:speed_convert}) & 0.32s  & 1.09s  \\
+  Delete readings (\ref{sec:speed_deletex})     & 5.9s   & -- \\
+  FSA rule testing (\ref{sec:speed_fsa})        & 10s    & -- \\
+  Custom FSA runner (\ref{sec:speed_custom})    & 1.47s  &       \\
+  Custom FST runner (\ref{sec:speed_custom})    & 1.47s  &       \\
+  Input partitioning (\ref{sec:speed_custom})   & 1.47s  &       \\
+  One-time conversion (\ref{sec:speed_convert}) & 0.32s  & 1.09s  \\
   \hline
   \end{tabular}
 \end{table}
@@ -331,8 +402,8 @@ it is easy to see how this trivial sub-task may affect the memory consumption of
 the application, as well as the size of the grammar binary.
 
 Since in our system, the job of token matching has been delegated to the symbol
-automaton (see section \ref{}), there is no need to maintain separate tries for
-all individual FSAs. 
+automaton (see section \ref{sec:speed_convert}), there is no need to maintain
+separate tries for all individual FSAs. 
 % TODO: to not even save them? grammar binary size?
 
 % TODO: number of: singular or plural?
