@@ -209,8 +209,8 @@ the 1,500 reported by Peltonen, but clearly too slow to be of practical use.
 \subsection{Deletion of Discarded Readings}
 \label{sec:speed_deletex}
 
-The original transducers replace the \texttt{#0#} in front of discarded readings
-with \texttt{#X#}. Our first optimization comes from the observation that
+The original transducers replace the \texttt{\#0\#} in front of discarded readings
+with \texttt{\#X\#}. Our first optimization comes from the observation that
 deleting these readings instead would not make the transducers any more complex,
 but would shorten the resulting sentence, making subsequent tests faster.
 Moreover, it allows the engine to recognize actual rule application by simply
@@ -226,22 +226,63 @@ self-evident, this benefit remained in effect after our subsequent optimizations
 Theoretically, further speed-ups could be achieved by separating rule testing
 and application, using finite state automata for the former. Automata are faster
 than transducers for two reasons: first, there is no need to assemble an output;
-and second, a FSA can be determinized, while \texttt{foma} can only make a FST
-deterministic by treating it as a FSA with an alphabet of the original
-input:output pairs, which does not entail determinism in the input.
+and second, a FSA can be determinized and minimized, while \texttt{foma} can
+only make a FST deterministic by treating it as a FSA with an alphabet of the
+original input:output pairs, which does not entail determinism in the input.
 
-As the third row in table~\ref{tab:evaluation} shows, the idea does not
+As the third row in table~\ref{tab:evaluation} shows, the idea does not immediately
 translate well to practice. The fault lies with the \texttt{apply\_down()}
 function, which, being the only method of running a finite state machine in
-\texttt{foma}, was designed to support all features of the library with the same
-interface. It treats automata as identity transducers, and fails to capitalize
+\texttt{foma}, was designed to support all features of the library. It treats
+automata as identity transducers, and fails to capitalize
 on the aforementioned advantage of the former. To realize the benefits of
 FSA-based testing then, a custom function is required.
 
 \subsection{Custom FSA/FST Application}
 \label{sec:speed_custom}
 
-no indexing
+\texttt{apply\_down()} supports the following features: % TODO: \cite{Hulden:2009}?
+\begin{itemize}
+  \item Conversion of the text to symbols (single- and multi-character)
+  \item Regular transitions and flag diacritics
+  \item Three types of search in the transition matrix (linear, binary and indexed)
+  \item Deterministic and non-deterministic operation
+  \item Iterators (multiple invocations iterate the non-deterministic outputs)
+\end{itemize}
+
+Our use-case makes most of these features superfluous. \texttt{fomacg} uses
+multi-character symbols, but not flag diacritics. To maximize the performance
+gains, the rule testing automata must be minimal (hence deterministic), so
+there was no need for non-determinism and iterators. Finally, by modifying
+\texttt{fomacg} to sort the edges of all grammar machines, we could ensure that
+binary transition search alone suffices.
+% TODO: explain that indexed is not much better?
+
+The custom FSA applier function that implements only the necessary features
+was employed for both rule testing and finding the delimiter cohort. As a result,
+running time went down to 1.45 seconds (see table~\ref{tab:evaluation}), a 75\%
+improvement.
+
+A similar function was written for input-deterministic minimal transducers.
+While not applicable to the non-deterministic rule FSTs, it could
+replace \texttt{apply\_down()} for the conversion between the Apertium and  % TODO: eh
+the \texttt{fomacg} formats, further reducing the running time to 1.275 seconds.
+
+% TODO: br
+What we can take home from the last two sections is that when speed is paramount,
+relying blindly on generic libraries may not only lead to suboptimal performance,
+but may also produce counterintuitive results (see section~\ref{sec:speed_fsa}).
+Conversely, libraries may benefit from including specialized implementations
+for different use-cases. For example, \texttt{foma} has all information at hand
+to decide if a FST is deterministic, whether it supports binary search or not,
+etc. and so, providing specialized functions (even private ones hidden behind
+\texttt{apply\_down()}) would improve its performance in certain situations
+substantially.
+
+\subsection{Custom FST Application}
+\label{sec:speed_fst}
+
+The same custom 
 
 \subsection{One-time Conversion}
 \label{sec:speed_convert}
@@ -257,10 +298,11 @@ no indexing
   Naïve (\ref{sec:speed_naive})                 & 6.4s   & -- \\
   Delete readings (\ref{sec:speed_deletex})     & 5.9s   & -- \\
   FSA rule testing (\ref{sec:speed_fsa})        & 10s    & -- \\
-  Custom FSA runner (\ref{sec:speed_custom})    & 1.47s  &       \\
-  Custom FST runner (\ref{sec:speed_custom})    & 1.47s  &       \\
-  Input partitioning (\ref{sec:speed_custom})   & 1.47s  &       \\
-  One-time conversion (\ref{sec:speed_convert}) & 0.32s  & 1.09s  \\
+  Custom FSA runner (\ref{sec:speed_custom})    & 1.45s  &       \\
+  Custom format-FST (\ref{sec:speed_custom})    & 1.275s &       \\
+  Custom FST runner (\ref{sec:speed_custom})    & 1.45s  &       \\
+  Input partitioning (\ref{sec:speed_custom})   & 1.45s  &       \\
+  One-time conversion (\ref{sec:speed_convert}) & 0.32s  & 1.55s  \\
   \hline
   \end{tabular}
 \end{table}
