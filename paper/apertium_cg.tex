@@ -268,6 +268,8 @@ While not applicable to the non-deterministic rule FSTs, it could
 replace \texttt{apply\_down()} for the conversion between the Apertium and  % TODO: eh
 the \texttt{fomacg} formats, further reducing the running time to 1.275 seconds.
 
+% TODO: rule runner to here, too? Enumarate where we use FSM's?
+
 % TODO: br
 What we can take home from the last two sections is that when speed is paramount,
 relying blindly on generic libraries may not only lead to suboptimal performance,
@@ -276,16 +278,62 @@ Conversely, libraries may benefit from including specialized implementations
 for different use-cases. For example, \texttt{foma} has all information at hand
 to decide if a FST is deterministic, whether it supports binary search or not,
 etc. and so, providing specialized functions (even private ones hidden behind
-\texttt{apply\_down()}) would improve its performance in certain situations
-substantially.
+\texttt{apply\_down()}) would improve its performance substantially in certain
+situations.
 
-\subsection{Custom FST Application}
-\label{sec:speed_fst}
+\subsection{Exploiting CG Structure}  % TODO: ?
+\label{sec:speed_cg}
 
-The same custom 
+In this chapter, we review the improvements made available by the
+characteristics of our CG representation. The first of these is functionality:
+even though the rule FSTs are non-deterministic, the input-output mapping is
+one-to-one~\cite{Hulden:2011}. It was thus possible to implement the
+non-deterministic version of the FST runner function described in the last
+section without the need for an iterator feature, and to use it for rule
+application. The last usage of the generic \texttt{apply\_down()} function  % TODO: usage
+thus eradicated, the running time dropped to 1.05 seconds (see
+table~\ref{tab:evaluation}).
 
-\subsection{One-time Conversion}
-\label{sec:speed_convert}
+% TODO: is this true for SFST and OpenFST? cite!
+Internally \texttt{foma}, similarly to other FST toolkits, represents elements
+of the $\Sigma$ alphabet as integers. The conversion of text into tokens in
+$\Sigma$ is a step usually taken for granted in the literature, but it
+contributes to the execution time of an FST to a significant extent. In
+\texttt{foma}, token matching is performed by a trie built from the symbols in
+the automaton's alphabet. Our custom DFSA runner function (see
+section~\ref{sec:speed_custom}) spends about 60\% of its time applying this trie.
+
+%The two enhancements below have helped to all but negate the cost of token
+%conversion. The first of these exploits the fact that in the \texttt{fomacg}
+%format, the symbols are separated by space characters. Instead of passing the
+%input string to each FSM, we split it along the spaces, and pass the resulting
+%string vector to the machines. This is a rather small change, and while the
+%Hungarian grammar benefited almost nothing, the running time of the Breton
+%grammar improved by 0.4 second.
+
+The second enhancement aims to negate the cost of token conversion.
+It came from the observation that all rule testing automata
+and rule transducers accept the same CG tags. It is thus possible to generate an
+automaton whose alphabet is the union of those of the other machines. This
+automaton could be used to convert the input sentence into a vector of $\Sigma$
+ids, and then this vector could be sent to the other machines, relinquishing the
+need of repeated conversions.
+
+Both \texttt{fomacg} and \texttt{fomacg-proc} had to be modified for to add the
+converter FSA. The former now creates the converter FSA and saves it as the
+second machine in the binary
+grammar file. Also, since the ids that correspond to a symbol are unique to
+each machine, we added a postprocessing phase that replaces the ids with the
+"canonical" ones in the converter FSA. 
+\texttt{fomacg-proc} then converts the input to ids using the converter
+automaton's trie, and sends the vector to the rule machines. The rule machines
+treat the vector as their input, with a caveat: ids not in the alphabet of the
+machine in question are replaced by \texttt{@IDENTITY\_SYMBOL@}, so that they
+are handled in the same way as before.
+
+Table~\ref{tab:evaluation} shows that factoring the symbol conversion out from
+the individual machines resulted in huge savings: the running time of the
+Hungarian setup improved by 70\% to 0.32 second; the Breton one by \% to second.  %TODO
 
 \begin{table}[h]
   \centering
@@ -300,9 +348,9 @@ The same custom
   FSA rule testing (\ref{sec:speed_fsa})        & 10s    & -- \\
   Custom FSA runner (\ref{sec:speed_custom})    & 1.45s  &       \\
   Custom format-FST (\ref{sec:speed_custom})    & 1.275s &       \\
-  Custom FST runner (\ref{sec:speed_custom})    & 1.45s  &       \\
-  Input partitioning (\ref{sec:speed_custom})   & 1.45s  &       \\
-  One-time conversion (\ref{sec:speed_convert}) & 0.32s  & 1.55s  \\
+  Custom rule applier (\ref{sec:speed_cg})      & 1.05s  &       \\
+%  Input partitioning (\ref{sec:speed_cg})       & 1.45s  &       \\
+  One-time conversion (\ref{sec:speed_cg})      & 0.32s  & 1.55s  \\
   \hline
   \end{tabular}
 \end{table}
@@ -428,6 +476,7 @@ Table~\ref{tab:trees}
 \subsection{Token Matching}
 \label{sec:sub_token}
 
+% TODO: rewrite these two paragraphs (tries have already been introduced)
 The transition from text to integer representation of the $\Sigma$ alphabet
 has also opened a way to decrease the storage space requirements of the grammar.
 Once again, the improvement stems not from theoretical, but practical
