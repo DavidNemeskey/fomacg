@@ -1,5 +1,5 @@
-\documentclass{article}
-\usepackage{acl2013}
+\documentclass{llncs}
+%\usepackage{acl2013}
 \usepackage[utf8]{inputenc}
 %\usepackage{natbib}
 \usepackage{times}
@@ -11,34 +11,30 @@
 \usepackage[all]{xy}
 \usepackage{dblfloatfix}
 \usepackage{tikz}
-\usepackage{caption}
-\captionsetup{justification=centering}
+%\usepackage{caption}
+%\captionsetup{justification=centering}
 %\setlength\titlebox{6.5cm}    % You can expand the title box if you
 % really have to
 % \textheight 685pt 
 % \hyphenation{Buda-pest}
 % \addtocounter{section}{-1}
 
+%\DeclareRobustCommand{\rtextsuperscript}{\textsuperscript}
+%\DeclareRobustCommand{\rhspace}{\hspace}
+
 \title{Finite-state modeling of general vocabulary}
 
-% For authors from different institutions:
-% \author{Author 1 \\ Address line \\  ... \\ Address line
-%         \And  ... \And
-%         Author n \\ Address line \\ ... \\ Address line}
+\author{Dávid Márk Nemeskey\inst{1} \and Francis M. Tyers\inst{2}}
 
-\author{D\'avid Nemeskey\\
- HAS Computer and Automation Research Institute, \\
-   Kende u 13-17, \\
-   H-1111 Budapest\\
- {\tt nemeskey.david@sztaki.mta.hu}
-\And
-Francis M. Tyers\\
-Dept. Lleng. i Sist. Inform.,\\
+\institute{ HAS Computer and Automation Research Institute,\\
+Kende u 13-17,\\
+H-1111 Budapest\\
+\email{nemeskey.david@sztaki.mta.hu}
+\and Dept. Lleng. i Sist. Inform.,\\
 Universitat d'Alacant,\\
 E-03080 Alacant\\
-{\tt ftyers@dlsi.ua.es}}
-
-\date{}
+\email{ftyers@dlsi.ua.es}
+}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Submit to:
@@ -51,13 +47,13 @@ E-03080 Alacant\\
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{document}
-\maketitle\vspace*{-10mm}
+\maketitle
 
 \begin{abstract}
   % TODO Add Yli-Jyra:2011
   In recent years, the problem of finite state Constraint Grammar~(CG) parsing has
-  received renewed attention. Both \shortcite{Hulden:2011} and
-  \shortcite{Peltonen:2011} presented compilers that convert CG rules to finite
+  received renewed attention. Both \cite{Hulden:2011} and
+  \cite{Peltonen:2011} presented compilers that convert CG rules to finite
   state transducers. While these formalisms serve their purpose as proofs of the
   concept, their performance lags behind other implementations.  %TODO implementionS?
   % TODO I am not talking about compilation, but application
@@ -361,7 +357,7 @@ Hungarian setup improved by 70\% to 0.32 second; the Breton one by \% to second.
 \subsection{Complexity Analysis}
 \label{sec:complex}
 
-Tapanainen~\shortcite{Tapanainen:1999} proves that the worst-case time complexity
+Tapanainen~\cite{Tapanainen:1999} proves that the worst-case time complexity
 for disambiguating a sentence in his CG-2 parser is $\mathcal{O}(n^3k^2G)$,
 where $n$ is the length of the sentence, $k$ is the maximum number of readings
 per word, and the grammar consists of $G$ rules. The explanation is as follows:
@@ -373,7 +369,7 @@ sentence, resulting in the aforementioned bound.
 
 % TODO: reported speech?
 % TODO: too many 'claim's
-Hulden~\shortcite{Hulden:2011} claims that if the rules are compiled to FSTs,
+Hulden~\cite{Hulden:2011} claims that if the rules are compiled to FSTs,
 the complexity decreases to $\mathcal{O}(n^2k^2G)$, due to the fact that a
 transducer can be applied to a sentence of $nk$ tokens in $\mathcal{O}(nk)$
 (linear) time, instead of the $\mathcal{O}(n^2k)$ suggested by Tapanainen.
@@ -473,19 +469,17 @@ Table~\ref{tab:trees}
 
 % TODO introduction here?
 
-\subsection{Token Matching}
+\subsection{Symbol Conversion}
 \label{sec:sub_token}
 
 % TODO: rewrite these two paragraphs (tries have already been introduced)
-The transition from text to integer representation of the $\Sigma$ alphabet
-has also opened a way to decrease the storage space requirements of the grammar.
-Once again, the improvement stems not from theoretical, but practical
-considerations, and it concerns the conversion of text into tokens in $\Sigma$.
-Usually this step is taken for granted in the literature, but implementations
-must allocate resources to tackle this task.  % in their own way.
-
-% TODO describe the trie (e.g. byte-based, 256-way, etc.)
-In \texttt{foma}, token matching is performed by a trie built from the symbols
+The use of a single converter automaton has not only resulted in improved
+performance, but it has also opened a way to decrease the storage space
+requirements of the grammar as well.
+%Once again, the improvement stems not from theoretical, but practical
+%considerations, and it concerns the conversion of text into tokens in $\Sigma$.
+% TODO describe the trie (e.g. byte-based, 256-way (x pointer), etc.)
+The tries that convert the symbols to integer ids in \texttt{foma}
 in the automaton's alphabet. Depending on the number and length of the symbols
 in bytes, this trie may be responsible for a considerable portion of the memory
 footprint of an automaton. Given the number of rules in an average CG grammar,
@@ -539,13 +533,13 @@ exponential increase in size of the merged rule condition FSAs still prohibits
 the building of arbitrary large trees, and thereby prevents us from reaching
 the theoretical bound $\mathcal{O}(n^2k^2logG)$. The foma library already
 implements some storage compression methods, such as representing the transition
-matrix in row-indexed form, similarly to the method described in Kiraz~\shortcite{Kiraz:2001}.
+matrix in row-indexed form, similarly to the method described in Kiraz~\cite{Kiraz:2001}.
 Therefore, to make the idea in section~\ref{sec:idea} feasible, an algorithm that
 can compress FSAs aggressively is required. % TODO word order
 In this section, we survey the literature in order to find such a method.
 % TODO: compute the sparsity of our FSAs? (Kiraz)
 
-Automata Mista, due to Huet~\shortcite{Huet:2003,Huet:2005}, is an applicative
+Automata Mista, due to Huet~\cite{Huet:2003,Huet:2005}, is an applicative
 method for describing finite state machines. It represents the FSA or FST as
 a forest of tries, each corresponding to a deterministic subset of the paths in
 the state space. Non-deterministic transitions and loops are handled by
@@ -555,7 +549,7 @@ facilitates path sharing and the compact representation can further shrink the
 state space by merging non-branching paths. This technique managed to decrease
 the size of a Sanskrit lexicon by 87.1\%~\cite{Huet:2005}.
 
-XXX et al.~\shortcite{XXX:2014} present an algorithm for lossless
+XXX et al.~\cite{XXX:2014} present an algorithm for lossless
 hyperminimisation of lexical transducers using automatically induced flag
 diacritics. The idea behind the algorithm is to replace rightward continuations
 with setting the corresponding flag. The authors report savings between
@@ -603,9 +597,11 @@ in~\cite{Hulden:2011,Peltonen:2011}, closer inspection remains for future work.
 
 \begin{table*}[h]
   \centering
-  \caption{Performance and storage requirements of rule testing trees\\
-           \textsuperscript{*}State count limit was 500\hspace{3em}
-           \textsuperscript{+}Did not fit into memory}
+  \caption{Performance and storage requirements of rule testing trees}
+  % TODO: find a way to add * and +
+  %\caption{Performance and storage requirements of rule testing trees\\
+  %         \rtextsuperscript{*}State count limit was 500\rhspace{3em}
+  %         \rtextsuperscript{+}Did not fit into memory}
   \label{tab:trees}
   \begin{tabular}{ | l | r | r | r | r | r | }
   \hline
@@ -671,6 +667,6 @@ his insights.
 \cite{Peltonen:2011} % Peltonen:2011: the other try... should we include it at all?
 \cite{Tapanainen:1996} % Tapanainen:1996: CG-2
 
-\bibliographystyle{acl}
+\bibliographystyle{splncs03}
 \bibliography{apertium_cg}
 \end{document}
