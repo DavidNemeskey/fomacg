@@ -125,14 +125,16 @@ void RuleApplier::load_file_tree(const std::string& fst_file) {
     fsts.push_back(fst);
   }
 
-  std::cerr << "Num rules: " << fsts.size() << std::endl;
-  for (size_t i = 0; i < fsts.size(); i++) {
-    std::cerr << "Rule " << fsts[i].fst->name << " det: "
-              << fsts[i].fst->is_deterministic << " min: "
-              << fsts[i].fst->is_minimized << " eps: "
-              << fsts[i].fst->is_epsilon_free << " |sigma|: "
-              << fsts[i].sigma.size() << std::endl;
-  }
+//  sleep(30);
+
+//  std::cerr << "Num rules: " << fsts.size() << std::endl;
+//  for (size_t i = 0; i < fsts.size(); i++) {
+//    std::cerr << "Rule " << fsts[i].fst->name << " det: "
+//              << fsts[i].fst->is_deterministic << " min: "
+//              << fsts[i].fst->is_minimized << " eps: "
+//              << fsts[i].fst->is_epsilon_free << " |sigma|: "
+//              << fsts[i].sigma.size() << std::endl;
+//  }
 
   SmallestFirstTreeMerger merger;
   rules = merger.deserialize(fsts);
