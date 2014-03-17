@@ -8,7 +8,7 @@ SRCS = fomacg_common.cpp fomacg_converter.cpp fomacg_proc.cpp fomacg_rule_applie
 
 OBJS = $(SRCS:.cpp=.o)
 
-all: fomacg fomacg_proc
+all: fomacg fomacg-proc
 
 .cpp.o:
 	$(CXX) $(CXXFLAGS) -c $<  -o $@
@@ -16,8 +16,8 @@ fomacg:
 	$(LEX) -8 fomacg2.l 
 	$(CXX) $(CXXFLAGS) -o ../fomacg2 lex.yy.c rule_condition_tree.cpp foma_extra.cpp $(LDFLAGS) $(LINKALL)
 
-fomacg_proc: $(OBJS)
-	$(CXX) $(CXXFLAGS) $(OBJS) -o ../fomacg_proc $(LDFLAGS) $(LINKFOMA) -lrt 
+fomacg-proc: $(OBJS)
+	$(CXX) $(CXXFLAGS) $(OBJS) -o ../fomacg-proc $(LDFLAGS) $(LINKFOMA) -lrt 
 
 clean: 
 	rm *.o *.yy.c

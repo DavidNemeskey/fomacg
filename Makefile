@@ -1,4 +1,4 @@
-CPPFLAGS = -g -ggdb -Wall -Wno-write-strings -Wno-uninitialized -O3
+CXXFLAGS = -g -ggdb -Wall -Wno-write-strings -Wno-uninitialized -O3
 CPP = g++
 CXX = g++
 LINKFOMA = -lfoma
@@ -15,5 +15,5 @@ $(SUBDIRS):
 	$(MAKE) -C $@
 
 clean:
-	rm fomacg2 fomacg_proc
+	rm fomacg2 fomacg-proc
 #-I/usr/local/include/ -I. 
