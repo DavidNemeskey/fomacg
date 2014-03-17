@@ -1198,13 +1198,15 @@ int save_rules_fsm(char *filename) {
   int section = -1;
   char* outfile_name = (char*)calloc(strlen(filename) + 5, sizeof(char));
   sprintf(outfile_name, "%s.fst", filename);
-  gzFile* outfile = (gzFile*)gzopen(outfile_name, "wb");
+  gzFile outfile = gzopen(outfile_name, "wb");
+  // Old zlib: gzFile* outfile = (gzFile*)gzopen(outfile_name, "wb");
   printf("Writing rules to file %s.\n", outfile_name);
 
   /* Return to the original rule order. */
   reverse_rule_order();
 
-  FixLevelTreeMerger merger(2);
+//  SmallestFirstTreeMerger merger;
+  SortedFixLevelTreeMerger merger(3);
 
   struct Node* trees = merger.merge(cg_rules, total_rules);
   size_t num_rules;
@@ -1217,12 +1219,15 @@ int save_rules_fsm(char *filename) {
   struct fsm* allsigma = merge_sigma(to_print, num_rules);
 
   /* First the DELIMITERS... */
-  foma_net_print(delimiter_rule, outfile);
+  foma_net_print(delimiter_rule, (gzFile*)outfile);
+  printf("Printing delimiter net...\n");
 
   /* ... then the deserialized rule tree. */
-  foma_net_print(allsigma, outfile);
+  foma_net_print(allsigma, (gzFile*)outfile);
+  printf("Printing allsigma net...\n");
   for (i = 0; i < num_rules; i++) {
-    foma_net_print(to_print[i], outfile);
+    printf("Printing net %d...\n", i);
+    foma_net_print(to_print[i], (gzFile*)outfile);
   }
 
 //  /* ... then all the rules. */
