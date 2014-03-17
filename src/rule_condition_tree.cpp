@@ -69,8 +69,13 @@ struct Node* SmallestFirstTreeMerger::build_section_tree(
   }
 
   /** And now: smallest-first union. */
-  while (trees.size() > 1 && trees[0]->fsa.fst->statecount < MAX_STATES
-                          && trees[1]->fsa.fst->statecount < MAX_STATES) {
+  while (trees.size() > 1 && trees[0]->fsa.fst->statecount < max_states
+                          && trees[1]->fsa.fst->statecount < max_states) {
+    fprintf(stderr, "merging %s (%d) and %s (%d)...\n",
+        trees[0]->fsa.fst->name,
+        trees[0]->fsa.fst->statecount,
+        trees[1]->fsa.fst->name,
+        trees[1]->fsa.fst->statecount);
     struct Node* new_tree = (struct Node*)calloc(1, sizeof(struct Node));
     new_tree->fsa.fst = union_trees(trees[0]->fsa.fst, trees[1]->fsa.fst);
     sprintf(new_tree->fsa.fst->name, "union");
@@ -79,6 +84,8 @@ struct Node* SmallestFirstTreeMerger::build_section_tree(
     new_tree->section = trees[0]->section;
     new_tree->no_rules = trees[0]->no_rules + trees[1]->no_rules;
     trees[1] = new_tree;
+    fprintf(stderr, "resulting tree: %s (%d)\n",
+        new_tree->fsa.fst->name, new_tree->fsa.fst->statecount);
     trees.pop_front();
     std::sort(trees.begin(), trees.end(), tree_compare_size);
   }
