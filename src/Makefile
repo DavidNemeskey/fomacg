@@ -14,7 +14,7 @@ all: fomacg fomacg-proc
 	$(CXX) $(CXXFLAGS) -c $<  -o $@
 fomacg:
 	$(LEX) -8 fomacg2.l 
-	$(CXX) $(CXXFLAGS) -o ../fomacg2 lex.yy.c rule_condition_tree.cpp foma_extra.cpp $(LDFLAGS) $(LINKALL)
+	$(CXX) $(CXXFLAGS) -o ../fomacg2 lex.yy.c rule_condition_tree.cpp fomacg_common.cpp foma_extra.cpp $(LDFLAGS) $(LINKALL)
 
 fomacg-proc: $(OBJS)
 	$(CXX) $(CXXFLAGS) $(OBJS) -o ../fomacg-proc $(LDFLAGS) $(LINKFOMA) -lrt 

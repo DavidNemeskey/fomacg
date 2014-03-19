@@ -56,6 +56,9 @@ struct Node {
   struct Node* next;
 };
 
+/** Frees the memory associated with the specified Node forest. */
+void free_nodes(Node* node);
+
 /** The sorting order for rules and trees. */
 enum SortOrder {
   SORT_NAME,
@@ -88,7 +91,10 @@ public:
    */
   virtual struct Node* deserialize(const FstVector& rules)=0;
 
-  /** Merges the conditions it can and returns the resulting tree. */
+  /**
+   * Merges the conditions it can and returns the resulting tree. Sets the
+   * pointers to the machines in @p cg_rules to NULL.
+   */
   virtual struct Node* merge(struct cg_rules* cg_rules, size_t num_rules)=0;
 
 protected:

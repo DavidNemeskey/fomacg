@@ -5,6 +5,15 @@
 
 #include <algorithm>
 
+void free_nodes(Node* node) {
+  if (node->fsa.fst != NULL) node->fsa.cleanup();
+  if (node->fst.fst != NULL) node->fst.cleanup();
+  if (node->left != NULL) free_nodes(node->left);
+  if (node->right != NULL) free_nodes(node->right);
+  if (node->next != NULL) free_nodes(node->next);
+  free(node);
+}
+
 ConditionMerger::ConditionMerger(SortOrder order_) : order(order_) {}
 TreeConditionMerger::TreeConditionMerger(SortOrder order_) :
     ConditionMerger(order_) {}
@@ -277,6 +286,12 @@ struct Node* TreeConditionMerger::merge(struct cg_rules* cg_rules,
   struct Node* trees = build_section_tree(rules, section_first,
                                           i - section_first);
   add_trees_to_ret(trees, &ret, &last);
+
+  /* NULL it so that we don't run into problems with deleting cg_rules. */
+  for (size_t i = 0; i < no_rules; i++) {
+    rules[i]->rule       = NULL;
+    rules[i]->conditions = NULL;
+  }
 
   return ret;
 }

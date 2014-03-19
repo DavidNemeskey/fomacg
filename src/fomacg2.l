@@ -492,23 +492,50 @@ struct fsm *cg_removeaux(int count) {
   return(result);
 }
 
-void cg_free_rule_complex() {
-  struct cg_rule_complex* to_del = cg_rule_complex_current_head;
-  while (to_del != NULL) {
-    /* Delete fsms. */
+/** Deletes the fsms from the rule complex. Called by cg_free_rule_complex(). */
+void cg_free_one_rule_complex(struct cg_rule_complex* to_del) {
     if (to_del->wordform != NULL)  fsm_destroy(to_del->wordform);
     if (to_del->target != NULL)    fsm_destroy(to_del->target);
     if (to_del->condition != NULL) fsm_destroy(to_del->condition);
     if (to_del->barrier != NULL)   fsm_destroy(to_del->barrier);
+}
+
+void cg_free_rule_complex() {
+  struct cg_rule_complex* to_del = cg_rule_complex;
+  while (to_del != NULL) {
+    cg_free_one_rule_complex(to_del);
     /* Delete linked conditions. */
     struct cg_rule_complex* to_del_link = to_del->link;
     while (to_del_link != NULL) {
       struct cg_rule_complex* to_del_link_next = to_del_link->link;
+      cg_free_one_rule_complex(to_del_link);
       free(to_del_link);
       to_del_link = to_del_link_next;
     }
     /* Delete this object and go to the next. */
     struct cg_rule_complex* to_del_next = to_del->next;
+    free(to_del);
+    to_del = to_del_next;
+  }
+}
+
+void cg_free_rules() {
+  struct cg_rules* to_del = cg_rules;
+  while (to_del != NULL) {
+    if (to_del->rule != NULL)       fsm_destroy(to_del->rule);
+    if (to_del->conditions != NULL) fsm_destroy(to_del->conditions);
+    struct cg_rules* to_del_next = to_del->next;
+    free(to_del);
+    to_del = to_del_next;
+  }
+}
+
+void cg_free_sets() {
+  struct cg_sets* to_del = cg_sets;
+  while (to_del != NULL) {
+    if (to_del->name != NULL) free(to_del->name);
+    if (to_del->net != NULL)  fsm_destroy(to_del->net);
+    struct cg_sets* to_del_next = to_del->next;
     free(to_del);
     to_del = to_del_next;
   }
@@ -633,7 +660,7 @@ void cg_compile_rule() {
                               fsm_minimize(fsm_concat(scan, match)),
                               fsm_universal())));
             }
-          } else {	
+          } else {
             /* Look left */
             if (linkrule->rule_not) {
               /* [ ~$"$i$ " || ~[?* match scan] ] */
@@ -1223,12 +1250,16 @@ int save_rules_fsm(char *filename) {
   printf("Printing delimiter net...\n");
 
   /* ... then the deserialized rule tree. */
-  foma_net_print(allsigma, (gzFile*)outfile);
   printf("Printing allsigma net...\n");
+  foma_net_print(allsigma, (gzFile*)outfile);
+  fsm_destroy(allsigma);
+
   for (i = 0; i < num_rules; i++) {
     printf("Printing net %d...\n", i);
     foma_net_print(to_print[i], (gzFile*)outfile);
   }
+  free(to_print);
+  free_nodes(trees);
 
 //  /* ... then all the rules. */
 //  for (rules = cg_rules ; rules != NULL; rules = rules->next) {
@@ -1275,11 +1306,13 @@ int main(int argc, char **argv) {
   printf("Total number of states: %i\n",total_states);
   printf("Average number of transitions: %i\n",total_arcs/total_rules);
   printf("Total number of transitions: %i\n",total_arcs);
+  cg_free_rule_complex();
+  cg_free_sets();
 
   if (cg_rules != NULL)
 	save_rules_fsm(binary_prefix);
   free(binary_prefix);
-  cg_free_rule_complex();
   fsm_destroy(delimiter_rule);
+  cg_free_rules();
   return 1;
 }

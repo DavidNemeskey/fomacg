@@ -22,6 +22,8 @@ void FstPair::fill_sigma(size_t sigma_size) {
 void FstPair::cleanup() {
   if (ah != NULL) {
     apply_clear(ah);
+  }
+  if (fst != NULL) {
     fsm_destroy(fst);
   }
 }
