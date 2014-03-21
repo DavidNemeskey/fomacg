@@ -119,7 +119,7 @@ be achieved by exploiting the peculiarities of CG. Lastly, our research also
 aims to fill the niche left by the lack of openly accessible finite state CG
 implementations.
 
-In Sect.~\ref{sec:fomacg} briefly introduces the method we chose to evaluate.
+Sect.~\ref{sec:fomacg} briefly introduces the method we chose to evaluate.
 In the rest of the paper, we present our optimizations in a way that mirrors the
 actual development process. We start out with a simple rule engine based on
 foma, and improve it step-by-step, benchmarking its performance after each
@@ -148,13 +148,16 @@ https://svn.code.sf.net/p/apertium/svn/branches/fomacg}.
 
 Here we briefly describe how \emph{fomacg} works; for more details refer to
 \cite{Hulden:2011}. A CG used for morphological disambiguation takes as input
-a sentence that consists of \emph{cohorts}: a word with its possible meanings.
-A meaning (or \emph{reading} in CG parlance) is represented by a set of
-morphosyntactic \emph{tags}. For example, the cohort of the ambiguous Hungarian
-word \textit{szív} with two readings "heart" and "to suck" would be
+a morphologically analyzed text, which consists of \emph{cohorts}: a word with
+its possible meanings. A meaning (or \emph{reading} in CG parlance) is
+represented by a set of morphosyntactic \emph{tags}. For example, the cohort of
+the ambiguous Hungarian word \textit{szív} with two readings "heart" and
+"to suck" would be
 \texttt{\^{}szív/szív<n><sg><nom>/szív<vblex><pres><s3p>\$}\footnote{
-The example is in the Apertium stream format, not in CG-2 style.}. CG rules
-operate by removing readings based on the context of the word. Most
+The example is in the Apertium stream format, not in CG-2 style.}. The text is
+tokenized into sentences based on a set of \emph{delimiters}. CG rules
+operate on a sentence, removing readings from cohorts based on their context.
+The rules can be divided into priority levels called \emph{section}. Most
 implementations apply the rules one-by-one in a loop, until no rules can further
 modify the sentence.
 
@@ -218,6 +221,23 @@ subset of rules from each that compiled under \emph{fomacg}, and carried out the
 on these subsets. Table~\ref{tab:grammar_size} shows the number of rules in the
 original and the CG-2 grammars.
 
+\begin{table*}[h]
+  \centering
+  \caption{Grammar sizes with the running time and binary size of the respective
+           VISL-GC grammars}
+  \label{tab:grammar_size}
+  \begin{tabular}{ | l | r | r | r | r | }
+  \hline
+  \textbf{Language} & \textbf{Rules} & \textbf{CG-2 rules} &
+  \textbf{Binary} & \textbf{Time} \\
+  \hline
+  Hungarian &   33 &   33 &   8kB / 16kB & 0.284s / 0.15s \\
+  Breton    &  251 &  226 &  36kB / 44kB & 0.77s / 0.425s \\
+  Finnish   & 1207 & 1172 & 184kB / 164kB & 1.78s / 0.74s \\
+  \hline
+  \end{tabular}
+\end{table*}
+
 We recorded both initialization and rule application time for the two programs,
 via instrumentation in case of \emph{fomacg-proc} and by running the grammar
 first on an empty file and then on the test corpus in case of \emph{cg-proc}.
@@ -245,16 +265,15 @@ and it is read cohort-by-cohort. A \emph{foma} FST is used to convert each
 cohort to the format expected by the rule transducers, and to convert the final
 result back.
 
-% TODO what is DELIMITERS? What is a section?
 To tokenize the text to sentences, we modified \emph{fomacg} to compile the
-\emph{DELIMITERS} set and emit it as the first FSA in the binary representation
+\emph{delimiters} set and emit it as the first FSA in the binary representation
 of the grammar. \emph{fomacg-proc} reads the input until a cohort matches this
 set and then sends the accumulated sentence to the rule applier engine.
 
 The rules are tested one-by-one, section-by-section, to see if any of them can
 be applied to the text. Once such a rule is found, the associated FST is
 executed on the text. As it is possible that a rule that was not applicable to
-the original text would run on the modified one, testing is restarted from the
+the original text would now run on the modified one, testing is restarted from the
 first section after each rule application. The process ends when no more
 applicable rules are found.
 
@@ -313,7 +332,7 @@ translate well to practice. The fault lies with the \texttt{apply\_down()}
 function, which, being the only method of running a finite state machine in
 \emph{foma}, was designed to support all features of the library. It treats
 automata as identity transducers, and fails to capitalize
-on the aforementioned advantage of the former. To realize the benefits of
+on the aforementioned advantages of the former. To realize the benefits of
 FSA-based testing then, a custom function is required.
 
 \subsection{Custom FSA/FST Application}
@@ -352,13 +371,14 @@ the \emph{fomacg} formats, further reducing the running time to 1.275 seconds.
 % TODO: br
 What we can take home from the last two sections is that when speed is paramount,
 relying blindly on generic libraries may not only lead to suboptimal performance,
-but may also produce counterintuitive results (see section~\ref{sec:speed_fsa}).
+but may also produce counterintuitive results.
 Conversely, libraries may benefit from including specialized implementations
 for different use-cases. For example, \emph{foma} has all information at hand
 to decide if a FST is deterministic, whether it supports binary search or not,
 etc. and so, providing specialized functions (even private ones hidden behind
 \texttt{apply\_down()}) would improve its performance substantially in certain
 situations.
+% TODO TODO All configurations in the list above could have specialized functions.
 
 \subsection{Exploiting CG Structure}  % TODO: ?
 \label{sec:speed_cg}
@@ -382,16 +402,15 @@ contributes to the execution time of an FST to a significant extent. In
 the automaton's alphabet. Our custom DFSA runner function (see
 section~\ref{sec:speed_custom}) spends about 60\% of its time applying this trie.
 
-%The two enhancements below have helped to all but negate the cost of token
-%conversion. The first of these exploits the fact that in the \texttt{fomacg}
-%format, the symbols are separated by space characters. Instead of passing the
-%input string to each FSM, we split it along the spaces, and pass the resulting
-%string vector to the machines. This is a rather small change, and while the
-%Hungarian grammar benefited almost nothing, the running time of the Breton
-%grammar improved by 0.4 second.
+The two enhancements below have helped to all but negate the cost of token
+conversion. The first of these exploits the fact that in the \texttt{fomacg}
+format, symbols are separated by space characters. Instead of passing the
+input string to each FSM, we split it along the spaces, and pass the resulting
+string vector to the machines. This is a rather small change, and while the
+Hungarian grammar benefited almost nothing, the running time of the Breton
+grammar improved by 40\%.
 
-The second enhancement aims to negate the cost of token conversion.
-It came from the observation that all rule testing automata
+The second enhancement came from the observation that all rule testing automata
 and rule transducers accept the same CG tags. It is thus possible to generate an
 automaton whose alphabet is the union of those of the other machines. This
 automaton could be used to convert the input sentence into a vector of $\Sigma$
@@ -411,7 +430,8 @@ are handled in the same way as before.
 
 Table~\ref{tab:evaluation} shows that factoring the symbol conversion out from
 the individual machines resulted in huge savings: the running time of the
-Hungarian setup improved by 70\% to 0.32 second; the Breton one by \% to second.  %TODO
+Hungarian setup improved by 70\% to 0.32 second; the Breton one by 40\% to 1.55
+second.
 
 \begin{table}[h]
   \centering
@@ -425,11 +445,11 @@ Hungarian setup improved by 70\% to 0.32 second; the Breton one by \% to second.
   Composition (\ref{sec:speed_composition})     & 6.4s   & -- \\
   Delete readings (\ref{sec:speed_deletex})     & 5.9s   & -- \\
   FSA rule testing (\ref{sec:speed_fsa})        & 10s    & -- \\
-  Custom FSA runner (\ref{sec:speed_custom})    & 1.45s  &       \\
-  Custom format-FST (\ref{sec:speed_custom})    & 1.275s &       \\
-  Custom rule applier (\ref{sec:speed_cg})      & 1.05s  &       \\
-%  Input partitioning (\ref{sec:speed_cg})       & 1.45s  &       \\
-  One-time conversion (\ref{sec:speed_cg})      & 0.32s  & 1.55s  \\
+  Custom FSA runner (\ref{sec:speed_custom})    & 1.45s  & -- \\
+  Custom format-FST (\ref{sec:speed_custom})    & 1.275s & 6.8s \\
+  Input partitioning (\ref{sec:speed_cg})       & 1.15s  & 4s \\
+  Custom rule applier (\ref{sec:speed_cg})      & 1.05s  & 2.6s \\
+  One-time conversion (\ref{sec:speed_cg})      & 0.32s  & 1.55s \\
   \hline
   \end{tabular}
 \end{table}
@@ -447,23 +467,26 @@ each rule, yielding $\mathcal{O}(n^2kG)$. Finally, in the worst case, a rule
 only removes a single reading, so it takes $n(k - 1)$ rounds to disambiguate the
 sentence, resulting in the aforementioned bound.
 
-% TODO: reported speech?
-% TODO: too many 'claim's
 Hulden~\cite{Hulden:2011} showed that if the rules are compiled to bimachines,
 the complexity decreases to $\mathcal{O}(n^2k^2G)$, due to the fact that a
 bimachine can be applied to a sentence of $nk$ tokens in $\mathcal{O}(nk)$
 (linear) time, instead of the $\mathcal{O}(n^2k)$ suggested by Tapanainen.
+However, \emph{fomacg} does not include bimachine factorization as of yet.
 
 While this work has left the theoretical limit untouched thus far, it improved
-on two aspects of the complexity. First, the constant in the $\mathcal{O}$ has
-been decreased as a result of extensive optimization. Second, rule testing automata
-have been introduced which, being deterministic, can also be applied in
-$\mathcal{O}(nk)$ time. Assume that in a round $G_a$ rules can be applied to the
-sentence and $G_u$ cannot, $G_a + G_u = G$. With minimal automata for
-rule testing the round finishes with $3G_a + G_u$ machine applications, instead
-of the $2G$ required by bimachines. The facts that usually $G_a << G$ and that
-automata can be applied faster than transducers result in a performance
-improvement over the pure bimachine setup.
+on three aspects of the complexity.
+First, unlike \emph{foma}, our specialized FST application functions can take
+advantage of the properties of automata and bimachines, and actually run them
+in $\mathcal{O}(nk)$ time.
+Second, the constant in the $\mathcal{O}$ has been decreased as a result of
+extensive optimization.
+Third, rule testing automata have been introduced which, being minimal,
+can also be applied in $\mathcal{O}(nk)$ time. Assume that in a round $G_a$
+rules can be applied to the sentence and $G_u$ cannot, $G_a + G_u = G$. With
+minimal automata for rule testing the round finishes with $2G_a + G_u$ machine
+applications, instead of the $2G$ required by bimachines. The facts that usually
+$G_a << G$ and that automata can be applied faster than transducers result in a
+performance improvement over the pure bimachine setup.
 
 % TODO: Anssi
 % TODO: SuperTagger -> prefiltering Finite State to the Rescue (Extended Finite
@@ -485,7 +508,7 @@ If $FSA_{G_{ab}}$ is minimized, it runs in $\mathcal{O}(nk)$ time, the same as
 $FSA_{G_a}$ and $FSA_{G_b}$.
 
 % TODO: allows us -> enables decreasing?
-The union FSA allows us to decrease the number of rule checks. In this example,
+The union FSA allows us to implement hierarchical rule checking. In this example,
 testing if any of the two rules match a sentence with only the original
 automata requires a check with both. Instead, we can apply $FSA_{G_{ab}}$ first.
 If neither rule is applicable, the automaton will not accept the sentence, and
@@ -522,7 +545,7 @@ a smaller extent.
 The forest can be assembled in several ways; we experimented with two simple
 algorithms. Both take as input a list of rule testing automata, which are
 encapsulated into single-node trees. Before each step, the trees are sorted by
-the size of the automata in their roots.  % TODO FSAs?
+the size of the automata in their roots.
 
 The first algorithm, \textit{SmallestFirst}, unifies the two smallest trees in
 each step, until the root FSA in each tree is above a size limit (1000 states in
@@ -532,50 +555,93 @@ in a single step, it unifies the smallest tree with the largest, the second
 smallest with the second largest, etc, and repeats the process until the trees
 reach a predefined height.
 
-Table~\ref{tab:trees}
-% TODO TODO TODO!!!!!!!!!! + not worth it, we lose the benefits of CG without
-% improving performance much.
+% TODO: it can be seen?
+Table~\ref{tab:trees} lists the running times and memory requirements of the
+resulting forests. It can be seen that hierarchical rule testing
+indeed improves performance: even a single level of merging results in 30-42\%
+speedup. However, it is also immediately evident that aside from special cases,
+the disadvantages overweight the benefits: memory usage and binary size grow
+exponentially, affecting compilation and grammar loading time as well, and very
+soon we run into the limits of physical memory. This has prompted us to give up
+on hierarchical rule testing.
+
+\begin{table*}[h]
+  \centering
+  \caption{Performance and storage requirements of rule testing trees}
+  % TODO: find a way to add * and +
+  %\caption{Performance and storage requirements of rule testing trees\\
+  %         \rtextsuperscript{*}State count limit was 500\rhspace{3em}
+  %         \rtextsuperscript{+}Did not fit into memory}
+  \label{tab:trees}
+  \begin{tabular}{ | l | r | r | r | r | r | }
+  \hline
+  \textbf{Language} & \textbf{Algorithm} & \textbf{Initialization} &
+  \textbf{Disambiguation} & \textbf{Memory} & \textbf{File Size} \\
+  \hline
+  Hungarian & (flat) & 0.028s / 0.16s & 0.32s / 0.18s & 0.5\% & 60kB \\
+  Hungarian & FixedLevel(3) & 0.77s / 0.33s & 0.235s / 0.13s & 2.1\% & 7.1MB \\
+  Hungarian & Smallest First & 0.62s / 0.29s & 0.234s / 0.13s & 1.9\% & 5.9MB \\
+  Breton    & (flat) & 0.5s / 0.227s & 1.55s / 0.83s & 5.1\% & 1.5MB \\
+  Breton    & FixedLevel(2) & 1.8s / 0.82s & 1.09s / 0.573s & 9.6\% & 7.4MB \\
+  Breton    & Smallest First & 11.14s / 4.78s & 1.05s / 0.57s & 28.7\% & 60MB \\
+  Finnish   & (flat) & 1.5s / 0.6s & 22.87s / 9.3s & 21.8\% & 7.2MB \\
+  Finnish   & FixedLevel(2) & 3.64s / 1.6s & 13.28s / 5.25s & 32.3\% & 28MB \\
+  Finnish   & SmallestFirst\textsuperscript{*} & 20.75s / 9.4s & 9.95s / 4s & --\textsuperscript{+} & 198MB \\
+  \hline
+  \end{tabular}
+\end{table*}
 
 \section{Memory Savings}
 \label{sec:memory}
-
-% TODO introduction here?
 
 \subsection{Symbol Conversion}
 \label{sec:sub_token}
 
 The use of a single converter automaton has not only resulted in improved
 performance, but it has also opened a way to decrease the storage space
-requirements of the grammar as well.
-%Once again, the improvement stems not from theoretical, but practical
-%considerations, and it concerns the conversion of text into tokens in $\Sigma$.
-% TODO describe the trie (e.g. byte-based, 256-way (x pointer), etc.)
-The tries that convert the symbols to integer ids in \emph{foma}
-in the automaton's alphabet. Depending on the number and length of the symbols
-in bytes, this trie may be responsible for a considerable portion of the memory
+requirements of the grammar as well. The trie that convert the 
+machine's alphabet to integer ids in \emph{foma} takes up space; depending on
+the number and length of the symbols in bytes, this trie may be responsible for
+a considerable portion of the memory
 footprint of an automaton. Given the number of rules in an average CG grammar,
 it is easy to see how this trivial sub-task may affect the memory consumption of
 the application, as well as the size of the grammar binary.
-
-Since in our system, the job of token matching has been delegated to the symbol
-automaton (see section \ref{sec:speed_convert}), there is no need to maintain
+As the job of token matching has been delegated to the symbol
+automaton (see section \ref{sec:speed_cg}), we no longer maintain
 separate tries for all individual FSAs. 
-% TODO: to not even save them? grammar binary size?
 
-% TODO: number of: singular or plural?
 Table \ref{tab:sigma_memory} presents the resulting memory savings.
 We report numbers for the raw grammars (L1), as well as for two- and three-level
 condition trees (L2-3). It is not surprising that the raw grammars see the
 largest improvements; here the tries accounted for 70-80\% of the memory
 usage. As the trees get higher, the number of states and edges grows more
-rapidly than does the number of tries and the savings become more modest; however,
-the approximately 30\% achieved for a three-level condition tree is still
-substantial.  % TODO: what?
+rapidly than does the number of tries and the savings become more modest;
+however, the approximately 30\% achieved for a three-level condition tree is
+still substantial.  % TODO: what?
+
+\begin{table}[h]
+  \centering
+  \caption{Improvements in memory usage due to removing the sigma trie. Memory
+           consumption is measured as a percentage of the 4GB system memory}
+  \label{tab:sigma_memory}
+  \begin{tabular}{ | l | r | r | r | }
+  \hline
+  \textbf{Language} & \textbf{Before} & \textbf{After} & \textbf{Reduction} \\
+  \hline
+  hun L1 & 0.5\% & 0.1\% & 80\% \\
+  hun L3 & 2.1\% & 1.5\% & 28.57\% \\
+  br L1 & 5.1\% & 1.3\% & 74.5\% \\
+  br L2 & 9.6\% & 4.4\% & 54.16\% \\
+  fin L1 & 21\% & 4.1\% & 80.47\% \\
+  fin L2 & 32.3\% & 8.9\% & 72.44\% \\
+  \hline
+  \end{tabular}
+\end{table}
 
 \subsection{Economizing Condition Trees}
 
 % TODO lots of -> ???
-As already mentioned in section \ref{sec:idea}, while conditions trees speed up
+As already mentioned in section \ref{sec:complex_idea}, while conditions trees speed up
 rule matching, they also take up lots of space. The main reason is, as we have
 seen, the pace with which the size of the merged rule testing automata grows.
 There is, however, another factor at work here: each tree contains a
@@ -605,7 +671,7 @@ the building of arbitrary large trees, and thereby prevents us from reaching
 the theoretical bound $\mathcal{O}(n^2k^2logG)$. The foma library already
 implements some storage compression methods, such as representing the transition
 matrix in row-indexed form, similarly to the method described in Kiraz~\cite{Kiraz:2001}.
-Therefore, to make the idea in section~\ref{sec:idea} feasible, an algorithm that
+Therefore, to make the idea in section~\ref{sec:complex_idea} feasible, an algorithm that
 can compress FSAs aggressively is required. % TODO word order
 In this section, we survey the literature in order to find such a method.
 % TODO: compute the sparsity of our FSAs? (Kiraz)
@@ -620,7 +686,7 @@ facilitates path sharing and the compact representation can further shrink the
 state space by merging non-branching paths. This technique managed to decrease
 the size of a Sanskrit lexicon by 87.1\%~\cite{Huet:2005}.
 
-XXX et al.~\cite{XXX:2014} present an algorithm for lossless
+Drobac et al.~\cite{Drobac:2014} present an algorithm for lossless
 hyperminimisation of lexical transducers using automatically induced flag
 diacritics. The idea behind the algorithm is to replace rightward continuations
 with setting the corresponding flag. The authors report savings between
@@ -633,7 +699,7 @@ automata, such as those created for morphological analyzers. Second, both rely
 on techniques that are beyond the power of the simple automaton interpreter
 we are using (tries for Automata Mista and flag diacritics for XXX), and which
 may incur significant runtime costs; indeed, the hyperminimized transducers run
-12-200 times slower than the original ones~\cite{XXX:2014}. 
+12-200 times slower than the original ones~\cite{Drobac:2014}. 
 
 A task-specific framework, one based on inward deterministic automata has
 been proposed for CG parsing~\cite{Yli-Jyra:2011}. The paper reports a binary
@@ -647,69 +713,6 @@ in~\cite{Hulden:2011,Peltonen:2011}, closer inspection remains for future work.
 %       State Complexity Research and Approximation (http://link.springer.com/chapter/10.1007/978-3-642-22321-1_5)
 %       State Complexity: Recent Results and Open Problems (http://iospress.metapress.com/content/veemqfxm6n48cpxn/)
 %       Experiments with Automata Compression (http://link.springer.com/chapter/10.1007/3-540-44674-5_8)
-
-% TODO move these tables to where they should be
-\begin{table*}[h]
-  \centering
-  \caption{Grammar sizes with the running time and binary size of the respective
-           VISL-GC grammars}
-  \label{tab:grammar_size}
-  \begin{tabular}{ | l | r | r | r | r | }
-  \hline
-  \textbf{Language} & \textbf{Rules} & \textbf{CG-2 rules} &
-  \textbf{Binary} & \textbf{Time} \\
-  \hline
-  Hungarian & &   35 &   8kB / 16kB & 0.284s / 0.15s \\
-  Breton    & &  226 &  36kB / 44kB & 0.77s / 0.425s \\
-  Finnish   & & 1172 & 184kB / 164kB & 1.78s / 0.74s \\    % TODO: test sme-fin for running time!!!
-  \hline
-  \end{tabular}
-\end{table*}
-
-\begin{table*}[h]
-  \centering
-  \caption{Performance and storage requirements of rule testing trees}
-  % TODO: find a way to add * and +
-  %\caption{Performance and storage requirements of rule testing trees\\
-  %         \rtextsuperscript{*}State count limit was 500\rhspace{3em}
-  %         \rtextsuperscript{+}Did not fit into memory}
-  \label{tab:trees}
-  \begin{tabular}{ | l | r | r | r | r | r | }
-  \hline
-  \textbf{Language} & \textbf{Algorithm} & \textbf{Initialization} &
-  \textbf{Disambiguation} & \textbf{Memory} & \textbf{File Size} \\
-  \hline
-  Hungarian & (flat) & 0.028s / 0.16s & 0.32s / 0.18s & 0.5\% & 60kB \\
-  Hungarian & FixedLevel(3) & 0.77s / 0.33s & 0.235s / 0.13s & 2.1\% & 7.1MB \\
-  Hungarian & Smallest First & 0.62s / 0.29s & 0.234s / 0.13s & 1.9\% & 5.9MB \\
-  Breton    & (flat) & 0.5s / 0.227s & 1.55s / 0.83s & 5.1\% & 1.5MB \\
-  Breton    & FixedLevel(2) & 1.8s / 0.82s & 1.09s / 0.573s & 9.6\% & 7.4MB \\
-  Breton    & Smallest First & 11.14s / 4.78s & 1.05s / 0.57s & 28.7\% & 60MB \\
-  Finnish   & (flat) & 1.5s / 0.6s & 22.87s / 9.3s & 21.8\% & 7.2MB \\
-  Finnish   & FixedLevel(2) & 3.64s / 1.6s & 13.28s / 5.25s & 32.3\% & 28MB \\
-  Finnish   & SmallestFirst\textsuperscript{*} & 20.75s / 9.4s & 9.95s / 4s & --\textsuperscript{+} & 198MB \\
-  \hline
-  \end{tabular}
-\end{table*}
-
-\begin{table}[h]
-  \centering
-  \caption{Improvements in memory usage due to removing the sigma trie. Memory
-           consumption is measured as a percentage of the 4GB system memory}
-  \label{tab:sigma_memory}
-  \begin{tabular}{ | l | r | r | r | }
-  \hline
-  \textbf{Language} & \textbf{Before} & \textbf{After} & \textbf{Reduction} \\
-  \hline
-  hun L1 & 0.5\% & 0.1\% & 80\% \\
-  hun L3 & 2.1\% & 1.5\% & 28.57\% \\
-  br L1 & 5.1\% & 1.3\% & 74.5\% \\
-  br L2 & 9.6\% & 4.4\% & 54.16\% \\
-  fin L1 & 21\% & 4.1\% & 80.47\% \\
-  fin L2 & 32.3\% & 8.9\% & 72.44\% \\
-  \hline
-  \end{tabular}
-\end{table}
 
 \section{Conclusions}
 \label{sec:conclusion}
