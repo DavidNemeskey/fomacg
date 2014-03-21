@@ -23,7 +23,7 @@
 %\DeclareRobustCommand{\rtextsuperscript}{\textsuperscript}
 %\DeclareRobustCommand{\rhspace}{\hspace}
 
-\title{Finite-state modeling of general vocabulary}
+\title{Why implementation matters: evaluation of an open-source Constraint Grammar parser}
 
 \author{Dávid Márk Nemeskey \\
 HAS Computer and Automation Research Institute, \\
@@ -53,19 +53,17 @@ E-03080 Alacanti \\
 
 \begin{abstract}
   % TODO Add Yli-Jyra:2011
-  In recent years, the problem of finite state Constraint Grammar~(CG) parsing has
-  received renewed attention. Both \cite{Hulden:2011} and
-  \cite{Peltonen:2011} presented compilers that convert CG rules to finite
-  state transducers. While these formalisms serve their purpose as proofs of the
-  concept, their performance lags behind other implementations.  %TODO implementionS?
-  % TODO I am not talking about compilation, but application
+  In recent years, the problem of finite state Constraint Grammar~(CG) parsing
+  has received renewed attention. Several compilers have been proposed
+  convert CG rules to finite state transducers. While these formalisms serve
+  their purpose as proofs of the concept, the performance of the generated
+  transducers lags behind other CG implementations and taggers.
   
   In this paper, we argue that fault lies with using generic finite state
   libraries, and not with the formalisms themselves. We present an open-source
   implementation that capitalizes on the characteristics of CG rule
   application to improve execution time. The implementation achieves performance
   comparable to the current open-source state of the art.
-  % TODO OMG this is horrible
 \end{abstract}
 
 % TODO: Mans's quadratic claim stands only if bimachine factorization had been
@@ -77,7 +75,7 @@ E-03080 Alacanti \\
 
 \section{Introduction}
 
-Constraint Grammar (CG), described originally by Karlsson~\cite{Karlsson:1990},
+Constraint Grammar (CG), described originally by Karlsson~\shortcite{Karlsson:1990},
 is a rule-based formalism for various linguistics tasks, including morphological
 analysis, clause boundary detection and surface syntactic parsing. It has
 been used in a wide range of application areas, such as morphological
@@ -86,7 +84,7 @@ owns its popularity to two reasons: first, it achieves high accuracy on free
 text. Second, it works for languages where the annotated corpora required by
 statistical parsing methods are not available, but a linguist willing to work on
 the rules is. The original CG has since been superseded by CG-2, due to
-Tapanainen~\cite{Tapanainen:1996} and lately, the open source VISL
+Tapanainen~\shortcite{Tapanainen:1996} and lately, the open source VISL
 CG-3~\cite{Bick:2000,Didriksen:2011}.
 
 Constrain Grammar, however, has its drawbacks, one of which is speed. The
@@ -97,10 +95,10 @@ CG achieves higher accuracy, the $n$-gram model runs about ten times faster.
 In this paper, we investigate how using finite-state transducers (FST) for CG
 application can help bridging the performance gap. In recent years, several
 methods have been proposed for compiling a CG to FST and applying it on text:
-Hulden~\cite{Hulden:2011} compiles CG rules to transducers and runs them on the
-input sentences; Peltonen~\cite{Peltonen:2011} converts the sentences into ambiguous
+Hulden~\shortcite{Hulden:2011} compiles CG rules to transducers and runs them on the
+input sentences; Peltonen~\shortcite{Peltonen:2011} converts the sentences into ambiguous
 automata and attempts to eliminate branches by intersecting them with the rule
-FSTs; finally, Yli-Jyra~\cite{Yli-Jyra:2011} creates a single FST from the
+FSTs; finally, Yli-Jyra~\shortcite{Yli-Jyra:2011} creates a single FST from the
 grammar and applies it on featurized input. Unfortunately, none of the authors
 report exact performance measurements of their systems. Yli-Jyra published
 promising numbers for the preprocessing step, but nothing on the overall
@@ -112,7 +110,7 @@ concentrate on three practical aspects of FST-based CG. First, we report accurat
 measurements of the real-world performance of one of the methods above. Second,
 we endeavor to optimize the implementation of the selected method. All three
 works used \emph{foma}, an open source FST library due to Mans
-Hulden~\cite{Hulden:2009a,Hulden:2009b}. We show that while \emph{foma} is fast,
+Hulden~\shortcite{Hulden:2009a,Hulden:2009b}. We show that while \emph{foma} is fast,
 relying on specialized FST application code instead of a generic library
 clearly benefits performance. We also demonstrate what further improvements can
 be achieved by exploiting the peculiarities of CG. Lastly, our research also
@@ -457,7 +455,7 @@ second.
 \section{Complexity Analysis}
 \label{sec:complex}
 
-Tapanainen~\cite{Tapanainen:1999} proves that the worst-case time complexity
+Tapanainen~\shortcite{Tapanainen:1999} proves that the worst-case time complexity
 for disambiguating a sentence in his CG-2 parser is $\mathcal{O}(n^3k^2G)$,
 where $n$ is the length of the sentence, $k$ is the maximum number of readings
 per word, and the grammar consists of $G$ rules. The explanation is as follows:
@@ -467,7 +465,7 @@ each rule, yielding $\mathcal{O}(n^2kG)$. Finally, in the worst case, a rule
 only removes a single reading, so it takes $n(k - 1)$ rounds to disambiguate the
 sentence, resulting in the aforementioned bound.
 
-Hulden~\cite{Hulden:2011} showed that if the rules are compiled to bimachines,
+Hulden~\shortcite{Hulden:2011} showed that if the rules are compiled to bimachines,
 the complexity decreases to $\mathcal{O}(n^2k^2G)$, due to the fact that a
 bimachine can be applied to a sentence of $nk$ tokens in $\mathcal{O}(nk)$
 (linear) time, instead of the $\mathcal{O}(n^2k)$ suggested by Tapanainen.
@@ -615,9 +613,7 @@ We report numbers for the raw grammars (L1), as well as for two- and three-level
 condition trees (L2-3). It is not surprising that the raw grammars see the
 largest improvements; here the tries accounted for 70-80\% of the memory
 usage. As the trees get higher, the number of states and edges grows more
-rapidly than does the number of tries and the savings become more modest;
-however, the approximately 30\% achieved for a three-level condition tree is
-still substantial.  % TODO: what?
+rapidly than does the number of tries and the savings become more modest.
 
 \begin{table}[h]
   \centering
@@ -638,68 +634,14 @@ still substantial.  % TODO: what?
   \end{tabular}
 \end{table}
 
-\subsection{Economizing Condition Trees}
-
-% TODO lots of -> ???
-As already mentioned in section \ref{sec:complex_idea}, while conditions trees speed up
-rule matching, they also take up lots of space. The main reason is, as we have
-seen, the pace with which the size of the merged rule testing automata grows.
-There is, however, another factor at work here: each tree contains a
-FSA in each of its nodes. For a tree of $L$ levels, this translates to $2^L - 1$
-automata. Of course, the automata lower in the tree are much -- possibly
-exponentially -- smaller than the ones at the top, but in practice their
-contribution is not negligible.
-
-On closer inspection, however, we can see that it is not necessary to have a
-condition check in each node. If we are at a non-leaf node $N$ with children
-$L$ and $R$ that matches the condition, it is enough to check if the FSA in
-$L$ accepts the sentence; if not, we can automatically assume that $R$ does.
-Hence, we removed the condition automata in the right branches of all non-leaf
-nodes, thereby decreasing the number of condition FSAs to $2^{L-1}$. To maximize
-the effect, if the condition FSA on the left branch was bigger than the one on
-the right, the branches were swapped.
-
-Table \ref{tab:XXX} shows the results.
-% TODO: apparently I haven't implemented this yet! :)
-
-\subsection{FSA Compression}
-
-Although the memory saving techniques described in the last two sections help to
-keep the memory consumption of the grammar in control, the potentially
-exponential increase in size of the merged rule condition FSAs still prohibits
-the building of arbitrary large trees, and thereby prevents us from reaching
-the theoretical bound $\mathcal{O}(n^2k^2logG)$. The foma library already
-implements some storage compression methods, such as representing the transition
-matrix in row-indexed form, similarly to the method described in Kiraz~\cite{Kiraz:2001}.
-Therefore, to make the idea in section~\ref{sec:complex_idea} feasible, an algorithm that
-can compress FSAs aggressively is required. % TODO word order
-In this section, we survey the literature in order to find such a method.
-% TODO: compute the sparsity of our FSAs? (Kiraz)
-
-Automata Mista, due to Huet~\cite{Huet:2003,Huet:2005}, is an applicative
-method for describing finite state machines. It represents the FSA or FST as
-a forest of tries, each corresponding to a deterministic subset of the paths in
-the state space. Non-deterministic transitions and loops are handled by
-"jumping" to an arbitrary node in the forest, which is located via a global or a
-local addressing scheme. The trie format supports compression in two ways: it
-facilitates path sharing and the compact representation can further shrink the
-state space by merging non-branching paths. This technique managed to decrease
-the size of a Sanskrit lexicon by 87.1\%~\cite{Huet:2005}.
-
-Drobac et al.~\cite{Drobac:2014} present an algorithm for lossless
-hyperminimisation of lexical transducers using automatically induced flag
-diacritics. The idea behind the algorithm is to replace rightward continuations
-with setting the corresponding flag. The authors report savings between
-12.6--96.6\%.
-
-% TODO: analyzer or analyser? minimi[sz]ation?
-The above methods have similar characteristics that prevent us from applying them to
-our case. First, both are aimed at optimizing mostly deterministic, loop-free
-automata, such as those created for morphological analyzers. Second, both rely
-on techniques that are beyond the power of the simple automaton interpreter
-we are using (tries for Automata Mista and flag diacritics for XXX), and which
-may incur significant runtime costs; indeed, the hyperminimized transducers run
-12-200 times slower than the original ones~\cite{Drobac:2014}. 
+We explored other options as well to reduce the size of rule condition trees.
+Unfortunately, most methods aimed at FSA compression in the literature are
+either already implemented in \emph{foma} (e.g. as row-indexed transition matrix,
+see Kiraz~\shortcite{Kiraz:2001}), or are aimed at automata with a regular structure,
+such as morphological analyzers~\cite{Huet:2003,Huet:2005,Drobac:2014}. Without
+further support, the approximately 30\% saving achieved by our method for a
+three-level condition tree alone is not enough to redeem hierarchical rule
+checking.
 
 A task-specific framework, one based on inward deterministic automata has
 been proposed for CG parsing~\cite{Yli-Jyra:2011}. The paper reports a binary
@@ -755,12 +697,6 @@ This research was conducted under the Google Summer of Code 2013 project
 Rule-based finite-state disambiguation\footnote{https://google-melange.appspot.com/gsoc/project/google
 /gsoc2013/davidnemeskey/14002}. The authors would like to thank Mans Hulden for
 his insights.
-
-% TODO: citations:
-\cite{Karlsson:1990} % Karlsson:1990: the Finnish grammar
-\cite{Hulden:2011} % Hulden:2011: Mans's paper
-\cite{Peltonen:2011} % Peltonen:2011: the other try... should we include it at all?
-\cite{Tapanainen:1996} % Tapanainen:1996: CG-2
 
 \bibliographystyle{acl}
 \bibliography{apertium_cg}
