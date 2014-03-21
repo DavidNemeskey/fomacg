@@ -12,8 +12,8 @@
 \usepackage[all]{xy}
 \usepackage{dblfloatfix}
 \usepackage{tikz}
-%\usepackage{caption}
-%\captionsetup{justification=centering}
+\usepackage{caption}
+\captionsetup{justification=centering}
 %\setlength\titlebox{6.5cm}    % You can expand the title box if you
 % really have to
 % \textheight 685pt 
@@ -23,18 +23,18 @@
 %\DeclareRobustCommand{\rtextsuperscript}{\textsuperscript}
 %\DeclareRobustCommand{\rhspace}{\hspace}
 
-\title{Why implementation matters: evaluation of an open-source Constraint Grammar parser}
+\title{Why Implementation Matters: Evaluation of an Open-source Constraint Grammar Parser}
 
-\author{Dávid Márk Nemeskey \\
-HAS Computer and Automation Research Institute, \\
-Kende u 13-17, \\
-H-1111 Budapest \\
-{\tt nemeskey.david@sztaki.mta.hu} \\\And
-Francis M. Tyers \\
-Dept. Lleng. i Sist. Inform., \\
-Universitat d'Alacant, \\
-E-03080 Alacanti \\
-{\tt ftyers@dlsi.ua.es} \\}
+%\author{Dávid Márk Nemeskey \\
+%HAS Computer and Automation Research Institute, \\
+%Kende u 13-17, \\
+%H-1111 Budapest \\
+%{\tt nemeskey.david@sztaki.mta.hu} \\\And
+%Francis M. Tyers \\
+%Dept. Lleng. i Sist. Inform., \\
+%Universitat d'Alacant, \\
+%E-03080 Alacanti \\
+%{\tt ftyers@dlsi.ua.es} \\}
 
 \date{}
 
@@ -560,16 +560,15 @@ indeed improves performance: even a single level of merging results in 30-42\%
 speedup. However, it is also immediately evident that aside from special cases,
 the disadvantages overweight the benefits: memory usage and binary size grow
 exponentially, affecting compilation and grammar loading time as well, and very
-soon we run into the limits of physical memory. This has prompted us to give up
-on hierarchical rule testing.
+soon we run into the limits of physical memory. Unless a method is found that
+reduces memory usage substantially, we have to give up on hierarchical rule
+testing.
 
 \begin{table*}[h]
   \centering
-  \caption{Performance and storage requirements of rule testing trees}
-  % TODO: find a way to add * and +
-  %\caption{Performance and storage requirements of rule testing trees\\
-  %         \rtextsuperscript{*}State count limit was 500\rhspace{3em}
-  %         \rtextsuperscript{+}Did not fit into memory}
+  \caption{Performance and storage requirements of rule testing trees\\
+           $^\ast$ State count limit was 500\hspace{3em}
+           $^\dagger$ Did not fit into memory}
   \label{tab:trees}
   \begin{tabular}{ | l | r | r | r | r | r | }
   \hline
@@ -584,16 +583,13 @@ on hierarchical rule testing.
   Breton    & Smallest First & 11.14s / 4.78s & 1.05s / 0.57s & 28.7\% & 60MB \\
   Finnish   & (flat) & 1.5s / 0.6s & 22.87s / 9.3s & 21.8\% & 7.2MB \\
   Finnish   & FixedLevel(2) & 3.64s / 1.6s & 13.28s / 5.25s & 32.3\% & 28MB \\
-  Finnish   & SmallestFirst\textsuperscript{*} & 20.75s / 9.4s & 9.95s / 4s & --\textsuperscript{+} & 198MB \\
+  Finnish   & SmallestFirst$^\ast$ & 20.75s / 9.4s & 9.95s / 4s & --$^\dagger$ & 198MB \\
   \hline
   \end{tabular}
 \end{table*}
 
 \section{Memory Savings}
 \label{sec:memory}
-
-\subsection{Symbol Conversion}
-\label{sec:sub_token}
 
 The use of a single converter automaton has not only resulted in improved
 performance, but it has also opened a way to decrease the storage space
@@ -692,11 +688,11 @@ it, or other FST libraries, could benefit applications beyond the scope of CG.
 %       some representation (the sets it contains, etc.), and the second level
 %       does something else).
 
-\section*{Acknowledgements}
-This research was conducted under the Google Summer of Code 2013 project
-Rule-based finite-state disambiguation\footnote{https://google-melange.appspot.com/gsoc/project/google
-/gsoc2013/davidnemeskey/14002}. The authors would like to thank Mans Hulden for
-his insights.
+%\section*{Acknowledgements}
+%This research was conducted under the Google Summer of Code 2013 project
+%Rule-based finite-state disambiguation\footnote{https://google-melange.appspot.com/gsoc/project/google
+%/gsoc2013/davidnemeskey/14002}. The authors would like to thank Mans Hulden for
+%his insights.
 
 \bibliographystyle{acl}
 \bibliography{apertium_cg}
