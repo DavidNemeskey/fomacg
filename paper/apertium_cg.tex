@@ -173,7 +173,7 @@ they cannot be applied to.
 \emph{fomacg} is only a compiler, which reads a CG rule file and emits a
 \emph{foma} FST for each rule. The actual disambiguator program that applies the
 transducers to text we implemented ourselves. It reads the morphologically
-analysed input in the Apertium stream format, converts it into the format
+analyzed input in the Apertium stream format, converts it into the format
 expected by \emph{fomacg}, applies the transducers to it, and then converts the
 result back to the stream format. To emphasize its similarity to \emph{cg-proc},
 VISL CG's rule applier, we named our program \emph{fomacg-proc}.
@@ -193,7 +193,7 @@ for the early stages of parser development. Therefore, we have written a small
 Hungarian CG, aimed to fully disambiguate a short Hungarian story, which was used
 as the development corpus. Since Hungarian is not properly supported by Apertium
 yet, morphological analysis was carried out by Hunmorph~\cite{Tron:2005}, and
-the tags were translated to the Apertium tagset with a transducer in \texttt{foma}.
+the tags were translated to the Apertium tag set with a transducer in \texttt{foma}.
 
 The performance of \texttt{fomacg-proc} has been measured against that of
 VISL CG. The programs were benchmarked with three Apertium CG grammars: the toy
@@ -677,7 +677,7 @@ practice.
 
 Our main finding is that implementation matters: a too generic FST library
 hinders performance and can even make a theoretically faster algorithm slower
-in practice. Using bimachines and rule testing automata should have speeded up
+in practice. Using bimachines and rule testing automata should have sped up
 rule application, but did so only after we implemented our own, specialized
 FST functions. Since \emph{foma} has all necessary information about an FST in
 place to decide the right application method, incorporating our functions into
