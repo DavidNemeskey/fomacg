@@ -522,11 +522,11 @@ There is no need to stop here: we can take two union automata, and merge them
 again. It is easy to see that if we represent the rule testing automata in a
 graph, where a node is a FSA, and two nodes are connected iff one was created
 from the other via union, then we get a binary tree. For a grammar of $G$ rules,
-a binary tree of $logG$ levels can be built. Such a tree can confirm with a
+a binary tree of $\log G$ levels can be built. Such a tree can confirm with a
 single test if a sentence does not match any of the rules, or find the matching
-rule in $logG + 1$ tests, if one does. Accordingly, in theory this method
+rule in $\log G + 1$ tests, if one does. Accordingly, in theory this method
 allows us to improve the average- and best-case complexity bounds of the system
-to $\mathcal{O}(n^2k^2logG)$ and $\mathcal{O}(nk)$, respectively.  % TODO: rewrite this
+to $\mathcal{O}(n^2k^2\log G)$ and $\mathcal{O}(nk)$, respectively.  % TODO: rewrite this
 (Clearly, for grammars with several sections, instead of a single tree that
 contains all rules, one tree must be built for each section to preserve rule
 priorities. However, this does not affect the reasoning above.)  % TODO: reasoning?
@@ -676,7 +676,7 @@ performance measurements with and without these optimisations, so their efficacy
 can be accurately evaluated.
 A new method for rule testing has also been proposed, which in theory is capable
 of reducing the worst-case complexity bound of CG application to
-$\mathcal{O}(n^2k^2logG$). Unfortunately, the method proved to be not feasible in
+$\mathcal{O}(n^2k^2\log G$). Unfortunately, the method proved to be not feasible in
 practice.
 
 Our main finding is that implementation matters: a too generic FST library
