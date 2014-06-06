@@ -178,7 +178,7 @@ expected by \emph{fomacg}, applies the transducers to it, and then converts the
 result back to the stream format. To emphasise its similarity to \emph{cg-proc},
 VISL CG's rule applier, we named our program \emph{fomacg-proc}.
 
-%\section{Bridging the Gaps}
+%\section{Bridging the gaps}
 %\label{sec:bridging}
 %% TODO: what Måns did not cover in his paper (IFF, delimiters)?
 
@@ -276,7 +276,7 @@ first section after each rule application. The process ends when no more
 applicable rules are found.
 
 % TODO Two subsections: FST & CG-specific optimizations (?)
-\subsection{Naïve Implementation}
+\subsection{Naïve implementation}
 \label{sec:speed_naive}
 
 The first version of the program used the \texttt{apply\_down()} \emph{foma}
@@ -453,7 +453,7 @@ seconds.
   \end{tabular}
 \end{table}
 
-\section{Complexity Analysis}
+\section{Complexity analysis}
 \label{sec:complex}
 
 Tapanainen~\shortcite{Tapanainen:1999} proves that the worst-case time complexity
@@ -491,7 +491,7 @@ performance improvement over the pure bimachine setup.
 % TODO: SuperTagger -> prefiltering Finite State to the Rescue (Extended Finite
 %       State Models of Language)
 
-\subsection{Beyond the $\mathcal{O}(n^2k^2G)$ Bound}
+\subsection{Beyond the $\mathcal{O}(n^2k^2G)$ bound}
 \label{sec:complex_idea}
 
 This section presents an idea by Måns Huldén that allows the system to
