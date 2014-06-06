@@ -160,7 +160,7 @@ the ambiguous Hungarian word \textit{szív} with two readings ``heart'' and
 ``to suck'' would be
 \texttt{\^{}szív/szív<n><sg><nom>/szív<vblex><pres><s3p>\$}.\footnote{
 The example is in the Apertium stream format, not in CG-2 style.} The text is
-tokenised into sentences based on a set of \emph{delimiters} CG rules
+tokenised into sentences based on a set of \emph{delimiters}. CG rules
 operate on a sentence, removing readings from cohorts based on their context.
 The rules can be divided into priority levels called \emph{section}. Most
 implementations apply the rules one-by-one in a loop, until no rules can further
@@ -200,12 +200,12 @@ for the early stages of parser development. Therefore, we have written a small
 Hungarian CG, aimed to fully disambiguate a short Hungarian story, which was used
 as the development corpus. Since Hungarian is not properly supported by Apertium
 yet, morphological analysis was carried out by Hunmorph~\cite{Tron:2005}, and
-the tags were translated to the Apertium tag set with a transducer in \texttt{foma}.
+the tags were translated to the Apertium tagset with a transducer in \texttt{foma}.
 
 The performance of \texttt{fomacg-proc} has been measured against that of
 VISL CG. The programs were benchmarked with three Apertium CG grammars: the toy
 Hungarian grammar mentioned earlier, the Breton grammar from the \texttt{br-fr}
-language pair~\cite{Tyers:2010} and the version of the Finnish grammar originally
+language pair~\cite{Tyers:2010}, and the version of the Finnish grammar originally written
 by Karlsson in the North~Sámi--Finnish (\texttt{sme-fin}) pair. % TODO: what is sme? Citations!
 Seeing that in the early phases, only the Hungarian grammar was used for
 development, results for the other two languages are reported only for the later
@@ -343,7 +343,7 @@ FSA-based testing then, a custom function is required.
 \subsection{Custom FSA/FST application}
 \label{sec:speed_custom}
 
-\texttt{apply\_down()} supports the following features~\cite{Hulden:2009b}:
+The \texttt{apply\_down()} function supports the following features~\cite{Hulden:2009b}:
 \begin{itemize}
   \item Conversion of the text to symbols (single- and multi-character)
   \item Regular transitions and flag diacritics
