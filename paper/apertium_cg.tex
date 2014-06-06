@@ -193,7 +193,7 @@ VISL CG's rule applier, we named our program \emph{fomacg-proc}.
 \label{sec:methodology}
 
 Apertium includes constraint grammars for several
-languages.\footnote{http://wiki.apertium.org/wiki/Constraint\_grammar} While
+languages.\footnote{\url{http://wiki.apertium.org/wiki/Constraint_grammar}} While
 most of these are wide-coverage grammars, and are being actually used for morphological
 disambiguation in Apertium, they are also too big and complex to be easily used
 for the early stages of parser development. Therefore, we have written a small
@@ -265,7 +265,7 @@ plan to discard those as well, making our code self-contained.
 
 The program loads the transducers produced by \emph{fomacg} and applies them
 to the text. The input is in the Apertium stream
-format\footnote{http://wiki.apertium.org/wiki/Apertium\_stream\_format}
+format\footnote{\url{http://wiki.apertium.org/wiki/Apertium_stream_format}}
 and it is read cohort-by-cohort. A \emph{foma} FST is used to convert each
 cohort to the format expected by the rule transducers, and to convert the final
 result back.
@@ -554,7 +554,7 @@ encapsulated into single-node trees. Before each step, the trees are sorted by
 the size of the automata in their roots.
 
 The first algorithm, \textit{SmallestFirst}, unifies the two smallest trees in
-each step, until the root FSA in each tree is above a size limit (1000 states in
+each step, until the root FSA in each tree is above a size limit (1,000 states in
 our case).
 The second, \textit{FixedLevel}, aims to create full, balanced binary trees:
 in a single step, it unifies the smallest tree with the largest, the second
@@ -701,7 +701,7 @@ it, or other FST libraries, could benefit applications beyond the scope of CG.
 \section*{Acknowledgements}
 This research was conducted under the Google Summer of Code 2013 project
 Rule-based finite-state disambiguation.\footnote{
-https://google-melange.appspot.com/gsoc/project/google/gsoc2013/davidnemeskey/14002}
+\url{https://google-melange.appspot.com/gsoc/project/google/gsoc2013/davidnemeskey/14002}}
 
 \bibliographystyle{acl}
 \bibliography{apertium_cg}
