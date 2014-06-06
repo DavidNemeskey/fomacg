@@ -67,9 +67,9 @@ UiT Norgga árktalaš universitehta,\\
   comparable to the current open-source state of the art.
 \end{abstract}
 
-% TODO: Måns's quadratic claim stands only if bimachine factorization had been
+% TODO: Måns's quadratic claim stands only if bimachine factorisation had been
 %       performed!
-% TODO: Bimanchine factorization, measurements
+% TODO: Bimanchine factorisation, measurements
 
 % TODO: describe Måns's method
 % TODO: Apertium stream format, wchar_t vs. char
@@ -275,7 +275,7 @@ the original text would now run on the modified one, testing is restarted from t
 first section after each rule application. The process ends when no more
 applicable rules are found.
 
-% TODO Two subsections: FST & CG-specific optimizations (?)
+% TODO Two subsections: FST & CG-specific optimisations (?)
 \subsection{Naïve implementation}
 \label{sec:speed_naive}
 
@@ -434,7 +434,7 @@ seconds.
 
 \begin{table}[h]
   \centering
-  \caption{Effects of the optimizations on running time}
+  \caption{Effects of the optimisations on running time}
   \label{tab:evaluation}
   \begin{tabular}{ | l | r | r | }
   \hline
@@ -470,7 +470,7 @@ Huldén~\shortcite{Hulden:2011} showed that if the rules are compiled to bimachi
 the complexity decreases to $\mathcal{O}(n^2k^2G)$, due to the fact that a
 bimachine can be applied to a sentence of $nk$ tokens in $\mathcal{O}(nk)$
 (linear) time, instead of the $\mathcal{O}(n^2k)$ suggested by Tapanainen.
-However, \emph{fomacg} does not include bimachine factorization as of yet.
+However, \emph{fomacg} does not include bimachine factorisation as of yet.
 
 While this work has left the theoretical limit untouched thus far, it improved
 on three aspects of the complexity.
@@ -478,7 +478,7 @@ First, unlike \emph{foma}, our specialised FST application functions can take
 advantage of the properties of automata and bimachines, and actually run them
 in $\mathcal{O}(nk)$ time.
 Second, the constant in the $\mathcal{O}$ has been decreased as a result of
-extensive optimization.
+extensive optimisation.
 Third, rule testing automata have been introduced which, being minimal,
 can also be applied in $\mathcal{O}(nk)$ time. Assume that in a round $G_a$
 rules can be applied to the sentence and $G_u$ cannot, $G_a + G_u = G$. With
@@ -573,7 +573,7 @@ testing.
   \label{tab:trees}
   \begin{tabular}{ | l | r | r | r | r | r | }
   \hline
-  \textbf{Language} & \textbf{Algorithm} & \textbf{Initialization} &
+  \textbf{Language} & \textbf{Algorithm} & \textbf{Initialisation} &
   \textbf{Disambiguation} & \textbf{Memory} & \textbf{File Size} \\
   \hline
   Hungarian & (flat) & 0.028s / 0.16s & 0.32s / 0.18s & 0.5\% & 60kB \\
