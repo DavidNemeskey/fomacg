@@ -507,19 +507,19 @@ This section describes the method, and investigates its feasibility; the
 next section contains the evaluation.
 
 The idea is based on the fact that regular languages are closed under the union
-operator. If there are two automata, $FSA_{G_a}$ and $FSA_{G_b}$ that test the
+operator. If there are two automata, $\mathrm{FSA}_{G_a}$ and $\mathrm{FSA}_{G_b}$ that test the
 rules $G_a$ and $G_b$, respectively, then it follows that their union,
-$FSA_{G_{ab}}$, accepts a sentence iff either $G_a$ or $G_b$ is applicable to it.
-If $FSA_{G_{ab}}$ is minimised, it runs in $\mathcal{O}(nk)$ time, the same as
-$FSA_{G_a}$ and $FSA_{G_b}$.
+$\mathrm{FSA}_{G_{ab}}$, accepts a sentence iff either $G_a$ or $G_b$ is applicable to it.
+If $\mathrm{FSA}_{G_{ab}}$ is minimised, it runs in $\mathcal{O}(nk)$ time, the same as
+$\mathrm{FSA}_{G_a}$ and $\mathrm{FSA}_{G_b}$.
 
 % TODO: allows us -> enables decreasing?
 The union FSA allows us to implement hierarchical rule checking. In this example,
 testing if any of the two rules match a sentence with only the original
-automata requires a check with both. Instead, we can apply $FSA_{G_{ab}}$ first.
+automata requires a check with both. Instead, we can apply $\mathrm{FSA}_{G_{ab}}$ first.
 If neither rule is applicable, the automaton will not accept the sentence, and
-no further testing is required. If one of the rules is, $FSA_{G_a}$ (or
-equivalently, $FSA_{G_b}$) must be run against the sentence to see which. In
+no further testing is required. If one of the rules is, $\mathrm{FSA}_{G_a}$ (or
+equivalently, $\mathrm{FSA}_{G_b}$) must be run against the sentence to see which. In
 practice, if we pick two rules from a CG in random, we shall find that the
 majority of the sentences will not match either, hence the number of tests may
 be reduced substantially.
@@ -535,7 +535,7 @@ allows us to improve the average- and best-case complexity bounds of the system
 to $\mathcal{O}(n^2k^2\log G)$ and $\mathcal{O}(nk)$, respectively.  % TODO: rewrite this
 (Clearly, for grammars with several sections, instead of a single tree that
 contains all rules, one tree must be built for each section to preserve rule
-priorities. However, this does not affect the reasoning above.)  % TODO: reasoning?
+priorities. However, this does not affect the reasoning above).  % TODO: reasoning?
 
 The bottleneck in this method is memory consumption. The size of the FSA
 resulting from a non-deterministic union operation is simply the sum of the
@@ -603,7 +603,7 @@ testing.
 
 The use of a single converter automaton has not only resulted in improved
 performance, but it has also opened a way to decrease the storage space
-requirements of the grammar as well. The trie that convert the 
+requirements of the grammar as well. The trie that converts the 
 machine's alphabet to integer ids in \emph{foma} takes up space; depending on
 the number and length of the symbols in bytes, this trie may be responsible for
 a considerable portion of the memory
@@ -653,7 +653,7 @@ A task-specific framework, one based on inward deterministic automata has
 been proposed for CG parsing~\cite{Yli-Jyra:2011}. The paper reports a binary
 size similar to the original grammar size. However, as the framework breaks away
 from the practice of direct rule application followed in this paper and
-in~\cite{Hulden:2011,Peltonen:2011}, closer inspection remains for future work. 
+in related literature \cite{Hulden:2011,Peltonen:2011}, closer inspection remains as future work. 
 
 % TODO: read
 %       Reducing memory requirements in reachability-based finite automata operations (http://onlinelibrary.wiley.com/doi/10.1002/spe.561/abstract)
@@ -671,7 +671,7 @@ VISL CG-3. We used the CG grammars available in the Apertium machine translation
 project.
 
 Our goals were partially fulfilled: while the speed of our parser falls short
-of that of VISL CG-3, we have made advances on the state-of-the-art
+of that of VISL CG-3 --- with the exception of the execution of very small grammars --- we have made advances on the state-of-the-art
 free/open-source FST implementations of CG. We based our system on the
 \emph{fomacg} compiler, and extended it in several ways. Our parser  % TODO bimachines?
 uses optimised FST application methods instead of the generic \emph{foma} variant
@@ -682,13 +682,13 @@ performance measurements with and without these optimisations, so their efficacy
 can be accurately evaluated.
 A new method for rule testing has also been proposed, which in theory is capable
 of reducing the worst-case complexity bound of CG application to
-$\mathcal{O}(n^2k^2\log G$). Unfortunately, the method proved to be not feasible in
+$\mathcal{O}(n^2k^2\log G$). Unfortunately, the method has yet to be proven feasible in
 practice.
 
-Our main finding is that implementation matters: a too generic FST library
+Our main finding is that implementation matters: an FST library which is too generic
 hinders performance and can even make a theoretically faster algorithm slower
 in practice. Using bimachines and rule testing automata should have sped up
-rule application, but did so only after we implemented our own, specialised
+rule application, but only did so after we implemented our own, specialised
 FST functions. Since \emph{foma} has all necessary information about an FST in
 place to decide the right application method, incorporating our functions into
 it, or other FST libraries, could benefit applications beyond the scope of CG.
