@@ -672,7 +672,7 @@ performance measurements with and without these optimizations, so their efficacy
 can be accurately evaluated.
 A new method for rule testing has also been proposed, which in theory is capable
 of reducing the worst-case complexity bound of CG application to
-$\mathcal{O}n^2k^2logG$. Unfortunately, the method proved to be infeasible in
+$\mathcal{O}(n^2k^2logG$). Unfortunately, the method proved to be infeasible in
 practice.
 
 Our main finding is that implementation matters: a too generic FST library
@@ -688,11 +688,11 @@ it, or other FST libraries, could benefit applications beyond the scope of CG.
 %       some representation (the sets it contains, etc.), and the second level
 %       does something else).
 
-%\section*{Acknowledgements}
-%This research was conducted under the Google Summer of Code 2013 project
-%Rule-based finite-state disambiguation\footnote{https://google-melange.appspot.com/gsoc/project/google
-%/gsoc2013/davidnemeskey/14002}. The authors would like to thank Mans Hulden for
-%his insights.
+\section*{Acknowledgements}
+This research was conducted under the Google Summer of Code 2013 project
+Rule-based finite-state disambiguation\footnote{
+https://google-melange.appspot.com/gsoc/project/google/gsoc2013/davidnemeskey/14002}. The authors would like to thank Mans Hulden for
+his insights.
 
 \bibliographystyle{acl}
 \bibliography{apertium_cg}
