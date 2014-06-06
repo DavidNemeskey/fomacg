@@ -25,16 +25,16 @@
 
 \title{Why Implementation Matters: Evaluation of an Open-source Constraint Grammar Parser}
 
-%\author{Dávid Márk Nemeskey \\
-%HAS Computer and Automation Research Institute, \\
-%Kende u 13-17, \\
-%H-1111 Budapest \\
-%{\tt nemeskey.david@sztaki.mta.hu} \\\And
-%Francis M. Tyers \\
-%Dept. Lleng. i Sist. Inform., \\
-%Universitat d'Alacant, \\
-%E-03080 Alacanti \\
-%{\tt ftyers@dlsi.ua.es} \\}
+\author{Dávid Márk Nemeskey \\
+HAS Computer and Automation Research Institute, \\
+Kende u 13-17, \\
+H-1111 Budapest \\
+{\tt nemeskey.david@sztaki.mta.hu} \\\And
+Francis M. Tyers \\
+Dept. Lleng. i Sist. Inform., \\
+Universitat d'Alacant, \\
+E-03080 Alacanti \\
+{\tt ftyers@dlsi.ua.es} \\}
 
 \date{}
 
@@ -59,7 +59,7 @@
   their purpose as proofs of the concept, the performance of the generated
   transducers lags behind other CG implementations and taggers.
   
-  In this paper, we argue that fault lies with using generic finite state
+  In this paper, we argue that the fault lies with using generic finite state
   libraries, and not with the formalisms themselves. We present an open-source
   implementation that capitalizes on the characteristics of CG rule
   application to improve execution time. The implementation achieves performance
@@ -325,7 +325,7 @@ and second, a FSA can be determinized and minimized, while \emph{foma} can
 only make a FST deterministic by treating it as a FSA with an alphabet of the
 original input:output pairs, which does not entail determinism in the input.
 
-As the third row in table~\ref{tab:evaluation} shows, the idea does not immediately
+As the fourth row in table~\ref{tab:evaluation} shows, the idea does not immediately
 translate well to practice. The fault lies with the \texttt{apply\_down()}
 function, which, being the only method of running a finite state machine in
 \emph{foma}, was designed to support all features of the library. It treats
@@ -418,7 +418,7 @@ need of repeated conversions.
 Both \emph{fomacg} and \emph{fomacg-proc} had to be modified to account for the
 changes. The former now creates the converter FSA and saves it as the
 second machine in the binary grammar file. Also, since the ids that correspond
-to a symbol are unique to each machine, we added a postprocessing phase that
+to a symbol are unique to each machine, we added a post-processing phase that
 replaces the ids with the "canonical" ones in the converter FSA. 
 \emph{fomacg-proc} then converts the input to ids using the converter
 automaton's trie, and sends the vector to the rule machines. The rule machines
@@ -440,7 +440,7 @@ second.
   \textbf{Version} & \textbf{Hungarian} & \textbf{Breton} \\
   \hline
   Naïve (\ref{sec:speed_naive})                 & 6.4s   & -- \\
-  Composition (\ref{sec:speed_composition})     & 6.4s   & -- \\
+  Composition (\ref{sec:speed_composition})     & 45s    & -- \\
   Delete readings (\ref{sec:speed_deletex})     & 5.9s   & -- \\
   FSA rule testing (\ref{sec:speed_fsa})        & 10s    & -- \\
   Custom FSA runner (\ref{sec:speed_custom})    & 1.45s  & -- \\
