@@ -473,11 +473,17 @@ each rule, yielding $\mathcal{O}(n^2kG)$. Finally, in the worst case, a rule
 only removes a single reading, so it takes $n(k - 1)$ rounds to disambiguate the
 sentence, resulting in the aforementioned bound.
 
-Hulden~\shortcite{Hulden:2011} showed that if the rules are compiled to bimachines,
-the complexity decreases to $\mathcal{O}(n^2k^2G)$, due to the fact that a
-bimachine can be applied to a sentence of $nk$ tokens in $\mathcal{O}(nk)$
-(linear) time, instead of the $\mathcal{O}(n^2k)$ suggested by Tapanainen.
-However, \emph{fomacg} does not include bimachine factorisation as of yet.
+Hulden~\shortcite{Hulden:2011} showed that if the rules are compiled to
+transducers, they can be applied to the whole sentence in $\mathcal{O}(nk)$
+time, thus decreasing the complexity to $O(n^{2}k^{2}G)$, instead of the
+$O(n^{2}k)$ suggested by Tapanainen. To be more precise, applying a rule
+transducer takes $O(nkT)$ time, where the constant $T$ is the size of the FST.
+While $T$ may be rather large, rule transducers may be factored into
+bimachines, which removes the constant. Hence, a disambiguating bimachine for
+one CG rule can be applied to a sentence of $nk$ tokens in $O(nk)$
+(linear) time. However, \textit{fomacg} only includes CG
+rule-to-transducer compilation and does not include bimachine
+factorization as of yet.
 
 While this work has left the theoretical limit untouched thus far, it improved
 on three aspects of the complexity.
