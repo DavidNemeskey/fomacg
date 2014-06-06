@@ -150,8 +150,8 @@ Here we briefly describe how \emph{fomacg} works; for further details refer to
 a morphologically analysed text, which consists of \emph{cohorts}: a word with
 its possible readings. A reading is
 represented by a lemma and a set of morphosyntactic \emph{tags}. For example, the cohort of
-the ambiguous Hungarian word \textit{szív} with two readings "heart" and
-"to suck" would be
+the ambiguous Hungarian word \textit{szív} with two readings ``heart'' and
+``to suck'' would be
 \texttt{\^{}szív/szív<n><sg><nom>/szív<vblex><pres><s3p>\$}\footnote{
 The example is in the Apertium stream format, not in CG-2 style.}. The text is
 tokenised into sentences based on a set of \emph{delimiters}. CG rules
@@ -421,7 +421,7 @@ Both \emph{fomacg} and \emph{fomacg-proc} had to be modified to account for the
 changes. The former now creates the converter FSA and saves it as the
 second machine in the binary grammar file. Also, since the ids that correspond
 to a symbol are unique to each machine, we added a post-processing phase that
-replaces the ids with the "canonical" ones in the converter FSA. 
+replaces the ids with the ``canonical'' ones in the converter FSA. 
 \emph{fomacg-proc} then converts the input to ids using the converter
 automaton's trie, and sends the vector to the rule machines. The rule machines
 treat the vector as their input, with a caveat: ids not in the alphabet of the
