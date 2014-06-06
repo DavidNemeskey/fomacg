@@ -217,7 +217,11 @@ are no Finnish and Hungarian corpora in Apertium; for the former, we used a
 1,620-sentence excerpt from the 2013-Nov-14 snapshot of the Finnish Wikipedia,
 while for the latter, the short test corpus used for grammar development. Since
 the latter contains a mere 11 sentences, it was repeated 32 times to produce
-a corpus similar in size to the other two. The Breton and Finnish corpora
+a corpus similar in size to the other two.\footnote{Although we used the same
+corpus for development and testing for Hungarian, the experimental setup was
+the same for VISL-CG and fomacg. While the numbers we acquired for Hungarian
+are not representative of how a proper Hungarian CG would perform on unseen
+data, they clearly show which of our steps benefit performance.} The Breton and Finnish corpora
 were tagged by Apertium's morphological analyser tools.
 
 Since VISL CG implements CG-3, and \emph{fomacg} only supports CG-2, a one-to-one
