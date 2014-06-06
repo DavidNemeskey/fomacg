@@ -575,7 +575,7 @@ testing.
   \begin{tabular}{ | l | r | r | r | r | r | }
   \hline
   \textbf{Language} & \textbf{Algorithm} & \textbf{Initialisation} &
-  \textbf{Disambiguation} & \textbf{Memory} & \textbf{File Size} \\
+  \textbf{Disambiguation} & \textbf{Memory} & \textbf{File size} \\
   \hline
   Hungarian & (flat) & 0.028s / 0.16s & 0.32s / 0.18s & 0.5\% & 60kB \\
   Hungarian & FixedLevel(3) & 0.77s / 0.33s & 0.235s / 0.13s & 2.1\% & 7.1MB \\
@@ -620,16 +620,16 @@ rapidly than does the number of tries and the savings become more modest.
   \caption{Improvements in memory usage due to removing the sigma trie. Memory
            consumption is measured as a percentage of the 4GB system memory}
   \label{tab:sigma_memory}
-  \begin{tabular}{ | l | r | r | r | }
+  \begin{tabular}{ | l | l | r | r | r | }
   \hline
-  \textbf{Language} & \textbf{Before} & \textbf{After} & \textbf{Reduction} \\
+  \textbf{Language} & \textbf{Method} & \textbf{Before} & \textbf{After} & \textbf{Reduction} \\
   \hline
-  hun L1 & 0.5\% & 0.1\% & 80\% \\
-  hun L3 & 2.1\% & 1.5\% & 28.57\% \\
-  br L1 & 5.1\% & 1.3\% & 74.5\% \\
-  br L2 & 9.6\% & 4.4\% & 54.16\% \\
-  fin L1 & 21\% & 4.1\% & 80.47\% \\
-  fin L2 & 32.3\% & 8.9\% & 72.44\% \\
+  Hungarian & L1 & 0.5\% & 0.1\% & 80\% \\
+  Hungarian&  L3 & 2.1\% & 1.5\% & 28.57\% \\
+  Breton & L1 & 5.1\% & 1.3\% & 74.5\% \\
+  Breton & L2 & 9.6\% & 4.4\% & 54.16\% \\
+  Finnish & L1 & 21\% & 4.1\% & 80.47\% \\
+  Finnish & L2 & 32.3\% & 8.9\% & 72.44\% \\
   \hline
   \end{tabular}
 \end{table}
@@ -638,7 +638,7 @@ We explored other options as well to reduce the size of rule condition trees.
 Unfortunately, most methods aimed at FSA compression in the literature are
 either already implemented in \emph{foma} (e.g. as row-indexed transition matrix,
 see Kiraz~\shortcite{Kiraz:2001}), or are aimed at automata with a regular structure,
-such as morphological analyzers~\cite{Huet:2003,Huet:2005,Drobac:2014}. Without
+such as morphological analysers~\cite{Huet:2003,Huet:2005,Drobac:2014}. Without
 further support, the approximately 30\% saving achieved by our method for a
 three-level condition tree alone is not enough to redeem hierarchical rule
 checking.
