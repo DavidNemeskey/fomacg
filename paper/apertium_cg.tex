@@ -230,9 +230,9 @@ original and the CG-2 grammars.
   \textbf{Language} & \textbf{Rules} & \textbf{CG-2 rules} &
   \textbf{Binary} & \textbf{Time} \\
   \hline
-  Hungarian &   33 &   33 &   8kB / 16kB & 0.284s / 0.15s \\
-  Breton    &  251 &  226 &  36kB / 44kB & 0.77s / 0.425s \\
-  Finnish   & 1207 & 1172 & 184kB / 164kB & 1.78s / 0.74s \\
+  Hungarian &   33 &   33 &   8kB & 0.284s \\
+  Breton    &  251 &  226 &  36kB & 0.77s \\
+  Finnish   & 1207 & 1172 & 184kB & 1.78s \\
   \hline
   \end{tabular}
 \end{table*}
@@ -577,17 +577,17 @@ testing.
   \textbf{Language} & \textbf{Algorithm} & \textbf{Initialisation} &
   \textbf{Disambiguation} & \textbf{Memory} & \textbf{File size} \\
   \hline
-  Hungarian & (flat) & 0.028s / 0.16s & 0.32s / 0.18s & 0.5\% & 60kB \\
-  Hungarian & FixedLevel(3) & 0.77s / 0.33s & 0.235s / 0.13s & 2.1\% & 7.1MB \\
-  Hungarian & Smallest First & 0.62s / 0.29s & 0.234s / 0.13s & 1.9\% & 5.9MB \\
+  Hungarian & (flat) & 0.028s & 0.32s & 0.5\% & 60kB \\
+  Hungarian & FixedLevel(3) & 0.77s & 0.235s & 2.1\% & 7.1MB \\
+  Hungarian & Smallest First & 0.62s & 0.234s & 1.9\% & 5.9MB \\
 \hline
-  Breton    & (flat) & 0.5s / 0.227s & 1.55s / 0.83s & 5.1\% & 1.5MB \\
-  Breton    & FixedLevel(2) & 1.8s / 0.82s & 1.09s / 0.573s & 9.6\% & 7.4MB \\
-  Breton    & Smallest First & 11.14s / 4.78s & 1.05s / 0.57s & 28.7\% & 60MB \\
+  Breton    & (flat) & 0.5s & 1.55s & 5.1\% & 1.5MB \\
+  Breton    & FixedLevel(2) & 1.8s & 1.09s & 9.6\% & 7.4MB \\
+  Breton    & Smallest First & 11.14s & 1.05s & 28.7\% & 60MB \\
 \hline
-  Finnish   & (flat) & 1.5s / 0.6s & 22.87s / 9.3s & 21.8\% & 7.2MB \\
-  Finnish   & FixedLevel(2) & 3.64s / 1.6s & 13.28s / 5.25s & 32.3\% & 28MB \\
-  Finnish   & SmallestFirst$^\ast$ & 20.75s / 9.4s & 9.95s / 4s & --$^\dagger$ & 198MB \\
+  Finnish   & (flat) & 1.5s & 22.87s & 21.8\% & 7.2MB \\
+  Finnish   & FixedLevel(2) & 3.64s & 13.28s & 32.3\% & 28MB \\
+  Finnish   & SmallestFirst$^\ast$ & 20.75s & 9.95s & --$^\dagger$ & 198MB \\
   \hline
   \end{tabular}
 \end{table*}
