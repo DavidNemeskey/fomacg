@@ -1,0 +1,118 @@
+% $Header: /home/vedranm/bitbucket/beamer/solutions/generic-talks/generic-ornate-15min-45min.en.tex,v 90e850259b8b 2007/01/28 20:48:30 tantau $
+
+\documentclass[utf8x,t,aspectratio=169]{beamer}
+
+\mode<presentation>
+{
+%  \usetheme[height=7mm]{Rochester}
+  \usetheme{Rochester}
+  \useinnertheme{rounded}
+%  \useoutertheme{infolines}
+  % or ...
+
+  \setbeamercovered{transparent}
+}
+\usefonttheme[onlymath]{serif}
+
+\usepackage[english]{babel}
+\usepackage[utf8x]{inputenc}
+
+\usepackage{times}
+\usepackage[T1]{fontenc}
+% Or whatever. Note that the encoding and the font should match. If T1
+% does not look nice, try deleting the line with the fontenc.
+
+%% to draw trees without jpg figures
+%\usepackage{synttree}
+% For code blocks
+% for sane tabular handling
+\usepackage{array}
+% For strikethrough (normalem keeps it as emph)
+%\usepackage[normalem]{ulem}
+
+\usepackage{mathrsfs}
+\usepackage{bm}  % For bold math
+
+\newcommand{\vitem}{\item \vspace{4pt}}
+\newcommand{\nyil}{$\rightarrow$\ }
+\newcommand{\nagytilde}{$\sim$}
+\newtheorem{Examplee}{Example}[section]
+
+\newtheorem{nix}{}[section]
+
+\title{Why implementation matters}
+\subtitle{Evaluation of an open-source constraint grammar parser}
+
+\author{Dávid Márk Nemeskey\inst{1}, Francis M. Tyers\inst{2}, Mans Hulden\inst{3}}
+\institute{
+  \inst{1} Institute for Computer Science and Control, Hungarian Academy of Sciences \\
+  \inst{2} HSL-fakultetet, UiT Norgga árktalaš universitehta \\
+  \inst{3} Department of Linguistics, University of Colorado Boulder}
+
+\date % (optional)
+{25th August 2014}
+
+% If you have a file called "university-logo-filename.xxx", where xxx
+% is a graphic format that can be processed by latex or pdflatex,
+% resp., then you can add a logo as follows:
+
+% \pgfdeclareimage[height=0.5cm]{university-logo}{university-logo-filename}
+% \logo{\pgfuseimage{university-logo}}
+
+%\AtBeginSection[]
+%{
+%   \begin{frame}
+%       \frametitle{Outline}
+%       \tableofcontents[currentsection]
+%   \end{frame}
+%}
+%
+
+% If you wish to uncover everything in a step-wise fashion, uncomment
+% the following command: 
+%\beamerdefaultoverlayspecification{<+->}
+
+
+\begin{document}
+
+% TODO: do we need an outline?
+\begin{frame}{}
+  \titlepage
+\end{frame}
+
+\section{Introduction}
+
+\begin{frame}{Rule testing vs application}
+
+\begin{tabular}{| l | l | l | l |}
+\hline
+\textbf{Language} & \textbf{Testing} & \textbf{Application} & \textbf{Other} \\
+\hline
+Hungarian & 112,416 / 45.84\% & 2,560 / 7.20\% & 13,760 / 22.75\% \\
+Breton & 612,006 / 62.40\% & 4,707 / 2.74\% & 11,921 / 4.41\% \\
+Finnish & 6,290,609 / 87.17\% & ~0\% & 81,017 / 3.57\% \\
+\hline
+\end{tabular}
+
+\end{frame}
+
+
+\begin{frame}
+
+\bigskip
+
+\bigskip
+
+{\huge Thank you for your attention!}
+
+\bigskip
+\bigskip
+\bigskip
+
+emails: \\ {\tt nemeskey.david@gmail.com \\ francis.tyers@uit.no \\ mans.hulden@colorado.edu} \\
+
+\end{frame}
+
+\end{document}
+
+
