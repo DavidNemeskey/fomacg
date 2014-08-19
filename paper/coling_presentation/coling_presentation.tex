@@ -82,6 +82,118 @@
 
 \section{Introduction}
 
+% What is CG?
+% Apertium & VISL-CG; CG-2 & CG-3
+% Aims: measure actual speed of CG-based MD; faster CG-based MD; beat VISL-CG
+
+\section{fomacg}
+
+\section{Methodology}
+
+\begin{frame}{Development}
+The performance has been measured against VISL-CG.
+
+
+\begin{itemize}
+    \vitem Breton
+    \vitem Finnish
+\end{itemize}
+\end{frame}
+
+\section{Generic optimisations}
+
+% performance in the paper
+% CG-agnostic modifications
+
+\begin{frame}{Discarded readings}
+The original rule FSTs keep discarded readings, only prepend them with \texttt{\#X\#}.
+
+If we delete them:
+\begin{itemize}
+    \vitem after each rule application, the sentence gets shorter
+    \vitem subsequent rules can be applied faster
+    \vitem we can detect rule applications easier.
+\end{itemize}
+This simple change improves running time to 5.9s (8\%).
+
+\end{frame}
+
+\begin{frame}{Rule testing}
+Further speed-ups could be achieved by separating rule testing and application:
+\begin{itemize}
+    \vitem an FSA tests if the rule is applicable
+    \vitem the rule FST is only applied if it is
+\end{itemize}
+Automata are faster than tranducers:
+\begin{itemize}
+    \vitem no output is generated
+    \vitem can be determinised and minimised
+\end{itemize}
+\only<2-3>{After implementing it...
+\begin{itemize}
+    \vitem running time goes up to 9 seconds!
+    \only<3>{\vitem Why?}
+\end{itemize}}
+\end{frame}
+
+\begin{frame}{Foma is too generic}
+
+The \texttt{foma} library supports the following features:
+\begin{itemize}
+  \vitem Conversion of the text to symbols (single- and multi-character)
+  \vitem Regular transitions and flag diacritics
+  \vitem Three types of search in the transition matrix (linear, binary and indexed)
+  \vitem Deterministic and non-deterministic operation
+  \vitem Iterators (multiple invocations iterate the non-deterministic outputs)
+\end{itemize}
+%When we run a FSA, all these features are taken into account.
+\end{frame}
+
+\begin{frame}{Cut down on features}
+
+\setbeamercovered{transparent}
+What we actually need...
+\begin{itemize}
+  \vitem Conversion of the text to symbols (single- and multi-character)
+  \vitem Regular transitions \uncover<1>{and flag diacritics}
+  \vitem \uncover<1-2>{Three types of} search in the transition matrix (\uncover<1-2>{linear, }binary\uncover<1-2>{ and indexed})
+  \vitem Deterministic \uncover<1-3>{and non-deterministic }operation
+  \vitem \uncover<1-4>{Iterators (multiple invocations iterate the non-deterministic outputs)}
+\end{itemize}
+
+\only<6>{Implementing our own functions
+\begin{itemize}
+    \vitem for DFSAs (rule \& delimiter testers): 1.45s --- 75\% improvement!
+    \vitem for DFSTs (format conversion): 1.275s
+\end{itemize}}
+
+\end{frame}
+
+\begin{frame}{Learnings}
+Genericity is useful:
+\begin{itemize}
+    \vitem it allows a library to be used in many situations  % TODO Ugh
+\end{itemize}
+
+When performance is important, relying on generic libraries
+\begin{itemize}
+    \vitem leads to suboptimal performance
+    \vitem produces counterintuitive results
+\end{itemize}
+
+When doing research, it is important to use software the behaviour of which
+reflects theory.
+
+\end{frame}
+
+\section{CG-specific optimisations}
+
+% performance & memory (split by spaces, trie)
+
+\section{Complexity analysis}
+
+% from the paper
+
 \begin{frame}{Rule testing vs application}
 
 \begin{tabular}{| l | l | l | l |}
@@ -95,6 +207,12 @@ Finnish & 6,290,609 / 87.17\% & ~0\% & 81,017 / 3.57\% \\
 \end{tabular}
 
 \end{frame}
+
+\section{Conclusions}
+
+% Aims: Success, Success, Failure (yet)
+% logG method (not feasible)
+% to take home: implementation matters
 
 
 \begin{frame}
