@@ -324,8 +324,20 @@ Rest of the machines are simply $R_i: int \rightarrow int$.
 Tapanainen proves that worst-case time complexity for a CG parser is
 $\mathcal{O}(n^3k^2G)$, where
 \begin{itemize}
-    \vitem 
+    \vitem $n$ is the length of the sentence;
+    \vitem $k$ is the maximum number of readings per cohort;
+    \vitem $G$ is the number of rules in the grammar.
 \end{itemize}
+In more detail,
+\begin{itemize}
+    \vitem testing a cohort with a rule is $\mathcal{O}(nk)$;
+    \vitem the whole sentence, $\mathcal{O}(n^2k)$;
+    \vitem for each rule: $\mathcal{O}(n^2kG)$;
+    \vitem we need at most $n(k - 1)$ rounds.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Finite-state complexity}
 \end{frame}
 
 \begin{frame}{Rule testing vs application}
