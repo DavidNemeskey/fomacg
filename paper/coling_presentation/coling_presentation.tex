@@ -102,8 +102,10 @@ The performance has been measured against VISL-CG.
 
 \section{Generic optimisations}
 
-% performance in the paper
-% CG-agnostic modifications
+\begin{frame}{Naïve baseline}
+\end{frame}
+
+% TODO composition?
 
 \begin{frame}{Discarded readings}
 The original rule FSTs keep discarded readings, only prepend them with \texttt{\#X\#}.
@@ -145,6 +147,7 @@ The \texttt{foma} library supports the following features:
   \vitem Three types of search in the transition matrix (linear, binary and indexed)
   \vitem Deterministic and non-deterministic operation
   \vitem Iterators (multiple invocations iterate the non-deterministic outputs)
+  \vitem Transducer output
 \end{itemize}
 %When we run a FSA, all these features are taken into account.
 \end{frame}
@@ -159,13 +162,28 @@ What we actually need...
   \vitem \uncover<1-2>{Three types of} search in the transition matrix (\uncover<1-2>{linear, }binary\uncover<1-2>{ and indexed})
   \vitem Deterministic \uncover<1-3>{and non-deterministic }operation
   \vitem \uncover<1-4>{Iterators (multiple invocations iterate the non-deterministic outputs)}
+  \vitem \uncover<1-5>{Transducer output}
 \end{itemize}
 
-\only<6>{Implementing our own functions
+\only<7>{Implementing our own functions may improve performance.}
+\end{frame}
+
+\begin{frame}{Performance of our custom functions}
+Deterministic FSA
 \begin{itemize}
-    \vitem for DFSAs (rule \& delimiter testers): 1.45s --- 75\% improvement!
-    \vitem for DFSTs (format conversion): 1.275s
-\end{itemize}}
+    \vitem rule \& delimiter testers
+    \vitem 1.45s --- 75\% improvement!
+\end{itemize}
+Deterministic FST
+\begin{itemize}
+    \vitem format conversion
+    \vitem 1.275s
+\end{itemize}
+Non-deterministic functional FST
+\begin{itemize}
+    \vitem rule transducers
+    \vitem 1.05s
+\end{itemize}
 
 \end{frame}
 
@@ -188,7 +206,71 @@ reflects theory.
 
 \section{CG-specific optimisations}
 
-% performance & memory (split by spaces, trie)
+\begin{frame}{CG-specific optimisations}
+The changes thus were agnostic to the structure of the CG parsing task:
+\begin{itemize}
+    \vitem decreasing input length
+    \vitem using automata for rule testing
+    \vitem using custom functions
+\end{itemize}
+
+\only<2>{
+The rule FSAs \& FSTs have special properties:
+\begin{itemize}
+    \vitem multicharacter symbols, separated by spaces 
+    \vitem common symbols:
+    \begin{itemize}
+        \vitem boilerplate (\texttt{\$0\$}, \texttt{\#X\#}, etc.)
+        \vitem POS, words (\texttt{N}, \texttt{the}, etc.)
+    \end{itemize}
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}{String vector machines}
+Symbols are multicharacter, with spaces between them (e.g.
+\texttt{\$0\$ "as" \#BOC\# | \#X\# "as" <ADV> | \#0\# "as" <PREP> | \#EOC\#})
+\begin{itemize}
+    \vitem Our FSTs are $char* \rightarrow char*$
+    \vitem String to symbol vector transformation occurs on each FSA/FST application
+\end{itemize}
+Why not do it in a preprocessing step?
+\begin{itemize}
+    \vitem Do the transformation only once
+    \vitem Rewrite the FSTs to $StringVect \rightarrow StringVect$
+\end{itemize}
+Variable effectiveness: 4--40\%.
+\end{frame}
+
+\begin{frame}{String to symbol conversion}
+Internally foma uses integer symbol ids, so a $String \rightarrow int$ conversion
+is still performed separately by each FSA/FSTs.
+\begin{itemize}
+    \vitem Usually taken for granted in the literature
+    \vitem Significant contribution to execution time (60\%)
+\end{itemize}
+\only<2>{
+foma uses per-FST tries to do the conversion
+\begin{itemize}
+    \vitem Doing a single conversion is fast, but it adds up
+    \vitem Duplicated trie branches: boilerplate, CG tags
+    \vitem High memory consumption
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}{Converter transducer}
+Do the conversion only once in a converter transducer $C$:
+\begin{itemize}
+    \vitem $\Sigma_c = \displaystyle \bigcup_{i=0}^N{\Sigma_{R_i}}$
+    \vitem $C: String \rightarrow int$
+\end{itemize}
+Rest of the machines are simply $R_i: int \rightarrow int$.
+\begin{itemize}
+    \vitem Running time improved by 40--70\%.
+    \vitem Memory consumption reduced by 75--80\%.
+\end{itemize}
+\end{frame}
 
 \section{Complexity analysis}
 
