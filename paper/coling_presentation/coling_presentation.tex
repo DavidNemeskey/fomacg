@@ -37,6 +37,8 @@
 \newcommand{\nyil}{$\rightarrow$\ }
 \newcommand{\nagytilde}{$\sim$}
 \newtheorem{Examplee}{Example}[section]
+\providecommand{\abs}[1]{\lvert#1\rvert}
+\providecommand{\norm}[1]{\lVert#1\rVert}
 
 \newtheorem{nix}{}[section]
 
@@ -321,7 +323,7 @@ Rest of the machines are simply $R_i: int \rightarrow int$.
 \section{Complexity analysis}
 
 \begin{frame}{Complexity analysis}
-Tapanainen proves that worst-case time complexity for a CG parser is
+Tapanainen proved that worst-case time complexity for a CG parser is
 $\mathcal{O}(n^3k^2G)$, where
 \begin{itemize}
     \vitem $n$ is the length of the sentence;
@@ -338,9 +340,42 @@ In more detail,
 \end{frame}
 
 \begin{frame}{Finite-state complexity}
+Hulden showed that with FST rules, complexity decreases to $O(n^{2}k^{2}G)$.
+\begin{itemize}
+    \vitem an FST applies the rule everywhere in the sentence in $\mathcal{O}(nk)$
+    \vitem precisely, it takes $\mathcal{O}(nk \norm{FST})$,
+           where $\norm{FST}$ can be large
+    \vitem if the rules are factored to bimachines, this decreases $\mathcal{O}(2nk)$
+    \vitem fomacg does not include bimachine factorization
+\end{itemize}
+\only<2>{
+Our work improved on these numbers by
+\begin{itemize}
+    \vitem introducing rule testing automata, which can be applied in $\mathcal{O}(nk)$
+    \vitem implementing custom functions that can live up to the theory
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}{Bimachines vs rule condition FSAs}
+On average, our work also outperforms the pure bimachine setup. Let
+\begin{itemize}
+    \vitem $G_a$: number of rules that can be applied to the sentence
+    \vitem $G_u$: number of rules that cannot
+    \vitem $G = G_a + G_u$
+\end{itemize}
+Then, $G_a$ rounds (each $\frac{G_u}{2}$ unsuccessful test and 1 application) take
+\begin{itemize}
+    \vitem only bimachines: $~2G_a(1 + \frac{G_u}{2})$
+    \vitem condition FSAs: $~G_a(1 + 2 + \frac{G_u}{2})$
+\end{itemize}
+Since $G_a << G$ and $3 << G_u$, condition FSAs perform better.
 \end{frame}
 
 \begin{frame}{Rule testing vs application}
+$G_a << G$, but by how much?
+
+\bigskip
 
 \begin{tabular}{| l | l | l | l |}
 \hline
@@ -348,10 +383,42 @@ In more detail,
 \hline
 Hungarian & 112,416 / 45.84\% & 2,560 / 7.20\% & 13,760 / 22.75\% \\
 Breton & 612,006 / 62.40\% & 4,707 / 2.74\% & 11,921 / 4.41\% \\
-Finnish & 6,290,609 / 87.17\% & ~0\% & 81,017 / 3.57\% \\
+Finnish & 6,290,609 / 87.17\% & $\sim$0\% & 81,017 / 3.57\% \\
 \hline
 \end{tabular}
 
+\bigskip
+
+Is there a way to decrease the number of rule checks?
+
+\end{frame}
+
+\begin{frame}{Hierarchical rule checking}
+We use the fact that regular languages are closed under the union operator.
+\begin{itemize}
+    \vitem Let $\mathrm{FSA}_{G_a}$ and $\mathrm{FSA}_{G_b}$ be rule testing FSAs
+           for rules $G_a$ and $G_b$
+    \vitem Then, $\mathrm{FSA}_{G_{ab}} = \mathrm{FSA}_{G_a} \cup \mathrm{FSA}_{G_b}$
+           is a rule testing FSA for $G_{ab}$ = $G_a \cup G_b$
+    \vitem If $\mathrm{FSA}_{G_{ab}}$ is minimized, then it checks $G_{ab}$ in
+           $\mathcal{O}(nk)$.
+\end{itemize}
+This allows for hierarchical rule checking:
+\begin{itemize}
+    \vitem First check if $\mathrm{FSA}_{G_{ab}}$ accepts a sentence
+    \begin{itemize}
+        \vitem If yes, check with $\mathrm{FSA}_{G_a}$
+        \vitem If not, we saved a check!
+    \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The logG experiment}
+For $G$ rules, we can build a tree with $logG$ levels, reducing the number of
+checks to $logG$.
+\end{frame}
+
+\begin{frame}{Comparison with VISL-CG}
 \end{frame}
 
 \section{Conclusions}
