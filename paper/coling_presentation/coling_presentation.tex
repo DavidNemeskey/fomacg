@@ -91,51 +91,61 @@
 
 \section{Introduction}
 
+\begin{frame}{Constraint Grammar}
+Rule-based formalism for linguistic tasks:
+\begin{itemize}
+    \vitem morphological analysis
+    \vitem clause boundary detection
+    \vitem surface syntactic parsing
+\end{itemize}
+
+Advantages of CG:
+\begin{itemize}
+    \vitem very high accuracy on free text
+    \vitem works for languages without annotated corpora
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Constraint Grammar History}
+Implementations:
+\begin{itemize}
+  \vitem CG: Introduced by Karlsson (1995)
+  \vitem CG-2: Tapanainen (1996)
+  \vitem VISL CG: Bick (1996)
+  \vitem VISL CG3: Didriksen (2011)
+\end{itemize}
+Finite state experiments:
+\begin{itemize}
+    \vitem Hulden (2011)
+    \vitem Peltonen (2011)
+    \vitem Yli-Jyra (2011)
+\end{itemize}
+
+%\textbf{Other relevant literature:}
+%\begin{itemize}
+%  \item Samuelsson, C., Voutilainen, A. (1997) ``Comparing a linguistic and a stochastic tagger''. \emph{35th ACL}. 246--253
+%  \item ...
+%\end{itemize}
+
+\end{frame}
+
 % What is CG?
 % Apertium & VISL-CG; CG vs n-grame? 
 \begin{frame}{Apertium}
+Rule-based machine translation platform
 
 \begin{itemize}
-  \vitem Rule-based machine translation platform
   \vitem Over 40 released language pairs
   \vitem Free/open-source: GPL licence
-  \vitem Many language pairs include constraint grammars
-  \begin{itemize}
-    \vitem All pairs with constraint grammars use VISL CG-3
-  \end{itemize} 
 \end{itemize}
+Many language pairs include constraint grammars
+\begin{itemize}
+  \vitem All pairs with constraint grammars use VISL CG-3
+  \vitem Accuracy is higher than statistical ($n$-gram) models
+  \vitem Main drawback: running time is much worse
+\end{itemize} 
 
 \end{frame}
-
-\begin{frame}{Constraint Grammar}
-
-% history
-
-\textbf{History:}
-\begin{itemize}
-  \item Introduced by Fred Karlsson (1995)
-  \item ...
-\end{itemize}
-
-\textbf{Implementations:}
-\begin{itemize}
-  \item CG:
-  \item CG-2:
-  \item VISL CG:
-  \item VISL CG3:
-\end{itemize}
-
-
-\textbf{Other relevant literature:}
-\begin{itemize}
-  \item Samuelsson, C., Voutilainen, A. (1997) ``Comparing a linguistic and a stochastic tagger''. \emph{35th ACL}. 246--253
-  \item ...
-\end{itemize}
-
-\end{frame}
-
-% CG-2 & CG-3 (might be skippable)
-% Aims: measure actual speed of CG-based MD; faster CG-based MD; beat VISL-CG
 
 \begin{frame}{Aims}
 We set out with the following aims:
