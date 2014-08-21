@@ -33,6 +33,9 @@
 \usepackage{mathrsfs}
 \usepackage{bm}  % For bold math
 
+%\usepackage{marvosym}  % For tick
+\usepackage{wasysym}  % For tick
+
 \newcommand{\vitem}{\item \vspace{4pt}}
 \newcommand{\nyil}{$\rightarrow$\ }
 \newcommand{\nagytilde}{$\sim$}
@@ -93,12 +96,12 @@
 \begin{frame}{Apertium}
 
 \begin{itemize}
-  \item Rule-based machine translation platform
-  \item Over 40 released language pairs
-  \item Free/open-source: GPL licence
-  \item Many language pairs include constraint grammars
+  \vitem Rule-based machine translation platform
+  \vitem Over 40 released language pairs
+  \vitem Free/open-source: GPL licence
+  \vitem Many language pairs include constraint grammars
   \begin{itemize}
-    \item All pairs with constraint grammars use VISL CG-3
+    \vitem All pairs with constraint grammars use VISL CG-3
   \end{itemize} 
 \end{itemize}
 
@@ -134,6 +137,15 @@
 % CG-2 & CG-3 (might be skippable)
 % Aims: measure actual speed of CG-based MD; faster CG-based MD; beat VISL-CG
 
+\begin{frame}{Aims}
+We set out with the following aims:
+\begin{tabular}{ l  l }
+  Measure actual speed of CG-based morphological disambiguation & \textbf{\Square} \\
+  Improve on the performance of state-of-the-art open source finite-state CG & \textbf{\Square} \\
+  Try to outperform VISL-CG & \textbf{\Square} \\
+\end{tabular}
+\end{frame}
+
 \section{fomacg}
 
 \section{Methodology}
@@ -153,9 +165,6 @@ The performance has been measured against VISL-CG.
 \begin{frame}{Naïve baseline}
 \end{frame}
 
-\begin{frame}{Composition}
-
-\end{frame}
 % TODO composition?
 
 \begin{frame}{Discarded readings}
@@ -452,16 +461,33 @@ Unfortunately, this does not work in practice.
   Finnish   & VISL-CG & -- & \textbf{1.78s} & -- & 184kB \\
   Finnish   & flat & 1.5s & 22.87s & 4.1\% & 7.2MB \\
   Finnish   & forest & \textbf{\color{red}20.75s} & 9.95s & 8.9\% & 198MB \\
-  % TODO: colors! red & green
   \hline
   \end{tabular}
 \end{frame}
 
 \section{Conclusions}
 
-% Aims: Success, Success, Failure (yet)
-% logG method (not feasible)
-% to take home: implementation matters
+\begin{frame}{Conclusions}
+We set out with the following aims:
+\begin{tabular}{ l  l }
+  Measure actual speed of CG-based morphological disambiguation & \textbf{\CheckedBox} \\
+  Improve on the performance of state-of-the-art open source finite-state CG & \textbf{\CheckedBox} \\
+  Try to outperform VISL-CG & \textbf{\Square} \\
+\end{tabular}
+
+\smallskip
+
+\begin{itemize}
+    \vitem Experimented with decreasing the time of applying a CG to
+           $\mathcal{O}(n^2k^2\log G$; our method proved infeasible in practice
+    \vitem Our main finding is that implementation matters
+    \begin{itemize}
+        \vitem genericity hurts performance
+        \vitem it might prevent us from drawing valid conclusions from our
+               experiments.
+    \end{itemize}
+\end{itemize}
+\end{frame}
 
 
 \begin{frame}
