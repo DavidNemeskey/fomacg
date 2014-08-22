@@ -149,26 +149,63 @@ Many language pairs include constraint grammars
 
 \begin{frame}{Aims}
 We set out with the following aims:
+
+\smallskip
+
 \begin{tabular}{ l  l }
   Measure actual speed of CG-based morphological disambiguation & \textbf{\Square} \\
   Improve on the performance of state-of-the-art open source finite-state CG & \textbf{\Square} \\
   Try to outperform VISL-CG & \textbf{\Square} \\
 \end{tabular}
-\end{frame}
 
-\section{fomacg}
+\bigskip
+
+We have chose \emph{fomacg} (Hulden, 2011) as the base for our parser.
+\begin{itemize}
+    \vitem Open-source CG $\rightarrow$ FST compiler 
+    \vitem Documented well in the paper
+\end{itemize}
+\end{frame}
 
 \section{Methodology}
 
-\begin{frame}{Development}
-The performance has been measured against VISL-CG.
-
-
+\begin{frame}{Methodology}
+Development
 \begin{itemize}
-    \vitem Breton
-    \vitem Finnish
+    \vitem Naïve parser implementation for baseline
+    \vitem Optimisations
+    \begin{itemize}
+        \vitem parser
+        \vitem compiler
+    \end{itemize}
+    \vitem Benchmarked on a small Hungarian CG grammar
 \end{itemize}
+
+Testing
+\begin{itemize}
+    \vitem The performance has been measured against VISL-CG.
+    \vitem Three CGs: Hungarian, Breton, Finnish
+\end{itemize}
+
 \end{frame}
+
+\begin{frame}{Development and test sets}
+\begin{table}
+  \centering
+  \begin{tabular}{ | l | r | r | r | }
+  \hline
+  \textbf{Language} & \textbf{Rules} & \textbf{CG-2 rules} & \textbf{Corpus size} \\
+  \hline
+  Hungarian &   33 &   33 & 11 * 32 \\
+  Breton    &  251 &  226 & 1,161 \\
+  Finnish   & 1207 & 1172 & 1,620 \\
+  \hline
+  \end{tabular}
+\end{table}
+\end{frame}
+
+\section{fomacg}
+% TODO describe CG & foma-cg
 
 \section{Generic optimisations}
 
@@ -499,6 +536,8 @@ We set out with the following aims:
 \end{itemize}
 \end{frame}
 
+\begin{frame}{Acknowledgements}
+\end{frame}
 
 \begin{frame}
 

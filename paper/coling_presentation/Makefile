@@ -5,4 +5,4 @@ clean::
 
 %.pdf: %.tex
 	pdflatex $<
-	pdflatex $<
+#	pdflatex $<
