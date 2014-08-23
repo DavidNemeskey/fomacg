@@ -164,6 +164,7 @@ We have chose \emph{fomacg} (Hulden, 2011) as the base for our parser.
 \begin{itemize}
     \vitem Open-source CG $\rightarrow$ FST compiler 
     \vitem Documented well in the paper
+    \vitem All experiments used \emph{foma}; due to Mans Hulden
 \end{itemize}
 \end{frame}
 
@@ -205,14 +206,91 @@ Testing
 \end{frame}
 
 \section{fomacg}
-% TODO describe CG & foma-cg
+
+\begin{frame}{Morphological disambiguation based on CG}
+Ambiguous input sentence (\emph{fomacg} format):
+
+\uncover<2->{
+  \begin{itemize}
+    \uncover<2->{\vitem {\color<2>{red}cohorts}}
+    \uncover<3>{\vitem {\color<3>{red}readings}}
+  \end{itemize}
+}
+
+\bigskip
+
+\texttt{\$0\$ "All" \#BOC\# | \#0\# "all" <n> <sg> <nom> | \#EOC\#}\\
+\texttt{\$0\$ "is" \#BOC\# | \#0\# "be" <vbser> <pres> <s3p> | \#EOC\#}\\
+\only<1>{\texttt{\$0\$ "well" \#BOC\# | \#0\# "well" <n> <sg> <nom> | \#0\# "well" <adj> <sg> <nom> | \#EOC\#}\\}
+\only<2>{\texttt{\color{red}\$0\$ "well" \#BOC\# | \#0\# "well" <n> <sg> <nom> | \#0\# "well" <adj> <sg> <nom> | \#EOC\#}\\}
+\only<3>{\texttt{\$0\$ "well" \#BOC\# | {\color{red}\#0\# "well" <n> <sg> <nom>} | {\color{red}\#0\# "well" <adj> <sg> <nom>} | \#EOC\#}\\}
+\texttt{\$0\$ "." \#BOC\# | \#0\# "." <punct> | \#EOC\#}
+
+\end{frame}
+
+\begin{frame}{Morphological disambiguation based on CG}
+Rules (constraints):
+\begin{itemize}
+    \vitem select or filter readings
+    \vitem grouped into priority sections
+    \vitem two ways to look at it:
+    \begin{itemize}
+        \vitem constraint solving (optimality theory)
+        \only<1>{\vitem iterative rule application}
+        \only<2>{\vitem \textbf{iterative rule application}}
+    \end{itemize}
+    \vitem \emph{fomacg} converts these rules to FST
+\end{itemize}
+
+\bigskip
+
+\texttt{REMOVE (N SG) IF (-1C VBSER)}
+\end{frame}
+
+\begin{frame}{Morphological disambiguation based on CG}
+Rule application:
+
+\bigskip
+\bigskip
+\bigskip
+
+\texttt{\$0\$ "All" \#BOC\# | \#0\# "all" <n> <sg> <nom> | \#EOC\#}\\
+\texttt{\$0\$ "is" \#BOC\# | \#0\# "be" <vbser> <pres> <s3p> | \#EOC\#}\\
+\only<1>{\texttt{\$0\$ "well" \#BOC\# | \#0\# "well" <n> <sg> <nom> | \#0\# "well" <adj> <sg> <nom> | \#EOC\#}\\}
+\only<2>{\texttt{\$0\$ "well" \#BOC\# | \textbf{\color{red}\#X\#} "well" <n> <sg> <nom> | \#0\# "well" <adj> <sg> <nom> | \#EOC\#}\\}
+\texttt{\$0\$ "." \#BOC\# | \#0\# "." <punct> | \#EOC\#}
+
+\bigskip
+\bigskip
+\bigskip
+
+\texttt{FST\{ REMOVE (N SG) IF (-1C VBSER) \}}
+\end{frame}
 
 \section{Generic optimisations}
 
-\begin{frame}{Naïve baseline}
+\begin{frame}[fragile]
+  \only<1>{\frametitle{CG parser algorithm}}
+  \only<2>{\frametitle{Naïve baseline}}
+% TODO algorithm
+\begin{semiverbatim}
+for (sentence in text) \{
+  fomacg\_str = convert\_in(sentence);
+FIRST\_RULE:
+  for (section in cg)
+    for (rule in section)
+      if rule.test\_and\_apply(fomacg\_str)
+        goto FIRST\_RULE;
+    print convert\_out(fomacg\_str);
+\}
+\end{semiverbatim}
+\only<2>{
+\begin{itemize}
+    \vitem rules are FSTs
+    \vitem convert functions are FSTs
+\end{itemize}
+}
 \end{frame}
-
-% TODO composition?
 
 \begin{frame}{Discarded readings}
 The original rule FSTs keep discarded readings, only prepend them with \texttt{\#X\#}.
@@ -278,7 +356,7 @@ What we actually need...
 \begin{frame}{Performance of our custom functions}
 Deterministic FSA
 \begin{itemize}
-    \vitem rule \& delimiter testers
+    \vitem rule testers
     \vitem 1.45s--75\% improvement!
 \end{itemize}
 Deterministic FST
@@ -537,15 +615,15 @@ We set out with the following aims:
 \end{frame}
 
 \begin{frame}{Acknowledgements}
+
 \end{frame}
 
 \begin{frame}
 
 \bigskip
-
 \bigskip
 
-%{\huge Thank you for your attention!}
+{\huge Thank you for your attention!}
 {\huge Go raibh maith agaibh!}
 
 \bigskip
