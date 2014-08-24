@@ -26,7 +26,7 @@
 %\usepackage{synttree}
 % For code blocks
 % for sane tabular handling
-\usepackage{array}
+%\usepackage{array}
 % For strikethrough (normalem keeps it as emph)
 %\usepackage[normalem]{ulem}
 
@@ -289,7 +289,8 @@ Rule application:
 
 \begin{frame}[fragile]
   \only<1>{\frametitle{CG parser algorithm}}
-  \only<2>{\frametitle{Naïve baseline}}
+  \only<2-3>{\frametitle{Naïve baseline}}
+\begin{tabular}{p{22em} p{8em}}
 % TODO algorithm
 \begin{semiverbatim}
 for (sentence in text) \{
@@ -302,43 +303,86 @@ FIRST\_RULE:
     print convert\_out(fomacg\_str);
 \}
 \end{semiverbatim}
-\only<2>{
+\only<2-3>{
 \begin{itemize}
     \vitem rules are FSTs
     \vitem convert functions are FSTs
 \end{itemize}
 }
+&
+\only<3>{
+\smash{\raisebox{-\height}{\begin{tabular}{| l | r | r |}
+  \hline
+  \textbf{Method} & \textbf{Time} & \textbf{$\Delta$} \\
+  \hline
+  VISL-CG & 0.284s & -- \\
+  \hline
+  Naïve & 6.4s & 22.5x \\
+  \hline
+  \end{tabular}}}
+}
+\end{tabular}
 \end{frame}
 
 \begin{frame}{Discarded readings}
+\begin{tabular}{p{22em} p{8em}}
 The original rule FSTs keep discarded readings, only prepend them with \texttt{\#X\#}.
+
+\bigskip
 
 If we delete them:
 \begin{itemize}
     \vitem after each rule application, the sentence gets shorter
     \vitem subsequent rules can be applied faster
-    \vitem we can detect rule applications easier.
 \end{itemize}
-This simple change improves running time to 5.9s (8\%).
+&
+\only<2>{
+\smash{\raisebox{-\height}{\begin{tabular}{| l | r | r |}
+  \hline
+  \textbf{Method} & \textbf{Time} & \textbf{$\Delta$\%} \\
+  \hline
+  VISL-CG & 0.284s & -- \\
+  \hline
+  Naïve & 6.4s & -- \\
+  DeleteX & 5.9s & 8\% \\
+  \hline
+  \end{tabular}}}
+}
+\end{tabular}
 
 \end{frame}
 
 \begin{frame}{Rule testing}
+\begin{tabular}{p{22em} p{8em}}
 Further speed-ups could be achieved by separating rule testing and application:
 \begin{itemize}
     \vitem an FSA tests if the rule is applicable
     \vitem the rule FST is only applied if it is
 \end{itemize}
+
+\smallskip
+
 Automata are faster than tranducers:
 \begin{itemize}
     \vitem no output is generated
     \vitem can be determinised and minimised
 \end{itemize}
-\only<2-3>{After implementing it...
-\begin{itemize}
-    \vitem running time goes up to 9 seconds!
-    \only<3>{\vitem Why?}
-\end{itemize}}
+\only<2>{After implementing it...}
+&
+\only<2>{
+\smash{\raisebox{-\height}{\begin{tabular}{| l | r | r |}
+  \hline
+  \textbf{Method} & \textbf{Time} & \textbf{$\Delta$\%} \\
+  \hline
+  VISL-CG & 0.284s & -- \\
+  \hline
+  Naïve & 6.4s & -- \\
+  DeleteX & 5.9s & 8\% \\
+  Testing & 10s & -- \\
+  \hline
+  \end{tabular}}}
+}
+\end{tabular}
 \end{frame}
 
 \begin{frame}{Foma is too generic}
@@ -372,21 +416,37 @@ What we actually need...
 \end{frame}
 
 \begin{frame}{Performance of our custom functions}
+\begin{tabular}{p{22em} p{8em}}
 Deterministic FSA
 \begin{itemize}
     \vitem rule testers
-    \vitem 1.45s--75\% improvement!
 \end{itemize}
 Deterministic FST
 \begin{itemize}
     \vitem format conversion
-    \vitem 1.275s
 \end{itemize}
 Non-deterministic functional FST
 \begin{itemize}
     \vitem rule transducers
-    \vitem 1.05s
 \end{itemize}
+&
+\only<2>{
+\smash{\raisebox{-\height}{\begin{tabular}{| l | r | r |}
+  \hline
+  \textbf{Method} & \textbf{Time} & \textbf{$\Delta$\%} \\
+  \hline
+  VISL-CG & 0.284s & -- \\
+  \hline
+  Naïve & 6.4s & -- \\
+  DeleteX & 5.9s & 8\% \\
+  Testing & 10s & -- \\
+  Custom FSA & 1.45s & 75\% \\
+  Custom DFST & 1.275s & 12\% \\
+  Custom FFST & 1.05s & 18\% \\
+  \hline
+  \end{tabular}}}
+}
+\end{tabular}
 
 \end{frame}
 
@@ -431,8 +491,9 @@ The rule FSAs \& FSTs have special properties:
 \end{frame}
 
 \begin{frame}{String vector machines}
+\begin{tabular}{p{22em} p{8em}}
 Symbols are multicharacter, with spaces between them (e.g.
-\texttt{\$0\$ "as" \#BOC\# | \#X\# "as" <ADV> | \#0\# "as" <PREP> | \#EOC\#})
+\texttt{\$0\$ "as" \#BOC\# | \#0\# "as" <PREP> | \#EOC\#})
 \begin{itemize}
     \vitem Our FSTs are $char* \rightarrow char*$
     \vitem String to symbol vector transformation occurs on each FSA/FST application
@@ -442,7 +503,25 @@ Why not do it in a preprocessing step?
     \vitem Do the transformation only once
     \vitem Rewrite the FSTs to $StringVect \rightarrow StringVect$
 \end{itemize}
-Variable effectiveness: 4--40\%.
+&
+\only<2>{
+\smash{\raisebox{-\height}{\begin{tabular}{| l | r | r |}
+  \hline
+  \textbf{Method} & \textbf{Time} & \textbf{$\Delta$\%} \\
+  \hline
+  VISL-CG & 0.284s & -- \\
+  \hline
+  Naïve & 6.4s & -- \\
+  DeleteX & 5.9s & 8\% \\
+  Testing & 10s & -- \\
+  Custom FSA & 1.45s & 75\% \\
+  Custom DFST & 1.275s & 12\% \\
+  Custom FFST & 1.05s & 18\% \\
+  StringVect & 1s & 4\% \\
+  \hline
+  \end{tabular}}}
+}
+\end{tabular}
 \end{frame}
 
 \begin{frame}{String to symbol conversion}
@@ -463,16 +542,39 @@ foma uses per-FST tries to do the conversion
 \end{frame}
 
 \begin{frame}{Converter transducer}
+\begin{tabular}{p{22em} p{8em}}
 Do the conversion only once in a converter transducer $C$:
 \begin{itemize}
     \vitem $\Sigma_c = \displaystyle \bigcup_{i=0}^N{\Sigma_{R_i}}$
     \vitem $C: String \rightarrow int$
 \end{itemize}
 Rest of the machines are simply $R_i: int \rightarrow int$.
+\only<2>{
 \begin{itemize}
     \vitem Running time improved by 40--70\%.
     \vitem Memory consumption reduced by 75--80\%.
 \end{itemize}
+}
+&
+\only<2>{
+\smash{\raisebox{-\height}{\begin{tabular}{| l | r | r |}
+  \hline
+  \textbf{Method} & \textbf{Time} & \textbf{$\Delta$\%} \\
+  \hline
+  VISL-CG & 0.284s & -- \\
+  \hline
+  Naïve & 6.4s & -- \\
+  DeleteX & 5.9s & 8\% \\
+  Testing & 10s & -- \\
+  Custom FSA & 1.45s & 75\% \\
+  Custom DFST & 1.275s & 12\% \\
+  Custom FFST & 1.05s & 18\% \\
+  StringVect & 1s & 4\% \\
+  One-time trie & 0.32s & 68\% \\
+  \hline
+  \end{tabular}}}
+}
+\end{tabular}
 \end{frame}
 
 \section{Complexity analysis}
@@ -504,6 +606,9 @@ Hulden showed that with FST rules, complexity decreases to $O(n^{2}k^{2}G)$.
     \vitem fomacg does not include bimachine factorization
 \end{itemize}
 \only<2>{
+
+\smallskip
+
 Our work improved on these numbers by
 \begin{itemize}
     \vitem introducing rule testing automata, which can be applied in $\mathcal{O}(nk)$
@@ -558,6 +663,9 @@ We use the fact that regular languages are closed under the union operator.
     \vitem If $\mathrm{FSA}_{G_{ab}}$ is minimized, then it checks $G_{ab}$ in
            $\mathcal{O}(nk)$.
 \end{itemize}
+
+\smallskip
+
 This allows for hierarchical rule checking:
 \begin{itemize}
     \vitem First check if $\mathrm{FSA}_{G_{ab}}$ accepts a sentence
@@ -655,7 +763,7 @@ This research was supported through an Apertium project in the 2013 Google Summe
 \bigskip
 
 \begin{center}
-  {\huge Thank you for your attention!}\\[\baselineskip]
+{\huge Thank you for your attention!}\\[\baselineskip]
 {\huge Go raibh maith agaibh!}
 \end{center}
 
