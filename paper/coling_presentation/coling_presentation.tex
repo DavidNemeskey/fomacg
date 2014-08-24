@@ -35,6 +35,7 @@
 
 %\usepackage{marvosym}  % For tick
 \usepackage{wasysym}  % For tick
+\usepackage{adjustbox}
 
 \newcommand{\vitem}{\item \vspace{4pt}}
 \newcommand{\nyil}{$\rightarrow$\ }
@@ -87,6 +88,23 @@
 % TODO: do we need an outline?
 \begin{frame}{}
   \titlepage
+\end{frame}
+
+\begin{frame}{Outline}
+\begin{itemize}
+    \vitem Introduction
+    \vitem Practice
+    \begin{itemize}
+        \vitem Optimisation
+        \vitem Evaluation
+    \end{itemize}
+    \vitem Theory
+    \begin{itemize}
+        \vitem Complexity analysis
+        \vitem The "$\log{X}$ experiment"
+    \end{itemize}
+    \vitem Conclusions
+\end{itemize}
 \end{frame}
 
 \section{Introduction}
@@ -219,12 +237,12 @@ Ambiguous input sentence (\emph{fomacg} format):
 
 \bigskip
 
-\texttt{\$0\$ "All" \#BOC\# | \#0\# "all" <n> <sg> <nom> | \#EOC\#}\\
-\texttt{\$0\$ "is" \#BOC\# | \#0\# "be" <vbser> <pres> <s3p> | \#EOC\#}\\
-\only<1>{\texttt{\$0\$ "well" \#BOC\# | \#0\# "well" <n> <sg> <nom> | \#0\# "well" <adj> <sg> <nom> | \#EOC\#}\\}
-\only<2>{\texttt{\color{red}\$0\$ "well" \#BOC\# | \#0\# "well" <n> <sg> <nom> | \#0\# "well" <adj> <sg> <nom> | \#EOC\#}\\}
-\only<3>{\texttt{\$0\$ "well" \#BOC\# | {\color{red}\#0\# "well" <n> <sg> <nom>} | {\color{red}\#0\# "well" <adj> <sg> <nom>} | \#EOC\#}\\}
-\texttt{\$0\$ "." \#BOC\# | \#0\# "." <punct> | \#EOC\#}
+\texttt{\$0\$ "\textbf{All}" \#BOC\# | \#0\# "all" <det> | \#EOC\#}\\
+\texttt{\$0\$ "\textbf{is}" \#BOC\# | \#0\# "be" <vbser> <pres> <s3p> | \#EOC\#}\\
+\only<1>{\texttt{\$0\$ "\textbf{well}" \#BOC\# | \#0\# "well" <n> <sg> <nom> | \#0\# "well" <adj> <sg> <nom> | \#EOC\#}\\}
+\only<2>{\texttt{\color{red}\$0\$ "\textbf{well}" \#BOC\# | \#0\# "well" <n> <sg> <nom> | \#0\# "well" <adj> <sg> <nom> | \#EOC\#}\\}
+\only<3>{\texttt{\$0\$ "\textbf{well}" \#BOC\# | {\color{red}\#0\# "well" <n> <sg> <nom>} | {\color{red}\#0\# "well" <adj> <sg> <nom>} | \#EOC\#}\\}
+\texttt{\$0\$ "\textbf{.}" \#BOC\# | \#0\# "." <punct> | \#EOC\#}
 
 \end{frame}
 
@@ -254,11 +272,11 @@ Rule application:
 \bigskip
 \bigskip
 
-\texttt{\$0\$ "All" \#BOC\# | \#0\# "all" <n> <sg> <nom> | \#EOC\#}\\
-\texttt{\$0\$ "is" \#BOC\# | \#0\# "be" <vbser> <pres> <s3p> | \#EOC\#}\\
-\only<1>{\texttt{\$0\$ "well" \#BOC\# | \#0\# "well" <n> <sg> <nom> | \#0\# "well" <adj> <sg> <nom> | \#EOC\#}\\}
-\only<2>{\texttt{\$0\$ "well" \#BOC\# | \textbf{\color{red}\#X\#} "well" <n> <sg> <nom> | \#0\# "well" <adj> <sg> <nom> | \#EOC\#}\\}
-\texttt{\$0\$ "." \#BOC\# | \#0\# "." <punct> | \#EOC\#}
+\texttt{\$0\$ "\textbf{All}" \#BOC\# | \#0\# "all" <det> | \#EOC\#}\\
+\texttt{\$0\$ "\textbf{is}" \#BOC\# | \#0\# "be" <vbser> <pres> <s3p> | \#EOC\#}\\
+\only<1>{\texttt{\$0\$ "\textbf{well}" \#BOC\# | \#0\# "well" <n> <sg> <nom> | \#0\# "well" <adj> <sg> <nom> | \#EOC\#}\\}
+\only<2>{\texttt{\$0\$ "\textbf{well}" \#BOC\# | \textbf{\color{red}\#X\#} "well" <n> <sg> <nom> | \#0\# "well" <adj> <sg> <nom> | \#EOC\#}\\}
+\texttt{\$0\$ "\textbf{.}" \#BOC\# | \#0\# "." <punct> | \#EOC\#}
 
 \bigskip
 \bigskip
@@ -616,6 +634,19 @@ We set out with the following aims:
 
 \begin{frame}{Acknowledgements}
 
+\bigskip
+\bigskip
+
+This research was supported through an Apertium project in the 2013 Google Summer of Code.
+
+\bigskip
+
+\begin{table}
+  \centering
+  \begin{tabular}{ l  l }
+    \adjustbox{valign=c}{\includegraphics[width=67.5pt]{apertium.png}}\hspace{2em} & \hspace{2em}\adjustbox{valign=c}{\includegraphics[width=67.5pt]{soc-logo-google-blue.jpg}} \\
+  \end{tabular}
+\end{table}
 \end{frame}
 
 \begin{frame}
@@ -623,8 +654,10 @@ We set out with the following aims:
 \bigskip
 \bigskip
 
-{\huge Thank you for your attention!}
+\begin{center}
+  {\huge Thank you for your attention!}\\[\baselineskip]
 {\huge Go raibh maith agaibh!}
+\end{center}
 
 \bigskip
 \bigskip
