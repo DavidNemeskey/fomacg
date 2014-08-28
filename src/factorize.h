@@ -7,6 +7,7 @@
  * @author Dávid Márk Nemeskey
  */
 #include <map>
+#include <set>
 #include <iostream>
 #include <vector>
 
