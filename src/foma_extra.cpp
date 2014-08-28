@@ -3,8 +3,10 @@
 #include <set>
 #include <map>
 #include <iostream>
+#include <algorithm>
 
 #include <fomalibconf.h>
+#include "stl_extra.h"
 
 /* From apply.c :/. */
 #define UP 8
@@ -562,6 +564,75 @@ Continue:
       }
     }
   }
+}
+
+/****************************** Bimachine stuff *******************************/
+
+int inline trans_cmp(struct fsm_state* trans, State state_no, int signum) {
+  if (trans->state_no == state_no) {
+    if (trans->in == signum) {
+      return 0;
+    } else {
+      return (trans->in < signum) ? -1 : 1;
+    }
+  } else {
+    return (trans->state_no < state_no) ? -1 : 1;
+  }
+}
+
+/**
+ * Finds the integer offset of a transition from state @p state_no with input
+ * label @p in, if any. The offset is counted from <tt>fst->states</tt>.
+ */
+int find_transition_lrs(struct fsm *fst, State state_no, int signum) {
+  int begin = 0;
+  int end   = fst->linecount - 1;  // Last line is the -1, -1, -1, -1 line
+  struct fsm_state* start = fst->states;
+  while (begin < end) {
+    int middle = (begin + end) / 2;
+    struct fsm_state* trans = start + middle;
+    int cmp = trans_cmp(trans, state_no, signum);
+    if (cmp == 0) {
+      return middle;
+    } else if (cmp < 0) {
+      begin = middle + 1;
+    } else {
+      end = middle;
+    }
+  }
+  return -1;
+}
+
+std::vector<Symbol> common_apply_down_lrs_inner(
+    struct fsm* fst, const std::vector<Symbol>& input) {
+  std::vector<Symbol> output;
+  State q = 0;
+  struct fsm_state* start = fst->states;
+  for (std::vector<Symbol>::const_iterator symbol = input.begin();
+       symbol != input.end(); ++symbol) {
+    int trans_offset = find_transition_lrs(fst, q, symbol->number);
+    std::cerr << "trans_offset " << trans_offset << std::endl;
+    q = (fst->states + trans_offset)->target;
+    output.push_back((fst->states + trans_offset)->out);
+  }
+  return output;
+}
+
+bool common_apply_down_lrs(LeftRightSequential* lrs,
+                           const std::vector<Symbol>& sentence,
+                           std::vector<Symbol>& result) {
+  std::cout << "Sentence is: " << std::endl;
+  std::cout << join(sentence, "\n");
+  std::vector<Symbol> intermediate =
+      common_apply_down_lrs_inner(lrs->T_1, sentence);
+  std::reverse(intermediate.begin(), intermediate.end());
+  std::vector<Symbol> output =
+      common_apply_down_lrs_inner(lrs->T_2, intermediate);
+  std::reverse(output.begin(), output.end());
+  std::cout << std::endl << "Output is: " << std::endl;
+  std::cout << join(output, "\n");
+  result.swap(output);
+  return true;
 }
 
 inline static void get_basic_transitions(struct apply_handle* h,

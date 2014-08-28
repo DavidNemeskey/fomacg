@@ -6,6 +6,7 @@
 
 #include <fomalib.h>
 #include "fomacg_common.h"
+#include "factorize.h"
 
 /** Represents a symbol in the common_* functions. */
 struct Symbol {
@@ -19,7 +20,17 @@ struct Symbol {
   Symbol() : number(0), pos(0), len(0) {}
   Symbol(int number_, size_t pos_=0, size_t len_=0)
       : number(number_), pos(pos_), len(len_) {}
+
+  friend std::ostream& operator<<(std::ostream& os, const Symbol& s);
 };
+
+inline std::ostream& operator<<(std::ostream& os, const Symbol& s) {
+  os << "Symbol(" << s.number << ", "  << s.pos << ", " << s.len << ")";
+  return os;
+}
+
+/** The state type in foma. */
+typedef int State;
 
 /** Custom versions of the few relevant foma functions. */
 
@@ -107,6 +118,33 @@ void custom_create_sigmatch(struct apply_handle *h,
 bool common_apply_down(FstPair& fst,
                        const std::vector<Symbol>& sentence,
                        std::vector<Symbol>& result);
+
+/**
+ * Same as common_apply_down(), but for bimachines. We assume that the
+ * @p sentence is part of the machine's language -- otherwise this blows up.
+ */
+bool common_apply_down_lrs(LeftRightSequential* lrs,
+                           const std::vector<Symbol>& sentence,
+                           std::vector<Symbol>& result);
+
+/** Sequential FST apply down -- without the handle; who needs that? :) */
+std::vector<Symbol> common_apply_down_lrs_inner(
+    struct fsm* fst, const std::vector<Symbol>& input);
+
+/**
+ * Finds the integer offset of a transition from state @p state_no with input
+ * label @p in, if any. The offset is counted from <tt>fst->states</tt>.
+ */
+int find_transition_lrs(struct fsm *fst, State state_no, Symbol in);
+
+/**
+ * Compares @p trans to a virtual transition with source state @p state_no and
+ * input label @p in. Returns @c 0 if the transitions match, @c -1 if @p trans
+ * should come before the virtual transition, and @c 1 if it should come after.
+ *
+ * @note @p trans should be a valid transition, i.e. its state_no must not be -1.
+ */
+int inline trans_cmp(struct fsm_state* trans, State state_no, Symbol in);
 
 /**
  * Merges the sigma of all fsms in @p fsms. Creates an fsm whose sigma is the
