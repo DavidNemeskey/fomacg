@@ -1233,7 +1233,7 @@ int save_rules_fsm(char *filename) {
   reverse_rule_order();
 
 //  SmallestFirstTreeMerger merger;
-  SortedFixLevelTreeMerger merger(3);
+  SortedFixLevelTreeMerger merger(1);
 
   struct Node* trees = merger.merge(cg_rules, total_rules);
   size_t num_rules;
