@@ -7,12 +7,14 @@
 
 void free_nodes(Node* node) {
   if (node->fsa.fst != NULL) node->fsa.cleanup();
-  if (node->fst.fst != NULL) node->fst.cleanup();
+  if (node->lrs != NULL) delete node->lrs;
   if (node->left != NULL) free_nodes(node->left);
   if (node->right != NULL) free_nodes(node->right);
   if (node->next != NULL) free_nodes(node->next);
   free(node);
 }
+
+/******************************* Constructors *********************************/
 
 ConditionMerger::ConditionMerger(SortOrder order_) : order(order_) {}
 TreeConditionMerger::TreeConditionMerger(SortOrder order_) :
@@ -71,7 +73,7 @@ struct Node* SmallestFirstTreeMerger::build_section_tree(
     int rule = begin + i;
     trees[i] = (struct Node*)calloc(1, sizeof(struct Node));
     trees[i]->fsa.fst = rules[rule]->conditions;
-    trees[i]->fst.fst = rules[rule]->rule;
+    trees[i]->lrs = fst_to_left_right(rules[rule]->rule);
     trees[i]->section = rules[rule]->section_no;
     trees[i]->no_rules = 1;
     fprintf(stderr, "section %s : %d\n", rules[rule]->conditions->name, rules[rule]->section_no);
@@ -128,7 +130,7 @@ struct Node* FixLevelTreeMerger::build_section_tree(
     int rule = begin + i;
     trees[i] = (struct Node*)calloc(1, sizeof(struct Node));
     trees[i]->fsa.fst = rules[rule]->conditions;
-    trees[i]->fst.fst = rules[rule]->rule;
+    trees[i]->lrs = fst_to_left_right(rules[rule]->rule);
     trees[i]->section = rules[rule]->section_no;
     trees[i]->no_rules = 1;
     fprintf(stderr, "section %s : %d\n", rules[rule]->conditions->name, rules[rule]->section_no);
@@ -187,7 +189,7 @@ struct Node* SortedFixLevelTreeMerger::build_section_tree(
     int rule = begin + i;
     trees[i] = (struct Node*)calloc(1, sizeof(struct Node));
     trees[i]->fsa.fst = rules[rule]->conditions;
-    trees[i]->fst.fst = rules[rule]->rule;
+    trees[i]->lrs = fst_to_left_right(rules[rule]->rule);
     trees[i]->section = rules[rule]->section_no;
     trees[i]->no_rules = 1;
     fprintf(stderr, "section %s : %d\n", rules[rule]->conditions->name, rules[rule]->section_no);
@@ -311,7 +313,7 @@ struct fsm* ConditionMerger::union_trees(struct fsm* fst1, struct fsm* fst2) {
 
 size_t TreeConditionMerger::count_fsms(struct Node* tree, size_t count) {
   if (tree->fsa.fst != NULL) count++;
-  if (tree->fst.fst != NULL) count++;
+  if (tree->lrs != NULL) count += 2;
   if (tree->left != NULL) count = count_fsms(tree->left, count);
   if (tree->right != NULL) count = count_fsms(tree->right, count);
   if (tree->next != NULL) count = count_fsms(tree->next, count);
@@ -321,7 +323,10 @@ size_t TreeConditionMerger::count_fsms(struct Node* tree, size_t count) {
 size_t TreeConditionMerger::fill_fsms(struct Node* tree, struct fsm** rules,
                                       size_t i) {
   if (tree->fsa.fst != NULL) rules[i++] = tree->fsa.fst;
-  if (tree->fst.fst != NULL) rules[i++] = tree->fst.fst;
+  if (tree->lrs != NULL) {
+    rules[i++] = tree->lrs->T_1;
+    rules[i++] = tree->lrs->T_2;
+  }
   if (tree->left != NULL) i = fill_fsms(tree->left, rules, i);
   if (tree->right != NULL) i = fill_fsms(tree->right, rules, i);
   if (tree->next != NULL) i = fill_fsms(tree->next, rules, i);
@@ -344,7 +349,9 @@ struct Node* TreeConditionMerger::array_to_tree(const FstVector& rules,
   if (!strncmp(rules[*index].fst->name, "C", 1)) {
     new_tree->no_rules = 1;
     new_tree->fsa = rules[(*index)++];
-    new_tree->fst = rules[(*index)++];
+    FstPair left_fst = rules[(*index)++];
+    FstPair right_fst = rules[(*index)++];
+    new_tree->lrs = new LeftRightSequential(left_fst.fst, right_fst.fst);
   } else {
     new_tree->fsa = rules[(*index)++];
     struct Node* left_tree = array_to_tree(rules, index);

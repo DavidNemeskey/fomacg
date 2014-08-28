@@ -25,16 +25,16 @@ bool RuleApplier::is_delimiter(const std::string& cohort) const {
 }
 
 // TODO: move this to rule_condition_tree
-FstPair* RuleApplier::find_rule(Node* rule,
-                                const std::vector<Symbol>& split,
-                                bool match) const {
+LeftRightSequential* RuleApplier::find_rule(Node* rule,
+                                            const std::vector<Symbol>& split,
+                                            bool match) const {
 //  fprintf(stderr, "Testing condition %s...\n", rule->fsa.fst->name);
   if (match || common_detmin_fsa(rule->fsa, split)) {
     if (rule->left == NULL) {  // Leaf node -- just return the rule
  //     fprintf(stderr, "Leaf rule: returning %s / %s...\n", rule->fsa.fst->name, rule->fst.fst->name);
-      return &rule->fst;
+      return rule->lrs;
     } else {                   // else we traverse down the tree
-      FstPair* left = find_rule(rule->left, split);
+      LeftRightSequential* left = find_rule(rule->left, split);
       if (left != NULL) {
 //        fprintf(stderr, "Found left: %s.\n", left->fst->name);
         return left;
@@ -68,10 +68,10 @@ size_t RuleApplier::apply_rules(std::string& result,
 Continue:
     for (Node* rule = rules; rule != NULL; rule = rule->next) {
 //      fprintf(stderr, "Trying rule %s...\n", rule->fsa.fst->name);
-      FstPair* rule_pair = find_rule(rule, split);
+      LeftRightSequential* rule_pair = find_rule(rule, split);
       if (rule_pair != NULL) {
-//        fprintf(stderr, "Rule found: %s\n", rule_pair->fst->name);
-        if (common_apply_down(*rule_pair, split, res_split)) {
+        fprintf(stderr, "Rule found: %s\n", rule_pair->T_1->name);
+        if (common_apply_down_lrs(rule_pair, split, res_split)) {
           split.swap(res_split);
         } else {
 //          fprintf(stderr, "Rule %s failed.\n", rule_pair->fst->name);

@@ -24,6 +24,7 @@
 #include "fomacg_common.h"
 #include "rule_condition_tree.h"
 #include "foma_extra.h"
+#include "factorize.h"
 
 class Converter;
 
@@ -71,8 +72,8 @@ private:
    *              @c true when we check the last remaining branch under a
    *              matching node.
    */
-  FstPair* find_rule(Node* rule, const std::vector<Symbol>& split,
-                     bool match=false) const;
+  LeftRightSequential* find_rule(Node* rule, const std::vector<Symbol>& split,
+                                 bool match=false) const;
 
   /* ==== fomacg stuff ==== */
 

@@ -4,7 +4,7 @@ LINKFOMA = -lfoma
 LINKALL  = $(LINKFOMA) -lz
 LEX = flex
 
-SRCS = fomacg_common.cpp fomacg_converter.cpp fomacg_proc.cpp fomacg_rule_applier.cpp fomacg_stream_reader.cpp foma_extra.cpp rule_condition_tree.cpp factorize.cpp factorize_main.cpp
+SRCS = fomacg_common.cpp fomacg_converter.cpp fomacg_proc.cpp fomacg_rule_applier.cpp fomacg_stream_reader.cpp foma_extra.cpp rule_condition_tree.cpp factorize.cpp
 
 OBJS = $(SRCS:.cpp=.o)
 

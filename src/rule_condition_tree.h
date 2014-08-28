@@ -40,6 +40,7 @@
 
 #include "fomacg_common.h"
 #include "fomacg_types.h"
+#include "factorize.h"
 
 /** A node in the tree. */
 struct Node {
@@ -49,7 +50,7 @@ struct Node {
   /** The condition FSA. */
   FstPair fsa;
   /** The rule FST. */
-  FstPair fst;
+  LeftRightSequential* lrs;
   struct Node* left;
   struct Node* right;
   /** The next group of tests on the same level as this one. */
