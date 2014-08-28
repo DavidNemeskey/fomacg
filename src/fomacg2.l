@@ -1229,11 +1229,8 @@ int save_rules_fsm(char *filename) {
   // Old zlib: gzFile* outfile = (gzFile*)gzopen(outfile_name, "wb");
   printf("Writing rules to file %s.\n", outfile_name);
 
-  /* Return to the original rule order. */
-  reverse_rule_order();
-
 //  SmallestFirstTreeMerger merger;
-  SortedFixLevelTreeMerger merger(3);
+  SortedFixLevelTreeMerger merger(1);
 
   struct Node* trees = merger.merge(cg_rules, total_rules);
   size_t num_rules;
@@ -1255,7 +1252,8 @@ int save_rules_fsm(char *filename) {
   fsm_destroy(allsigma);
 
   for (i = 0; i < num_rules; i++) {
-    printf("Printing net %d...\n", i);
+    printf("Printing net %d (%s, states: %d, arcs: %d)\n",
+           i, to_print[i]->name, to_print[i]->statecount, to_print[i]->arccount);
     foma_net_print(to_print[i], (gzFile*)outfile);
   }
   free(to_print);
@@ -1310,7 +1308,11 @@ int main(int argc, char **argv) {
   cg_free_sets();
 
   if (cg_rules != NULL)
-	save_rules_fsm(binary_prefix);
+    /* Return to the original rule order. */
+    reverse_rule_order();
+
+    /* Save the rules to file. */
+    save_rules_fsm(binary_prefix);
   free(binary_prefix);
   fsm_destroy(delimiter_rule);
   cg_free_rules();
