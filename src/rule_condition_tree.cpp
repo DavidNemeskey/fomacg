@@ -11,7 +11,7 @@ void free_nodes(Node* node) {
   if (node->left != NULL) free_nodes(node->left);
   if (node->right != NULL) free_nodes(node->right);
   if (node->next != NULL) free_nodes(node->next);
-  free(node);
+  delete node;
 }
 
 /******************************* Constructors *********************************/
@@ -56,22 +56,22 @@ bool ConditionMerger::rule_name_compare(const struct cg_rules* rule1,
   }
 }
 
-bool TreeConditionMerger::tree_compare_size(const struct Node* tree1,
-                                            const struct Node* tree2) {
+bool TreeConditionMerger::tree_compare_size(const Node* tree1,
+                                            const Node* tree2) {
   return tree1->fsa.fst->statecount < tree2->fsa.fst->statecount;
 }
 
 /********************************** Merging ***********************************/
 
-struct Node* SmallestFirstTreeMerger::build_section_tree(
+Node* SmallestFirstTreeMerger::build_section_tree(
     std::vector<struct cg_rules*>& rules, size_t begin, size_t length) {
   fprintf(stderr, "build_section_tree(%zu, %zu)\n", begin, length);
-  std::deque<struct Node*> trees(length);
+  std::deque<Node*> trees(length);
   /* Let's fill the array. */
   size_t i;
   for (i = 0; i < length; i++) {
     int rule = begin + i;
-    trees[i] = (struct Node*)calloc(1, sizeof(struct Node));
+    trees[i] = new Node();
     trees[i]->fsa.fst = rules[rule]->conditions;
     trees[i]->lrs = fst_to_left_right(rules[rule]->rule);
     trees[i]->section = rules[rule]->section_no;
@@ -87,7 +87,7 @@ struct Node* SmallestFirstTreeMerger::build_section_tree(
         trees[0]->fsa.fst->statecount,
         trees[1]->fsa.fst->name,
         trees[1]->fsa.fst->statecount);
-    struct Node* new_tree = (struct Node*)calloc(1, sizeof(struct Node));
+    Node* new_tree = new Node();
     new_tree->fsa.fst = union_trees(trees[0]->fsa.fst, trees[1]->fsa.fst);
     sprintf(new_tree->fsa.fst->name, "union");
     new_tree->left  = trees[0];
@@ -102,7 +102,7 @@ struct Node* SmallestFirstTreeMerger::build_section_tree(
   }
 
   /* Finishing touches... */
-  struct Node* ret = trees[0];
+  Node* ret = trees[0];
   for (i = 0; i < trees.size(); i++) {
     if (i < trees.size() - 1) {
       trees[i]->next = trees[i + 1];
@@ -112,7 +112,7 @@ struct Node* SmallestFirstTreeMerger::build_section_tree(
     }
   }
 
-  struct Node* p = trees[0];
+  Node* p = trees[0];
   while (p != NULL) {
     fprintf(stderr, "Tree %s : %d (%zu)\n", p->fsa.fst->name, p->fsa.fst->statecount, p->no_rules);
     p = p->next;
@@ -121,14 +121,14 @@ struct Node* SmallestFirstTreeMerger::build_section_tree(
   return ret;
 }
 
-struct Node* FixLevelTreeMerger::build_section_tree(
+Node* FixLevelTreeMerger::build_section_tree(
     std::vector<struct cg_rules*>& rules, size_t begin, size_t length) {
   fprintf(stderr, "build_section_tree(%zu, %zu)\n", begin, length);
-  std::deque<struct Node*> trees(length);
+  std::deque<Node*> trees(length);
   /* Let's fill the array. */
   for (size_t i = 0; i < length; i++) {
     int rule = begin + i;
-    trees[i] = (struct Node*)calloc(1, sizeof(struct Node));
+    trees[i] = new Node();
     trees[i]->fsa.fst = rules[rule]->conditions;
     trees[i]->lrs = fst_to_left_right(rules[rule]->rule);
     trees[i]->section = rules[rule]->section_no;
@@ -145,7 +145,7 @@ struct Node* FixLevelTreeMerger::build_section_tree(
 //          trees[i]->fsa.fst->name, i, trees[i]->fsa.fst->statecount,
 //          trees[trees.size() - 1]->fsa.fst->name, trees.size() - 1,
 //          trees[trees.size() - 1]->fsa.fst->statecount);
-      struct Node* new_tree = (struct Node*)calloc(1, sizeof(struct Node));
+      Node* new_tree = new Node();
       new_tree->fsa.fst = union_trees(trees[i]->fsa.fst, trees.back()->fsa.fst);
       sprintf(new_tree->fsa.fst->name, "union");
       new_tree->left  = trees[i];
@@ -159,7 +159,7 @@ struct Node* FixLevelTreeMerger::build_section_tree(
   }
 
   /* Finishing touches... */
-  struct Node* ret = trees[0];
+  Node* ret = trees[0];
   for (size_t i = 0; i < trees.size(); i++) {
     if (i < trees.size() - 1) {
       trees[i]->next = trees[i + 1];
@@ -169,7 +169,7 @@ struct Node* FixLevelTreeMerger::build_section_tree(
     }
   }
 
-  struct Node* p = trees[0];
+  Node* p = trees[0];
   while (p != NULL) {
     fprintf(stderr, "Tree %s : %d (%zu)\n", p->fsa.fst->name, p->fsa.fst->statecount, p->no_rules);
     p = p->next;
@@ -178,16 +178,16 @@ struct Node* FixLevelTreeMerger::build_section_tree(
   return ret;
 }
 
-struct Node* SortedFixLevelTreeMerger::build_section_tree(
+Node* SortedFixLevelTreeMerger::build_section_tree(
     std::vector<struct cg_rules*>& rules, size_t begin, size_t length) {
   fprintf(stderr, "build_section_tree(%zu, %zu)\n", begin, length);
-  std::vector<struct Node*> trees(length);
-  std::vector<struct Node*> tmp;
+  std::vector<Node*> trees(length);
+  std::vector<Node*> tmp;
 
   /* Let's fill the array. */
   for (size_t i = 0; i < length; i++) {
     int rule = begin + i;
-    trees[i] = (struct Node*)calloc(1, sizeof(struct Node));
+    trees[i] = new Node();
     trees[i]->fsa.fst = rules[rule]->conditions;
     trees[i]->lrs = fst_to_left_right(rules[rule]->rule);
     trees[i]->section = rules[rule]->section_no;
@@ -200,7 +200,7 @@ struct Node* SortedFixLevelTreeMerger::build_section_tree(
     /* Union trees by pairs. */
     for (size_t i = 0; i < trees.size() / 2; i++) {
       size_t j = 2 * i;
-      tmp.push_back((struct Node*)calloc(1, sizeof(struct Node)));
+      tmp.push_back(new Node());
       struct fsm* aaa = union_trees(trees[j]->fsa.fst, trees[j + 1]->fsa.fst);
       tmp[i]->fsa.fst = aaa;
       sprintf(tmp[i]->fsa.fst->name, "union");
@@ -217,7 +217,7 @@ struct Node* SortedFixLevelTreeMerger::build_section_tree(
   }
 
   /* Finishing touches... */
-  struct Node* ret = trees[0];
+  Node* ret = trees[0];
   for (size_t i = 0; i < trees.size(); i++) {
     if (i < trees.size() - 1) {
       trees[i]->next = trees[i + 1];
@@ -227,7 +227,7 @@ struct Node* SortedFixLevelTreeMerger::build_section_tree(
     }
   }
 
-  struct Node* p = trees[0];
+  Node* p = trees[0];
   while (p != NULL) {
     fprintf(stderr, "Tree %s : %d (%zu)\n", p->fsa.fst->name, p->fsa.fst->statecount, p->no_rules);
     p = p->next;
@@ -236,9 +236,9 @@ struct Node* SortedFixLevelTreeMerger::build_section_tree(
   return ret;
 }
 
-void TreeConditionMerger::add_trees_to_ret(struct Node* trees,
-                                           struct Node** ret,
-                                           struct Node** last) {
+void TreeConditionMerger::add_trees_to_ret(Node* trees,
+                                           Node** ret,
+                                           Node** last) {
   if (*ret == NULL) {
     *ret = *last = trees;
     for (; (*last)->next != NULL; *last = (*last)->next);
@@ -248,11 +248,11 @@ void TreeConditionMerger::add_trees_to_ret(struct Node* trees,
   }
 }
 
-struct Node* TreeConditionMerger::merge(struct cg_rules* cg_rules,
-                                        size_t no_rules) {
+Node* TreeConditionMerger::merge(struct cg_rules* cg_rules,
+                                 size_t no_rules) {
   std::vector<struct cg_rules*> rules(no_rules);
-  struct Node* ret = NULL;
-  struct Node* last = NULL;
+  Node* ret = NULL;
+  Node* last = NULL;
   size_t i;
 
   for (i = 0; i < no_rules; i++) {
@@ -278,15 +278,15 @@ struct Node* TreeConditionMerger::merge(struct cg_rules* cg_rules,
 
   for (i = 0; i < no_rules; i++) {
     if (rules[i]->section_no != curr_section) {
-      struct Node* trees = build_section_tree(rules, section_first,
-                                              i - section_first);
+      Node* trees = build_section_tree(rules, section_first,
+                                       i - section_first);
       add_trees_to_ret(trees, &ret, &last);
       curr_section = rules[i]->section_no;
       section_first = i;
     }
   }
-  struct Node* trees = build_section_tree(rules, section_first,
-                                          i - section_first);
+  Node* trees = build_section_tree(rules, section_first,
+                                   i - section_first);
   add_trees_to_ret(trees, &ret, &last);
 
   /* NULL it so that we don't run into problems with deleting cg_rules. */
@@ -311,7 +311,7 @@ struct fsm* ConditionMerger::union_trees(struct fsm* fst1, struct fsm* fst2) {
 
 /******************************* Serialization ********************************/
 
-size_t TreeConditionMerger::count_fsms(struct Node* tree, size_t count) {
+size_t TreeConditionMerger::count_fsms(Node* tree, size_t count) {
   if (tree->fsa.fst != NULL) count++;
   if (tree->lrs != NULL) count += 2;
   if (tree->left != NULL) count = count_fsms(tree->left, count);
@@ -320,7 +320,7 @@ size_t TreeConditionMerger::count_fsms(struct Node* tree, size_t count) {
   return count;
 }
 
-size_t TreeConditionMerger::fill_fsms(struct Node* tree, struct fsm** rules,
+size_t TreeConditionMerger::fill_fsms(Node* tree, struct fsm** rules,
                                       size_t i) {
   if (tree->fsa.fst != NULL) rules[i++] = tree->fsa.fst;
   if (tree->lrs != NULL) {
@@ -333,7 +333,7 @@ size_t TreeConditionMerger::fill_fsms(struct Node* tree, struct fsm** rules,
   return i;
 }
 
-struct fsm** TreeConditionMerger::serialize(struct Node* tree, size_t* num_rules) {
+struct fsm** TreeConditionMerger::serialize(Node* tree, size_t* num_rules) {
   *num_rules = count_fsms(tree);
   struct fsm** rules = (struct fsm**)calloc(*num_rules, sizeof(struct fsm*));
   fill_fsms(tree, rules);
@@ -342,9 +342,9 @@ struct fsm** TreeConditionMerger::serialize(struct Node* tree, size_t* num_rules
 
 /****************************** De-serialization ******************************/
 
-struct Node* TreeConditionMerger::array_to_tree(const FstVector& rules,
-                                                size_t* index) {
-  struct Node* new_tree = (struct Node*)calloc(1, sizeof(struct Node));
+Node* TreeConditionMerger::array_to_tree(const FstVector& rules,
+                                         size_t* index) {
+  Node* new_tree = new Node();
   /* Leaf node. */
   if (!strncmp(rules[*index].fst->name, "C", 1)) {
     new_tree->no_rules = 1;
@@ -357,8 +357,8 @@ struct Node* TreeConditionMerger::array_to_tree(const FstVector& rules,
     right_fst.cleanup(true);
   } else {
     new_tree->fsa = rules[(*index)++];
-    struct Node* left_tree = array_to_tree(rules, index);
-    struct Node* right_tree = array_to_tree(rules, index);
+    Node* left_tree = array_to_tree(rules, index);
+    Node* right_tree = array_to_tree(rules, index);
     new_tree->no_rules = left_tree->no_rules + right_tree->no_rules;
     new_tree->left  = left_tree;
     new_tree->right = right_tree;
@@ -366,12 +366,12 @@ struct Node* TreeConditionMerger::array_to_tree(const FstVector& rules,
   return new_tree;
 }
 
-struct Node* TreeConditionMerger::deserialize(const FstVector& rules) {
-  struct Node* ret = NULL;   // the returned tree
-  struct Node* curr = NULL;  // the last tree in the chain
+Node* TreeConditionMerger::deserialize(const FstVector& rules) {
+  Node* ret = NULL;   // the returned tree
+  Node* curr = NULL;  // the last tree in the chain
   size_t index = 0;
   while (index < rules.size()) {
-    struct Node* new_tree = array_to_tree(rules, &index);
+    Node* new_tree = array_to_tree(rules, &index);
     if (ret == NULL) {
       ret = curr = new_tree;
     } else {

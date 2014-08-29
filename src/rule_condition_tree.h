@@ -51,10 +51,10 @@ struct Node {
   FstPair fsa;
   /** The rule FST. */
   LeftRightSequential* lrs;
-  struct Node* left;
-  struct Node* right;
+  Node* left;
+  Node* right;
   /** The next group of tests on the same level as this one. */
-  struct Node* next;
+  Node* next;
 };
 
 /** Frees the memory associated with the specified Node forest. */
@@ -80,7 +80,7 @@ public:
    * @return an array of <tt>struct fsm*</tt>s. The order will be the one
    *         described for deserialize_tree().
    */
-  virtual struct fsm** serialize(struct Node* tree, size_t* num_rules)=0;
+  virtual struct fsm** serialize(Node* tree, size_t* num_rules)=0;
 
   /**
    * Given an array of FSTs read from a .fst file, it creates the binary trees
@@ -90,13 +90,13 @@ public:
    *
    * @note Same as for serialize().
    */
-  virtual struct Node* deserialize(const FstVector& rules)=0;
+  virtual Node* deserialize(const FstVector& rules)=0;
 
   /**
    * Merges the conditions it can and returns the resulting tree. Sets the
    * pointers to the machines in @p cg_rules to NULL.
    */
-  virtual struct Node* merge(struct cg_rules* cg_rules, size_t num_rules)=0;
+  virtual Node* merge(struct cg_rules* cg_rules, size_t num_rules)=0;
 
 protected:
   /**
@@ -129,9 +129,9 @@ public:
    * "C") are represented by their condition FSA; leaf nodes are by both the
    * FSA and the rule FST.
    */
-  struct fsm** serialize(struct Node* tree, size_t* num_rules);
-  struct Node* deserialize(const FstVector& rules);
-  struct Node* merge(struct cg_rules* cg_rules, size_t num_rules);
+  struct fsm** serialize(Node* tree, size_t* num_rules);
+  Node* deserialize(const FstVector& rules);
+  Node* merge(struct cg_rules* cg_rules, size_t num_rules);
 
 protected:
   /**
@@ -143,12 +143,11 @@ protected:
    * @param length the length of the section.
    * @return the tree.
    */
-  virtual struct Node* build_section_tree(std::vector<struct cg_rules* >& rules,
-                                          size_t begin, size_t length)=0;
+  virtual Node* build_section_tree(std::vector<struct cg_rules* >& rules,
+                                   size_t begin, size_t length)=0;
 
   /** Comparison function for sort() that sorts the tree(-node)s by size. */
-  static bool tree_compare_size(
-      const struct Node* tree1, const struct Node* tree2);
+  static bool tree_compare_size(const Node* tree1, const Node* tree2);
 
 private:
   /**
@@ -157,14 +156,14 @@ private:
    * @note @p count is for inner use; when you call this function, it should be
    * @c 0 (the default).
    */
-  size_t count_fsms(struct Node* tree, size_t count=0);
+  size_t count_fsms(Node* tree, size_t count=0);
   /**
    * Recursive function that fills @p rules with the rules and conditions in
    * @p tree. Called by serialize().
    * @note @p i is for inner bookkeeping; when you call this function, it should
    * be @c 0 (the default).
    */
-  size_t fill_fsms(struct Node* tree, struct fsm** rules, size_t i=0);
+  size_t fill_fsms(Node* tree, struct fsm** rules, size_t i=0);
 
   /**
    * The recursive function that walks through @p rules and builds trees from
@@ -173,15 +172,14 @@ private:
    * @param rules the rule fsm array.
    * @param index the current index in @p rules.
    */
-  struct Node* array_to_tree(const FstVector& rules, size_t* index);
+  Node* array_to_tree(const FstVector& rules, size_t* index);
 
   /**
    * Called by merge() to add the newly created tree group @p trees to the
    * returned set (which starts at @p ret and ends in @p last). Updates the
    * latter two.
    */
-  void add_trees_to_ret(struct Node* trees,
-                        struct Node** ret, struct Node** last);
+  void add_trees_to_ret(Node* trees, Node** ret, Node** last);
 };
 
 /**
@@ -198,8 +196,8 @@ public:
   SmallestFirstTreeMerger(int max_states=MAX_STATES);
 
 protected:
-  struct Node* build_section_tree(std::vector<struct cg_rules*>& rules,
-                                  size_t begin, size_t length);
+  Node* build_section_tree(std::vector<struct cg_rules*>& rules,
+                           size_t begin, size_t length);
 
 private:
   int max_states;
@@ -220,8 +218,8 @@ public:
   FixLevelTreeMerger(int levels=3);
 
 protected:
-  struct Node* build_section_tree(std::vector<struct cg_rules*>& rules,
-                                  size_t begin, size_t length);
+  Node* build_section_tree(std::vector<struct cg_rules*>& rules,
+                           size_t begin, size_t length);
 
 private:
   int levels;
@@ -242,8 +240,8 @@ public:
   SortedFixLevelTreeMerger(int levels=3);
 
 protected:
-  struct Node* build_section_tree(std::vector<struct cg_rules*>& rules,
-                                  size_t begin, size_t length);
+  Node* build_section_tree(std::vector<struct cg_rules*>& rules,
+                           size_t begin, size_t length);
 
 private:
   int levels;
