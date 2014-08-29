@@ -39,8 +39,12 @@ struct FstPair {
 
   /** Fills the sigma vector. */
   void fill_sigma(size_t sigma_size);
-  /** Frees all resources associated with this FST. */
-  void cleanup();
+  /**
+   * Frees all resources associated with this FST.
+   *
+   * If @p only_handle is @c true, only the handle is deleted.
+   */
+  void cleanup(bool only_handle=false);
 };
 
 /** A vector of FSTs with their apply handle. */

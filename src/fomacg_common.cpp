@@ -19,11 +19,11 @@ void FstPair::fill_sigma(size_t sigma_size) {
   }
 }
 
-void FstPair::cleanup() {
+void FstPair::cleanup(bool only_handle) {
   if (ah != NULL) {
     apply_clear(ah);
   }
-  if (fst != NULL) {
+  if (fst != NULL && !only_handle) {
     fsm_destroy(fst);
   }
 }

@@ -352,6 +352,9 @@ struct Node* TreeConditionMerger::array_to_tree(const FstVector& rules,
     FstPair left_fst = rules[(*index)++];
     FstPair right_fst = rules[(*index)++];
     new_tree->lrs = new LeftRightSequential(left_fst.fst, right_fst.fst);
+    // Delete the handles
+    left_fst.cleanup(true);
+    right_fst.cleanup(true);
   } else {
     new_tree->fsa = rules[(*index)++];
     struct Node* left_tree = array_to_tree(rules, index);
