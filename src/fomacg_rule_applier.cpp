@@ -142,6 +142,8 @@ void RuleApplier::load_file_tree(const std::string& fst_file) {
 
 RuleApplier::~RuleApplier() {
   delimiters.cleanup();
+  allsigma.cleanup();
+  free_nodes(rules);
 }
 
 //int main(int argc, char* argv[]) {

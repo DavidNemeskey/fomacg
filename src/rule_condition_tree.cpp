@@ -8,6 +8,8 @@
 void free_nodes(Node* node) {
   if (node->fsa.fst != NULL) node->fsa.cleanup();
   if (node->fst.fst != NULL) node->fst.cleanup();
+  delete &(node->fsa);
+  delete &(node->fst);
   if (node->left != NULL) free_nodes(node->left);
   if (node->right != NULL) free_nodes(node->right);
   if (node->next != NULL) free_nodes(node->next);
