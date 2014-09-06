@@ -621,16 +621,18 @@ std::vector<Symbol> common_apply_down_lrs_inner(
 bool common_apply_down_lrs(LeftRightSequential* lrs,
                            const std::vector<Symbol>& sentence,
                            std::vector<Symbol>& result) {
-  std::cout << "Sentence is: " << std::endl;
-  std::cout << join(sentence, "\n");
+  std::cerr << "Sentence is: " << std::endl;
+  std::cerr << join(sentence, "\n");
   std::vector<Symbol> intermediate =
       common_apply_down_lrs_inner(lrs->T_1, sentence);
+  std::cerr << "Reverse intermediate is: " << std::endl;
+  std::cerr << join(intermediate, "\n");
   std::reverse(intermediate.begin(), intermediate.end());
   std::vector<Symbol> output =
       common_apply_down_lrs_inner(lrs->T_2, intermediate);
   std::reverse(output.begin(), output.end());
-  std::cout << std::endl << "Output is: " << std::endl;
-  std::cout << join(output, "\n");
+  std::cerr << std::endl << "Output is: " << std::endl;
+  std::cerr << join(output, "\n");
   result.swap(output);
   return true;
 }
@@ -670,9 +672,9 @@ std::vector<Symbol> common_create_sigmatch(
       }  // for i
 
       if (signum != IDENTITY) {
-        ret.push_back(Symbol(signum));
+        ret.push_back(Symbol(signum, pos, found - pos + 1, sentence.substr(pos, found - pos + 1)));
       } else {
-        ret.push_back(Symbol(IDENTITY, pos, found - pos + 1));
+        ret.push_back(Symbol(IDENTITY, pos, found - pos + 1, sentence.substr(pos, found - pos + 1)));
       }
 
       pos = found + 1;

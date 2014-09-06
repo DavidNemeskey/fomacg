@@ -23,7 +23,8 @@ fomacg-proc: $(OBJS)
 	$(CXX) $(CXXFLAGS) $(OBJS) -o ../fomacg-proc $(LDFLAGS) $(LINKFOMA) -lrt 
 
 factorize: $(OBJS)
-	$(CXX) $(CXXFLAGS) -o ../factorize factorize.cpp factorize_main.cpp $(LDFLAGS) $(LINKALL) -lrt
+	$(CXX) $(CXXFLAGS) -o ../factorize factorize.cpp factorize_main.cpp \
+	    fomacg_common.cpp foma_extra.cpp $(LDFLAGS) $(LINKALL) -lrt
 
 clean: 
 	rm *.o *.yy.c

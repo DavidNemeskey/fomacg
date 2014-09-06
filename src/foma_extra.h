@@ -16,16 +16,19 @@ struct Symbol {
   size_t pos;
   /** The length of the symbol. */
   size_t len;
+  /** The string it represents. */
+  std::string str;
 
   Symbol() : number(0), pos(0), len(0) {}
-  Symbol(int number_, size_t pos_=0, size_t len_=0)
-      : number(number_), pos(pos_), len(len_) {}
+  Symbol(int number_, size_t pos_=0, size_t len_=0, std::string str_="")
+      : number(number_), pos(pos_), len(len_), str(str_) {}
 
   friend std::ostream& operator<<(std::ostream& os, const Symbol& s);
 };
 
 inline std::ostream& operator<<(std::ostream& os, const Symbol& s) {
-  os << "Symbol(" << s.number << ", "  << s.pos << ", " << s.len << ")";
+  os << "Symbol(" << s.number << ", "  << s.pos << ", " << s.len << ", "
+     << s.str << ")";
   return os;
 }
 

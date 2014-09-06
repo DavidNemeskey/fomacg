@@ -66,7 +66,7 @@ int find_transition(struct fsm *fst, State state_no, SigmaSymbol in) {
 
 /**
  * Copies the sigma structure orig, but discards all entries not in @p filter
- * (if @p retain is @p true) or IN @p filter (if @p retain is @p false).
+ * (if @p retain is @c true) or IN @p filter (if @p retain is @c false).
  */
 struct sigma* copy_filter_sigma(struct sigma* orig, std::set<SigmaSymbol>& filter,
                                 bool retain=true) {
@@ -113,44 +113,6 @@ std::vector<SigmaSymbol> fst_apply_down(struct fsm* fst,
 }
 
 };
-
-void print_fst(struct fsm* fst) {
-  std::cout << "Name: " << fst->name << std::endl;
-  std::cout << "arity: " << fst->arity << std::endl;
-  std::cout << "arccount: " << fst->arccount << std::endl;
-  std::cout << "statecount: " << fst->statecount << std::endl;
-  std::cout << "linecount: " << fst->linecount << std::endl;
-  std::cout << "finalcount: " << fst->finalcount << std::endl;
-  std::cout << "pathcount: " << fst->pathcount << std::endl;
-  std::cout << "is_deterministic: " << fst->is_deterministic << std::endl;
-  std::cout << "is_pruned: " << fst->is_pruned << std::endl;
-  std::cout << "is_minimized: " << fst->is_minimized << std::endl;
-  std::cout << "is_epsilon_free: " << fst->is_epsilon_free << std::endl;
-  std::cout << "is_loop_free: " << fst->is_loop_free << std::endl;
-  std::cout << "is_completed: " << fst->is_completed << std::endl;
-  std::cout << "arcs_sorted_in: " << fst->arcs_sorted_in << std::endl;
-  std::cout << "arcs_sorted_out: " << fst->arcs_sorted_out << std::endl;
-  std::map<short int, std::string> sigmas;
-  for (struct sigma* sigma = fst->sigma; sigma != NULL; sigma = sigma->next) {
-    sigmas[sigma->number] = sigma->symbol;
-  }
-  struct fsm_state* elem = fst->states;
-  for (int i = 0; ; i++) {
-    std::cout << "Elem:" << std::endl;
-    std::cout << "  state_no: " << (elem + i)->state_no << std::endl;
-    std::cout << "  in: " << (elem + i)->in << " -- "
-              << sigmas[(elem + i)->in] << std::endl;
-    std::cout << "  out: " << (elem + i)->out << " -- "
-              << sigmas[(elem + i)->out] << std::endl;
-    std::cout << "  target: " << (elem + i)->target << std::endl;
-    std::cout << "  final_state: " << (char)((elem + i)->final_state + 48) << std::endl;
-    std::cout << "  start_state: " << (char)((elem + i)->start_state + 48) << std::endl;
-    if ((elem + i)->state_no == -1) break;
-  }
-  for (struct sigma* sigma = fst->sigma; sigma != NULL; sigma = sigma->next) {
-    std::cout << "Sigma " << sigma->number << ": " << sigma->symbol << std::endl;
-  }
-}
 
 /** Returns a set that contains the start states of @p fst. */
 std::set<State> get_start_states(const struct fsm* fst) {
