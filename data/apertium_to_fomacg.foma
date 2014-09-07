@@ -1,0 +1,48 @@
+## Conversion script between the Apertium stream format and the format fomacg
+## expects.
+
+define Stops ["/" | "|" | %" | %^ | %$ ];
+define LineSep "| ";
+define WhiteSpace [" " | "	"];
+define NotText [Stops | %"%< | %>%"% ];
+
+# TODO: modify Reading so that it works even if there are no non-lemma tags 
+#       (i.e. ^word-form/lemma1/lemma2<tag1>$)
+define Begin    %^:"$0$ ";
+
+# Note the space at the end of the symbol before #BOC# !
+define WordForm 0:%"%< ~$NotText 0:[%>%"%  "#BOC# "];
+define NewLine  "/":[LineSep];
+define Tag      [%< ~$[NotText | %< | %>] %>:[%> " "]];
+define Lemma    0:%" ~$[NotText | %< | %>]+ 0:[%" " "];
+# A stem in a compound verb: lemma and syntactic tags
+define Stem     ~$%+ .o.
+#                [%> %< <-> %> " " %<] .o.
+#                0:%" ~$"<" "<":[%" " " %<] ~$"/" ">":[%> " "];
+		Lemma Tag+;
+# A possible reading: a sequence of stems
+define Reading  0:"#0# " Stem [%+:["+ "] Stem]*;
+# The "meat": wordform + readings
+define Middle   ~$[%^ | %$] .o. WordForm [NewLine Reading]+;
+#define End      %$:[LineSep "#EOC# " "\u000a"];
+# This has to be one symbol, not [LineSep "#EOC# "], otherwise foma translates
+# it to a nondeterministic automaton!
+# define End      %$:[LineSep "#EOC# "];
+define End      %$:"| #EOC# ";
+
+define Cohort Begin Middle End;
+## The code that feeds Pattern should remove all whitespaces between the
+## cohorts. Only in this way can we avoid generation of whitespaces in the
+## inverse direction.
+# define Pattern [[WhiteSpace:0]* Cohort 0:"\u000a"]+ [WhiteSpace:0]*;
+define Pattern [Cohort]+;
+
+## # This might not be needed as the rules now delete the filtered readings instead
+## # of simply marking them.
+## define DeletedReading 0 -> ["#X# " ~$LineSep LineSep];
+
+# Apertium -> fomacg conversion
+read regex Pattern;
+## # fomacg -> Apertium conversion with filtered reading deletion
+## read regex Pattern .o. DeletedReading;
+save stack apertium_to_fomacg.fst

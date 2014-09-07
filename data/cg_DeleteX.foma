@@ -1,0 +1,8 @@
+## Deletes the readings marked for removal (#X# ).
+
+define DEAD "#X# ";
+define DEL  "| ";
+
+define DeleteX [ [DEAD ~$[DEAD | DEL] DEL] -> 0 ] .o. ~$DEAD;
+
+read regex DeleteX;

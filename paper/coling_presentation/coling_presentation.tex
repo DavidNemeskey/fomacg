@@ -1,0 +1,745 @@
+% $Header: /home/vedranm/bitbucket/beamer/solutions/generic-talks/generic-ornate-15min-45min.en.tex,v 90e850259b8b 2007/01/28 20:48:30 tantau $
+
+\documentclass[utf8x,t,aspectratio=169,xcolor={dvipsnames}]{beamer}
+
+\mode<presentation>
+{
+%  \usetheme[height=7mm]{Rochester}
+  \usetheme{Rochester}
+  \useinnertheme{rounded}
+%  \useoutertheme{infolines}
+  % or ...
+
+  \setbeamercovered{transparent}
+}
+\usefonttheme[onlymath]{serif}
+
+\usepackage[english]{babel}
+\usepackage[utf8x]{inputenc}
+
+\usepackage{times}
+\usepackage[T1]{fontenc}
+% Or whatever. Note that the encoding and the font should match. If T1
+% does not look nice, try deleting the line with the fontenc.
+
+%% to draw trees without jpg figures
+%\usepackage{synttree}
+% For code blocks
+% for sane tabular handling
+%\usepackage{array}
+% For strikethrough (normalem keeps it as emph)
+%\usepackage[normalem]{ulem}
+
+\usepackage{mathrsfs}
+\usepackage{bm}  % For bold math
+
+%\usepackage{marvosym}  % For tick
+\usepackage{wasysym}  % For tick
+\usepackage{adjustbox}
+
+\newcommand{\vitem}{\item \vspace{4pt}}
+\newcommand{\nyil}{$\rightarrow$\ }
+\newcommand{\nagytilde}{$\sim$}
+\newtheorem{Examplee}{Example}[section]
+\providecommand{\abs}[1]{\lvert#1\rvert}
+\providecommand{\norm}[1]{\lVert#1\rVert}
+
+\newtheorem{nix}{}[section]
+
+\title{Why implementation matters}
+\subtitle{Evaluation of an open-source constraint grammar parser}
+
+\author{Dávid Márk Nemeskey\inst{1}, Francis M. Tyers\inst{2}, Mans Hulden\inst{3}}
+\institute{
+  \inst{1} Institute for Computer Science and Control, Hungarian Academy of Sciences \\
+  \inst{2} HSL-fakultetet, UiT Norgga árktalaš universitehta \\
+  \inst{3} Department of Linguistics, University of Colorado Boulder}
+
+\date % (optional)
+{25th August 2014}
+
+% If you have a file called "university-logo-filename.xxx", where xxx
+% is a graphic format that can be processed by latex or pdflatex,
+% resp., then you can add a logo as follows:
+
+% \pgfdeclareimage[height=0.5cm]{university-logo}{university-logo-filename}
+% \logo{\pgfuseimage{university-logo}}
+
+\pgfdeclareimage[height=1.5cm]{apertium-logo}{apertium.png}
+\logo{\pgfuseimage{apertium-logo}}
+
+%\AtBeginSection[]
+%{
+%   \begin{frame}
+%       \frametitle{Outline}
+%       \tableofcontents[currentsection]
+%   \end{frame}
+%}
+%
+
+% If you wish to uncover everything in a step-wise fashion, uncomment
+% the following command: 
+%\beamerdefaultoverlayspecification{<+->}
+
+\setbeamertemplate{navigation symbols}{}%remove navigation symbols
+
+\begin{document}
+
+% TODO: do we need an outline?
+\begin{frame}{}
+  \titlepage
+\end{frame}
+
+\begin{frame}{Outline}
+\begin{itemize}
+    \vitem Introduction
+    \vitem Practice
+    \begin{itemize}
+        \vitem Optimisation
+        \vitem Evaluation
+    \end{itemize}
+    \vitem Theory
+    \begin{itemize}
+        \vitem Complexity analysis
+        \vitem The "$\log{X}$ experiment"
+    \end{itemize}
+    \vitem Conclusions
+\end{itemize}
+\end{frame}
+
+\section{Introduction}
+
+\begin{frame}{Constraint Grammar}
+Rule-based formalism for linguistic tasks:
+\begin{itemize}
+    \vitem morphological analysis
+    \vitem clause boundary detection
+    \vitem surface syntactic parsing
+\end{itemize}
+
+Advantages of CG:
+\begin{itemize}
+    \vitem very high accuracy on free text
+    \vitem works for languages without annotated corpora
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Constraint Grammar History}
+Implementations:
+\begin{itemize}
+  \vitem CG: Introduced by Karlsson (1995)
+  \vitem CG-2: Tapanainen (1996)
+  \vitem VISL CG: Bick (1996)
+  \vitem VISL CG3: Didriksen (2011)
+\end{itemize}
+Finite state experiments:
+\begin{itemize}
+    \vitem Hulden (2011)
+    \vitem Peltonen (2011)
+    \vitem Yli-Jyrä (2011)
+\end{itemize}
+
+%\textbf{Other relevant literature:}
+%\begin{itemize}
+%  \item Samuelsson, C., Voutilainen, A. (1997) ``Comparing a linguistic and a stochastic tagger''. \emph{35th ACL}. 246--253
+%  \item ...
+%\end{itemize}
+
+\end{frame}
+
+% What is CG?
+% Apertium & VISL-CG; CG vs n-grame? 
+\begin{frame}{Apertium}
+Rule-based machine translation platform
+
+\begin{itemize}
+  \vitem Over 40 released language pairs
+  \vitem Free/open-source: GPL licence
+\end{itemize}
+Many language pairs include constraint grammars
+\begin{itemize}
+  \vitem All pairs with constraint grammars use VISL CG-3
+  \vitem Accuracy is higher than statistical ($n$-gram) models
+  \vitem Main drawback: running time is much worse
+\end{itemize} 
+
+\end{frame}
+
+\begin{frame}{Aims}
+We set out with the following aims:
+
+\smallskip
+
+\begin{tabular}{ l  l }
+  Measure actual speed of CG-based morphological disambiguation & \textbf{\Square} \\
+  Improve on the performance of state-of-the-art open source finite-state CG & \textbf{\Square} \\
+  Try to outperform VISL-CG & \textbf{\Square} \\
+\end{tabular}
+
+\bigskip
+
+We have chose \emph{fomacg} (Hulden, 2011) as the base for our parser.
+\begin{itemize}
+    \vitem Open-source CG $\rightarrow$ FST compiler 
+    \vitem Documented well in the paper
+    \vitem All experiments used \emph{foma}; due to Mans Hulden
+\end{itemize}
+\end{frame}
+
+\section{Methodology}
+
+\begin{frame}{Methodology}
+Development
+\begin{itemize}
+    \vitem Naïve parser implementation for baseline
+    \vitem Optimisations
+    \begin{itemize}
+        \vitem parser
+        \vitem compiler
+    \end{itemize}
+    \vitem Benchmarked on a small Hungarian CG grammar
+\end{itemize}
+
+Testing
+\begin{itemize}
+    \vitem The performance has been measured against VISL-CG.
+    \vitem Three CGs: Hungarian, Breton, Finnish
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{Development and test sets}
+\begin{table}
+  \centering
+  \begin{tabular}{ | l | r | r | r | }
+  \hline
+  \textbf{Language} & \textbf{Rules} & \textbf{CG-2 rules} & \textbf{Corpus size} \\
+  \hline
+  Hungarian &   33 &   33 & 11 * 32 \\
+  Breton    &  251 &  226 & 1,161 \\
+  Finnish   & 1207 & 1172 & 1,620 \\
+  \hline
+  \end{tabular}
+\end{table}
+\end{frame}
+
+\section{fomacg}
+
+\begin{frame}{Morphological disambiguation based on CG}
+Ambiguous input sentence (\emph{fomacg} format):
+
+\uncover<2->{
+  \begin{itemize}
+    \uncover<2->{\vitem {\color<2>{red}cohorts}}
+    \uncover<3>{\vitem {\color<3>{red}readings}}
+  \end{itemize}
+}
+
+\bigskip
+
+\texttt{\$0\$ "\textbf{All}" \#BOC\# | \#0\# "all" <det> | \#EOC\#}\\
+\texttt{\$0\$ "\textbf{is}" \#BOC\# | \#0\# "be" <vbser> <pres> <s3p> | \#EOC\#}\\
+\only<1>{\texttt{\$0\$ "\textbf{well}" \#BOC\# | \#0\# "well" <n> <sg> <nom> | \#0\# "well" <adv> | \#EOC\#}\\}
+\only<2>{\texttt{\color{red}\$0\$ "\textbf{well}" \#BOC\# | \#0\# "well" <n> <sg> <nom> | \#0\# "well" <adv> | \#EOC\#}\\}
+\only<3>{\texttt{\$0\$ "\textbf{well}" \#BOC\# | {\color{red}\#0\# "well" <n> <sg> <nom>} | {\color{red}\#0\# "well" <adv>} | \#EOC\#}\\}
+\texttt{\$0\$ "\textbf{.}" \#BOC\# | \#0\# "." <punct> | \#EOC\#}
+
+\end{frame}
+
+\begin{frame}{Morphological disambiguation based on CG}
+Rules (constraints):
+\begin{itemize}
+    \vitem select or filter readings
+    \vitem grouped into priority sections
+    \vitem two ways to look at it:
+    \begin{itemize}
+        \vitem constraint solving (optimality theory)
+        \only<1>{\vitem iterative rule application}
+        \only<2>{\vitem \textbf{iterative rule application}}
+    \end{itemize}
+    \vitem \emph{fomacg} converts these rules to FST
+\end{itemize}
+
+\bigskip
+
+\texttt{REMOVE (N SG) IF (-1C VBSER)}
+\end{frame}
+
+\begin{frame}{Morphological disambiguation based on CG}
+Rule application:
+
+\bigskip
+\bigskip
+\bigskip
+
+\texttt{\$0\$ "\textbf{All}" \#BOC\# | \#0\# "all" <det> | \#EOC\#}\\
+\texttt{\$0\$ "\textbf{is}" \#BOC\# | \#0\# "be" <vbser> <pres> <s3p> | \#EOC\#}\\
+\only<1>{\texttt{\$0\$ "\textbf{well}" \#BOC\# | \#0\# "well" <n> <sg> <nom> | \#0\# "well" <adv> | \#EOC\#}\\}
+\only<2>{\texttt{\$0\$ "\textbf{well}" \#BOC\# | \textbf{\color{red}\#X\#} "well" <n> <sg> <nom> | \#0\# "well" <adv> | \#EOC\#}\\}
+\texttt{\$0\$ "\textbf{.}" \#BOC\# | \#0\# "." <punct> | \#EOC\#}
+
+\bigskip
+\bigskip
+\bigskip
+
+\texttt{FST\{ REMOVE (N SG) IF (-1C VBSER) \}}
+\end{frame}
+
+\section{Generic optimisations}
+
+\begin{frame}[fragile]
+  \only<1>{\frametitle{CG parser algorithm}}
+  \only<2-3>{\frametitle{Naïve baseline}}
+\begin{tabular}{p{22em} p{8em}}
+% TODO algorithm
+\begin{semiverbatim}
+for (sentence in text) \{
+  fomacg\_str = convert\_in(sentence);
+FIRST\_RULE:
+  for (section in cg)
+    for (rule in section)
+      if rule.test\_and\_apply(fomacg\_str)
+        goto FIRST\_RULE;
+    print convert\_out(fomacg\_str);
+\}
+\end{semiverbatim}
+\only<2-3>{
+\begin{itemize}
+    \vitem rules are FSTs
+    \vitem convert functions are FSTs
+\end{itemize}
+}
+&
+\only<3>{
+\smash{\raisebox{-\height}{\begin{tabular}{| l | r | r |}
+  \hline
+  \textbf{Method} & \textbf{Time} & \textbf{$\Delta$} \\
+  \hline
+  VISL-CG & 0.284s & -- \\
+  \hline
+  Naïve & 6.4s & 22.5x \\
+  \hline
+  \end{tabular}}}
+}
+\end{tabular}
+\end{frame}
+
+\begin{frame}{Discarded readings}
+\begin{tabular}{p{22em} p{8em}}
+The original rule FSTs keep discarded readings, only prepend them with \texttt{\#X\#}.
+
+\bigskip
+
+If we delete them:
+\begin{itemize}
+    \vitem after each rule application, the sentence gets shorter
+    \vitem subsequent rules can be applied faster
+\end{itemize}
+&
+\only<2>{
+\smash{\raisebox{-\height}{\begin{tabular}{| l | r | r |}
+  \hline
+  \textbf{Method} & \textbf{Time} & \textbf{$\Delta$\%} \\
+  \hline
+  VISL-CG & 0.284s & -- \\
+  \hline
+  Naïve & 6.4s & -- \\
+  DeleteX & 5.9s & 8\% \\
+  \hline
+  \end{tabular}}}
+}
+\end{tabular}
+
+\end{frame}
+
+\begin{frame}{Rule testing}
+\begin{tabular}{p{22em} p{8em}}
+Further speed-ups could be achieved by separating rule testing and application:
+\begin{itemize}
+    \vitem an FSA tests if the rule is applicable
+    \vitem the rule FST is only applied if it is
+\end{itemize}
+
+\smallskip
+
+Automata are faster than tranducers:
+\begin{itemize}
+    \vitem no output is generated
+    \vitem can be determinised and minimised
+\end{itemize}
+\only<2>{After implementing it...}
+&
+\only<2>{
+\smash{\raisebox{-\height}{\begin{tabular}{| l | r | r |}
+  \hline
+  \textbf{Method} & \textbf{Time} & \textbf{$\Delta$\%} \\
+  \hline
+  VISL-CG & 0.284s & -- \\
+  \hline
+  Naïve & 6.4s & -- \\
+  DeleteX & 5.9s & 8\% \\
+  Testing & 10s & -- \\
+  \hline
+  \end{tabular}}}
+}
+\end{tabular}
+\end{frame}
+
+\begin{frame}{Foma is too generic}
+
+The \texttt{foma} library supports the following features:
+\begin{itemize}
+  \vitem Conversion of the text to symbols (single- and multi-character)
+  \vitem Regular transitions and flag diacritics
+  \vitem Three types of search in the transition matrix (linear, binary and indexed)
+  \vitem Deterministic and non-deterministic operation
+  \vitem Iterators (multiple invocations iterate the non-deterministic outputs)
+  \vitem Transducer output
+\end{itemize}
+%When we run a FSA, all these features are taken into account.
+\end{frame}
+
+\begin{frame}{Cut down on features}
+
+\setbeamercovered{transparent}
+What we actually need...
+\begin{itemize}
+  \vitem Conversion of the text to symbols (single- and multi-character)
+  \vitem Regular transitions \uncover<1>{and flag diacritics}
+  \vitem \uncover<1-2>{Three types of} search in the transition matrix (\uncover<1-2>{linear, }binary\uncover<1-2>{ and indexed})
+  \vitem Deterministic \uncover<1-3>{and non-deterministic }operation
+  \vitem \uncover<1-4>{Iterators (multiple invocations iterate the non-deterministic outputs)}
+  \vitem \uncover<1-5>{Transducer output}
+\end{itemize}
+
+\only<7>{Implementing our own functions may improve performance.}
+\end{frame}
+
+\begin{frame}{Performance of our custom functions}
+\begin{tabular}{p{22em} p{8em}}
+Deterministic FSA
+\begin{itemize}
+    \vitem rule testers
+\end{itemize}
+Deterministic FST
+\begin{itemize}
+    \vitem format conversion
+\end{itemize}
+Non-deterministic functional FST
+\begin{itemize}
+    \vitem rule transducers
+\end{itemize}
+&
+\only<2>{
+\smash{\raisebox{-\height}{\begin{tabular}{| l | r | r |}
+  \hline
+  \textbf{Method} & \textbf{Time} & \textbf{$\Delta$\%} \\
+  \hline
+  VISL-CG & 0.284s & -- \\
+  \hline
+  Naïve & 6.4s & -- \\
+  DeleteX & 5.9s & 8\% \\
+  Testing & 10s & -- \\
+  Custom FSA & 1.45s & 75\% \\
+  Custom DFST & 1.275s & 12\% \\
+  Custom FFST & 1.05s & 18\% \\
+  \hline
+  \end{tabular}}}
+}
+\end{tabular}
+
+\end{frame}
+
+\begin{frame}{Learnings}
+Genericity is useful:
+\begin{itemize}
+    \vitem it allows a library to be used in many situations  % TODO Ugh
+\end{itemize}
+
+When performance is important, relying on generic libraries
+\begin{itemize}
+    \vitem leads to suboptimal performance
+    \vitem produces counterintuitive results
+\end{itemize}
+
+When doing research, it is important to use software the behaviour of which
+reflects theory.
+
+\end{frame}
+
+\section{CG-specific optimisations}
+
+\begin{frame}{CG-specific optimisations}
+The changes thus were agnostic to the structure of the CG parsing task:
+\begin{itemize}
+    \vitem decreasing input length
+    \vitem using automata for rule testing
+    \vitem using custom functions
+\end{itemize}
+
+\only<2>{
+The rule FSAs \& FSTs have special properties:
+\begin{itemize}
+    \vitem multicharacter symbols, separated by spaces 
+    \vitem common symbols:
+    \begin{itemize}
+        \vitem boilerplate (\texttt{\$0\$}, \texttt{\#X\#}, etc.)
+        \vitem POS, words (\texttt{N}, \texttt{the}, etc.)
+    \end{itemize}
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}{String to symbol conversion}
+Internally foma uses integer symbol ids, so a $String \rightarrow int$ conversion
+is still performed separately by each FSA/FSTs.
+\begin{itemize}
+    \vitem Usually taken for granted in the literature
+    \vitem Significant contribution to execution time (60\%)
+\end{itemize}
+\only<2>{
+foma uses per-FST tries to do the conversion
+\begin{itemize}
+    \vitem Doing a single conversion is fast, but it adds up
+    \vitem Duplicated trie branches: boilerplate, CG tags
+    \vitem High memory consumption
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}{Converter transducer}
+\begin{tabular}{p{22em} p{8em}}
+Do the conversion only once in a converter transducer $C$:
+\begin{itemize}
+    \vitem $\Sigma_c = \displaystyle \bigcup_{i=0}^N{\Sigma_{R_i}}$
+    \vitem $C: String \rightarrow int$
+\end{itemize}
+Rest of the machines are simply $R_i: int \rightarrow int$.
+\only<2>{
+\begin{itemize}
+    \vitem Running time improved by 40--70\%.
+    \vitem Memory consumption reduced by 75--80\%.
+\end{itemize}
+}
+&
+\only<2>{
+\smash{\raisebox{-\height}{\begin{tabular}{| l | r | r |}
+  \hline
+  \textbf{Method} & \textbf{Time} & \textbf{$\Delta$\%} \\
+  \hline
+  VISL-CG & 0.284s & -- \\
+  \hline
+  Naïve & 6.4s & -- \\
+  DeleteX & 5.9s & 8\% \\
+  Testing & 10s & -- \\
+  Custom FSA & 1.45s & 75\% \\
+  Custom DFST & 1.275s & 12\% \\
+  Custom FFST & 1.05s & 18\% \\
+  One-time trie & 0.32s & 70\% \\
+  \hline
+  \end{tabular}}}
+}
+\end{tabular}
+\end{frame}
+
+\section{Complexity analysis}
+
+\begin{frame}{Complexity analysis}
+Tapanainen proved that worst-case time complexity for a CG parser is
+$\mathcal{O}(n^3k^2G)$, where
+\begin{itemize}
+    \vitem $n$ is the length of the sentence;
+    \vitem $k$ is the maximum number of readings per cohort;
+    \vitem $G$ is the number of rules in the grammar.
+\end{itemize}
+In more detail,
+\begin{itemize}
+    \vitem testing a cohort with a rule is $\mathcal{O}(nk)$;
+    \vitem the whole sentence, $\mathcal{O}(n^2k)$;
+    \vitem for each rule: $\mathcal{O}(n^2kG)$;
+    \vitem we need at most $n(k - 1)$ rounds.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Finite-state complexity}
+Hulden showed that with FST rules, complexity decreases to $O(n^{2}k^{2}G)$.
+\begin{itemize}
+    \vitem an FST applies the rule everywhere in the sentence in $\mathcal{O}(nk)$
+    \vitem precisely, it takes $\mathcal{O}(nk \norm{FST})$,
+           where $\norm{FST}$ can be large
+    \vitem if the rules are factored to bimachines, this decreases $\mathcal{O}(2nk)$
+    \vitem fomacg does not include bimachine factorisation
+\end{itemize}
+\only<2>{
+
+\smallskip
+
+Our work improved on these numbers by
+\begin{itemize}
+    \vitem introducing rule testing automata, which can be applied in $\mathcal{O}(nk)$
+    \vitem implementing custom functions that can live up to the theory
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}{Bimachines vs rule condition FSAs}
+On average, our work also outperforms the pure bimachine setup. Let
+\begin{itemize}
+    \vitem $G_a$: number of rules that can be applied to the sentence
+    \vitem $G_u$: number of rules that cannot
+    \vitem $G = G_a + G_u$
+\end{itemize}
+Then, $G_a$ rounds (each $\frac{G_u}{2}$ unsuccessful test and 1 application) take
+\begin{itemize}
+    \vitem only bimachines: $~2G_a(1 + \frac{G_u}{2})$
+    \vitem condition FSAs: $~G_a(1 + 2 + \frac{G_u}{2})$
+\end{itemize}
+Since $G_a << G$ and $3 << G_u$, condition FSAs perform better.
+\end{frame}
+
+\begin{frame}{Rule testing vs application}
+$G_a << G$, but by how much?
+
+\bigskip
+
+\begin{tabular}{| l | l | l | l |}
+\hline
+\textbf{Language} & \textbf{Testing} & \textbf{Application} & \textbf{Other} \\
+\hline
+Hungarian & 112,416 / 45.84\% & 2,560 / 7.20\% & 13,760 / 22.75\% \\
+Breton & 612,006 / 62.40\% & 4,707 / 2.74\% & 11,921 / 4.41\% \\
+Finnish & 6,290,609 / 87.17\% & $\sim$0\% & 81,017 / 3.57\% \\
+\hline
+\end{tabular}
+
+\bigskip
+
+Is there a way to decrease the number of rule checks?
+
+\end{frame}
+
+\begin{frame}{Hierarchical rule checking}
+We use the fact that regular languages are closed under the union operator.
+\begin{itemize}
+    \vitem Let $\mathrm{FSA}_{G_a}$ and $\mathrm{FSA}_{G_b}$ be rule testing FSAs
+           for rules $G_a$ and $G_b$
+    \vitem Then, $\mathrm{FSA}_{G_{ab}} = \mathrm{FSA}_{G_a} \cup \mathrm{FSA}_{G_b}$
+           is a rule testing FSA for $G_{ab}$ = $G_a \cup G_b$
+    \vitem If $\mathrm{FSA}_{G_{ab}}$ is minimized, then it checks $G_{ab}$ in
+           $\mathcal{O}(nk)$.
+\end{itemize}
+
+\smallskip
+
+This allows for hierarchical rule checking:
+\begin{itemize}
+    \vitem First check if $\mathrm{FSA}_{G_{ab}}$ accepts a sentence
+    \begin{itemize}
+        \vitem If yes, check with $\mathrm{FSA}_{G_a}$
+        \vitem If not, we saved a check!
+    \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The $\log G$ experiment}
+For $G$ rules, we can build a tree with $\log G$ levels, reducing
+\begin{itemize}
+    \vitem the number of checks to $\log G$;
+    \vitem the full running time to $\mathcal{O}(n^2k^2\log G)$.
+\end{itemize}
+% So what's the problem.
+\only<2>{
+Unfortunately, this does not work in practice.
+\begin{itemize}
+    \vitem the size of the unified automata grows exponentially
+    \vitem this effects both memory consumption and binary size
+    \vitem a single tree is infeasible
+    \vitem compromise solution: a forest of 2-4 level trees.
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}{Final evaluation}
+% TODO center horizontally without pushing it down (table[h] and center don't work)
+  \begin{tabular}{ | l | r | r | r | r | r | }
+  \hline
+  \textbf{Language} & \textbf{Algorithm} & \textbf{Initialisation} &
+  \textbf{Disambiguation} & \textbf{Memory \%} & \textbf{File size} \\
+  \hline
+  Hungarian & VISL-CG & -- & 0.284s & -- & 9kB \\
+  Hungarian & flat & 0.028s & 0.32s & 0.1\% & 60kB \\
+  Hungarian & forest & 0.62s & \textbf{\color{OliveGreen}0.234s} & 1.5\% & 5.9MB \\
+  \hline
+  Breton    & VISL-CG & -- & \textbf{0.77s} & -- & 36kB \\
+  Breton    & flat & 0.5s & 1.55s & 1.3\% & 1.5MB \\
+  Breton    & forest & \textbf{\color{red}11.14s} & 1.05s & 4.4\% & 60MB \\
+  \hline
+  Finnish   & VISL-CG & -- & \textbf{1.78s} & -- & 184kB \\
+  Finnish   & flat & 1.5s & 22.87s & 4.1\% & 7.2MB \\
+  Finnish   & forest & \textbf{\color{red}20.75s} & 9.95s & 8.9\% & 198MB \\
+  \hline
+  \end{tabular}
+\end{frame}
+
+\section{Conclusions}
+
+\begin{frame}{Conclusions}
+We set out with the following aims:
+\begin{tabular}{ l  l }
+  Measure actual speed of CG-based morphological disambiguation & \textbf{\CheckedBox} \\
+  Improve on the performance of state-of-the-art open source finite-state CG & \textbf{\CheckedBox} \\
+  Try to outperform VISL-CG & \textbf{\Square} \\
+\end{tabular}
+
+\smallskip
+
+\begin{itemize}
+    \vitem Experimented with decreasing the time of applying a CG to
+           $\mathcal{O}(n^2k^2\log G$; our method proved infeasible in practice
+    \vitem Our main finding is that implementation matters
+    \begin{itemize}
+        \vitem genericity hurts performance
+        \vitem it might prevent us from drawing valid conclusions from our
+               experiments.
+    \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Acknowledgements}
+
+\bigskip
+\bigskip
+
+This research was supported through an Apertium project in the 2013 Google Summer of Code.
+
+\bigskip
+
+\begin{table}
+  \centering
+  \begin{tabular}{ l  l }
+    \adjustbox{valign=c}{\includegraphics[width=67.5pt]{apertium.png}}\hspace{2em} & \hspace{2em}\adjustbox{valign=c}{\includegraphics[width=67.5pt]{soc-logo-google-blue.jpg}} \\
+  \end{tabular}
+\end{table}
+\end{frame}
+
+\begin{frame}
+
+\bigskip
+\bigskip
+
+\begin{center}
+{\huge Thank you for your attention!}\\[\baselineskip]
+{\huge Go raibh maith agaibh!}
+\end{center}
+
+\bigskip
+\bigskip
+\bigskip
+
+emails: \\ {\tt nemeskey.david@gmail.com \\ francis.tyers@uit.no \\ mans.hulden@colorado.edu} \\
+
+\end{frame}
+
+\end{document}
+
+

@@ -1,0 +1,15 @@
+## The InitialFilter pattern in the paper: checks if the input is valid.
+
+define DEL   "| ";
+define ALIVE ["#0# " | "#1# " | "#2# "];
+define DEAD  "#X# ";
+
+# The auxiliary symbols. DEAD must be included, even though it's not used in
+# this pattern explicitly.
+define AUX "$0$ " | "$1$ " | "$A$ " | "$R$ " | ALIVE | DEAD | DEL |
+           "#BOC# " | "#EOC# ";
+
+define InitialFilter ~$AUX ["$0$ " ~$AUX "#BOC# "
+                     [DEL "#0# " ~$AUX]+ DEL "#EOC# "]* ;
+
+read regex InitialFilter;

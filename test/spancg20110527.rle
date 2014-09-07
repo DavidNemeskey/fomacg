@@ -1,0 +1,261 @@
+DELIMITERS = "<$.>" "<$!>" "<$?>" "az" sent;
+
+#SETS
+
+LIST clitics = ACC ACC/DAT DAT ;
+LIST beforeimp = >>> CC ;
+LIST endofnp = "<$.>" "<$,>" CC CS REL V ;
+LIST punc = "<$.>" "<$!>" "<$?>" "<$,>" "<$¡>" "<$¿>" ;
+LIST nominalhead = ACC NOM N "el";
+LIST argumenthead = (PRON PERS) (PRON INDEF) N ;
+
+CONSTRAINTS
+
+#################
+# N/V ambiguity #
+#################
+
+REMOVE (V) IF (-1C (DET));
+
+# "<un>"
+#	"un" DET MASC SG
+# "<programa>"
+#	"programa" N MASC SG <Correct!>
+#	"programar" V PRES 3P SG INDICATIVE VFIN
+#	"programar" V IMPERATIVE 2P SG VFIN
+
+REMOVE (N) IF (-1C (PRON PERS));
+
+# "<te>"
+#	"tu" PRON PERS MF 2P SG ACC/DAT
+# "<mando>"
+#	"mando" N MASC SG
+#	"mandar" V PRES 1P SG INDICATIVE VFIN <Correct!>
+
+REMOVE (VFIN) IF (0 (N)) (-1C (PREP));
+
+# (el hombre que[PR] vive en Donostia me dijo que[CS]) la *casa* está construida
+# las *puertas* han sido ...
+REMOVE (VFIN) IF (1C (VFIN)) (NOT *-1 (PRON REL) BARRIER (CS));
+
+
+########################
+# DET -> N agreement   #
+########################
+
+# Enforce det N agreement where there's ambiguity: el radio(F)/radio(M)
+
+REMOVE (N MASC) IF (-1C (DET FEM));
+REMOVE (N FEM) IF (-1C (DET MASC));
+
+########################
+# DET/X disambiguation #
+########################
+
+SELECT (DET) IF (1C (N));
+
+SELECT (DET) IF (1 (N) LINK 1C (ADJ));
+
+# "<una>"
+#	"un" DET FEM SG <Correct!>
+#	"uno" NUM FEM SG
+#	"unir" V PRES 1/3P SG SUBJUNCTIVE VFIN
+# "<ruta>"
+#	"ruta" N FEM SG <Correct!>
+#	"rutar" V PRES 3P SG INDICATIVE VFIN
+#	"rutar" V IMPERATIVE 2P SG VFIN
+# "<fácil>"
+#	"fácil" ADJ MF SG
+
+SELECT (ART) IF (NOT 1 (VFIN));
+
+# "<la>"
+#	"la" DET ART FEM SG <Correct!> SELECT:25 
+#	"la" PRON PERS FEM 3P SG ACC SELECT:25 
+# "<luz>"
+#	"luz" N FEM SG 
+
+SELECT (ART) IF (-1C (PREP));
+
+# "<en>"
+# 	"en" PREP
+# "<la>"
+# 	"la" DET ART FEM SG <Correct!>
+# 	"la" PRON PERS FEM 3P SG ACC
+
+# Disambiguate DET/PRON PERS
+
+SELECT clitics IF (1C (V));
+
+# "<las>"
+#	"la" <*> PRON PERS FEM 3P PL ACC <Correct!> SELECT:35 
+#	"la" <*> DET ART FEM PL SELECT:35 
+# "<lee>"
+#	"leer" V PRES 3P SG INDICATIVE VFIN <Correct!> 
+#	"leer" V IMPERATIVE 2P SG VFIN 
+
+
+REMOVE clitics IF (-1C (VFIN));
+#remove DET at sentence end
+REMOVE (DET) IF (1 (<<<));
+
+##########
+# V/PREP #
+##########
+
+SELECT (PREP) IF (0 (V)) (1C (V INF));
+# ...el barco para cobrar... 
+
+###################
+# N/ADJ ambiguity #
+###################
+
+SELECT (N) IF (-1C (DET)) (1C endofnp);
+
+# "<aquel>"
+#	"aquel" DET MASC SG 
+# "<individuo>"
+# 	"individuo" N MASC SG <Correct!> SELECT:67 
+# ;	"individuo" ADJ MASC SG SELECT:67 
+# ;	"individuar" V PRES 1P SG INDICATIVE VFIN SELECT:67 
+# "<que>"
+#	"que" PRON REL MF SGPL <Correct!> 
+#	"que" CS 
+
+REMOVE (N) IF (-2C (PREP) OR (DET) LINK 1C (N)); # los habitos personales, de (la) semana pasada ,...
+SELECT (ADJ) IF (-1C (DET)) (1C (N)); #la primera persona
+SELECT (N) IF (-2C (PREP)) (-1C (ADJ));
+
+# "cualquiera que lee." (relativized minimality)
+# the idea is that we need at least one argument before an early verb
+SELECT (PRON PERS) (1C (V)) (-1 (>>>));
+SELECT (PRON INDEF) (1C (V)) (-1 (>>>));
+
+###########
+# ADJ/ADV #
+###########
+
+SELECT (ADV) IF (-1C (ADV)); # ...muy poco
+SELECT (ADV) IF (NOT *-1 (DET)) (1C (VFIN)); #así fue ...
+
+###################
+# N/ADV ambiguity #
+###################
+
+# [freeling] after a determiner, prefer noun over adverb
+
+REMOVE (ADV) (0 (N)) (-1C (ART));
+
+###########
+# ADJ/PCP #
+###########
+
+SELECT (ADJ) IF (0 (PCP)) (-1C (ADV)); # es muy dotado ,...
+# "fue pintada", "está construida" ..., but not "ser abogado" ...
+SELECT (PCP) IF (0 (ADJ)) (-1 ("haber") OR ("ser") OR ("estar")); 
+
+##############
+# "ser"/"ir" #
+##############
+
+SELECT ("ser") IF (0 ("ir")) (1C (PCP));
+SELECT ("ir") IF (0 ("ser")) (1 ("a") LINK 1 (DET) OR (VINF));
+SELECT ("ir") IF (0 ("ser")) (1C (GER)); # prefer "ir" (fui andando, fui sobreviviendo)
+SELECT ("ir") IF (0 ("ser")) (-1C ("se")); #...se fue(ron)...
+SELECT ("ser") IF (0 ("ir")) (-1 (>>>)) (1C (DET)); #fue una/el
+SELECT ("ser") IF (0 ("ir")) (1C (PRON REL)); #fue lo que/que ...
+SELECT ("ir") IF (0 ("ser")) (-2 ("<se>")) (-1C (PRON PERS)) ; # se (me/nos/te) fue
+
+##############
+# ADJ/V      #
+##############
+
+# la mujer está/anda *contenta*
+REMOVE (V PRES) IF (0 (ADJ)) (-1C (VFIN)) (-2C (N)) ;
+# but might overapply in tricky cases:
+# la mujer que esta contenta {con/a} todo el mundo.
+
+#############################
+# "haber"(V) vs "haber" (N) #
+#############################
+
+SELECT (INF) IF (0 ("<haber>")) (1C (PCP)); #haber(N/V) pagado la cuenta
+
+#########################
+# REL/CS disambiguation #
+#########################
+
+# Distinguish between REL and CS if previous word is known to be N
+# nominalhead could be expanded to include all identifiable NPs or chunks that look like NPs
+SELECT (REL) IF (-1C nominalhead);
+
+# "<frases>"
+# 	"frase" N FEM PL 
+# "<que>"
+#	"que" PRON REL MF SGPL <Correct!> SELECT:81 
+#;	"que" CS SELECT:81 
+
+# Disambiguate CS and PRON REL
+SELECT (CS) IF (0 (REL)) (NOT *-1 nominalhead);
+
+# [freeling] select CS for "que" after NC+de "en vista de que", "a causa de que"
+SELECT (CS) (0 ("que")) (-1 ("<de>")) (-2 (N)) (-3 (PREP));
+
+#########################
+# IMPERATIVE/INDICATIVE #
+#########################
+
+# Remove non-plausible imperatives
+REMOVE (IMPERATIVE) IF (NOT -1 beforeimp);
+REMOVE (IMPERATIVE) IF (-1 (CC)) (NOT -2 (>>>) OR punc);
+
+# "<las>"
+# 	"la" <*> PRON PERS FEM 3P PL ACC <Correct!> 
+# "<lee>"
+# 	"leer" V PRES 3P SG INDICATIVE VFIN <Correct!> 
+# 	"leer" V IMPERATIVE 2P SG VFIN
+
+# -- N/V AND DET/PRON CASES ??
+# "<la>"
+# 	"la" DET ART FEM SG <Correct!> 
+# 	"la" PRON PERS FEM 3P SG ACC 
+# "<cuenta>"
+# 	"cuenta" N FEM SG <Correct!> 
+# 	"contar" V PRES 3P SG INDICATIVE VFIN
+
+#################################
+# interrogative/exclamative qué #
+#################################
+
+SELECT (INTERR) IF (@1 ("<$¿>"));
+SELECT (INTERR) IF (*1 ("<$?>"));
+SELECT (EXCL) IF (@1 ("<$¡>"));
+SELECT (EXCL) IF (*1 ("<$!>"));
+
+SELECT (DET) IF (0C (INTERR)) (1C (N));
+SELECT (PRON) IF (0C (INTERR)) (1C (V));
+SELECT (PRON) IF (0C ("qué")) (1C (V));
+
+SELECT (INTERR) IF (0C (PRON)) (1C (V));
+
+################
+# sí ADV/PRON  #
+################
+
+# IFF ("sí" PERS) (-1C (PREP));
+# [freeling] "sí" after preposition is pronoun (por sí, para sí), but otherwise, is adverb
+
+####################
+# "si" ... "fuera" #
+####################
+
+#si (no) fuera(mos) ...
+"<fuera>" SELECT ("ser") IF (*-1 ("si") BARRIER (V));
+#also disambiguating si
+"<si>" SELECT (CS) IF (*1 ("ser" IMPF SUBJUNCTIVE) BARRIER (V));
+#si (tal vez) no tuviera ...
+"<si>" SELECT (CS) IF (*1 (IMPF SUBJUNCTIVE) BARRIER (V)); 
+
+SELECT (N) IF (0 (DET) LINK -1 (DET) LINK -1 (VINF) LINK 4 (V) LINK *1 (DET));
+SELECT (N) IF (0 (DET) LINK *-1 (DET) LINK *-1 (VINF) LINK *4 (V) LINK *1 (DET) BARRIER (V));
+

@@ -1,0 +1,724 @@
+\documentclass[11pt]{article}
+\usepackage{coling2014}
+\setlength\titlebox{7.5cm}
+%\usepackage{acl2013}
+\usepackage[utf8]{inputenc}
+%\usepackage{natbib}
+\usepackage{times}
+\usepackage{url}
+\usepackage{color}
+\usepackage{multirow}
+\usepackage{latexsym}
+\usepackage{booktabs,amsmath,multicol}
+\usepackage[all]{xy}
+\usepackage[bf]{caption}
+\usepackage{dblfloatfix}
+\usepackage{tikz}
+\usepackage{caption}
+\captionsetup{justification=centering}
+%\setlength\titlebox{6.5cm}    % You can expand the title box if you
+% really have to
+% \textheight 685pt 
+% \hyphenation{Buda-pest}
+% \addtocounter{section}{-1}
+
+%\DeclareRobustCommand{\rtextsuperscript}{\textsuperscript}
+%\DeclareRobustCommand{\rhspace}{\hspace}
+
+\title{Why implementation matters: Evaluation of an open-source constraint grammar parser}
+
+\author{Dávid Márk Nemeskey \\
+Institute for Computer Science and Control, \\
+Hungarian Academy of Sciences, \\
+H-1111 Budapest \\
+{\tt nemeskey.david@sztaki.mta.hu} \\\And
+Francis M. Tyers \\
+HSL-fakultetet,\\
+UiT Norgga árktalaš universitehta,\\
+9017 Romsa (Norway) \\
+{\tt francis.tyers@uit.no} \\\AND 
+Mans Hulden \\
+Department of Linguistics, \\
+University of Colorado Boulder \\
+80309 Boulder, Colorado\\
+{\tt mans.hulden@colorado.edu} }
+
+\date{}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Submit to:
+%   - AFL14    (http://www.inf.u-szeged.hu/afl2014/) -- Mar 14
+%   - CIAA2014 (http://www.informatik.uni-giessen.de/ciaa2014/) -- Mar 9
+%   - CICLing 15th (http://www.cicling.org/2014/) -- Dec 31 / Jan 7
+%   - FSMNLP 2014 (?) -- ??
+%
+%   Nothing on EACL this year :(
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+  % TODO Add Yli-Jyra:2011
+  In recent years, the problem of finite-state constraint grammar~(CG) parsing
+  has received renewed attention. Several compilers have been proposed to
+  convert CG rules to finite-state transducers. While these formalisms serve
+  their purpose as proofs of the concept, the performance of the generated
+  transducers lags behind other CG implementations and taggers.
+  
+  In this paper, we argue that the fault lies with using generic finite-state
+  libraries, and not with the formalisms themselves. We present an open-source
+  implementation that capitalises on the characteristics of CG rule
+  application to improve execution time. On smaller grammars our 
+  implementation achieves performance
+  comparable to the current open-source state of the art.
+\end{abstract}
+
+% TODO: Måns's quadratic claim stands only if bimachine factorisation had been
+%       performed!
+% TODO: Bimanchine factorisation, measurements
+
+% TODO: describe Måns's method
+% TODO: Apertium stream format, wchar_t vs. char
+
+\section{Introduction}
+
+\blfootnote{
+    \hspace{-0.65cm}  % space normally used by the marker
+    This work is licensed under a Creative Commons Attribution 4.0
+    International Licence. Page numbers and proceedings footer are added by
+    the organisers. Licence details:
+    \url{http://creativecommons.org/licenses/by/4.0/}
+}
+
+Constraint grammar (CG), described originally by Karlsson~\shortcite{Karlsson:1990},
+is a rule-based formalism for various linguistics tasks, including morphological
+analysis, clause boundary detection and surface syntactic parsing. It has
+been used in a wide range of application areas, such as morphological
+disambiguation, grammar checking and machine translation~\cite{Bick:2011}. CG
+owns its popularity to two reasons: first, it achieves high accuracy on free
+text. Second, it works for languages where the annotated corpora required by
+statistical parsing methods are not available, but a linguist willing to work on
+the rules is. The original CG has since been superseded by CG-2 \cite{Tapanainen:1996} and lately, the free/open-source VISL
+CG-3~\cite{Bick:2000,Didriksen:2011}.
+
+Constraint grammar, however, has its drawbacks, one of which is speed. The
+Apertium machine translation project~\cite{Apertium:2011} uses both CG (via
+VISL CG-3) and $n$-gram based models for morphological disambiguation, and while
+CG achieves higher accuracy, the $n$-gram model runs about ten times faster.
+
+In this paper, we investigate how using finite-state transducers (FST) for CG
+application can help to bridge the performance gap. In recent years, several
+methods have been proposed for compiling a CG to FST and applying it on text:
+Hulden~\shortcite{Hulden:2011} compiles CG rules to transducers and runs them on the
+input sentences; Peltonen~\shortcite{Peltonen:2011} converts the sentences into ambiguous
+automata and attempts to eliminate branches by intersecting them with the rule
+FSTs; finally, Yli-Jyrä~\shortcite{Yli-Jyra:2011} creates a single FST from the
+grammar and applies it on featurised input. Unfortunately, none of the authors
+report exact performance measurements of their systems. Yli-Jyrä published
+promising numbers for the preprocessing step, but nothing on the overall
+performance. Peltonen, on the other hand, observed that ``VISL CG-3 was 1,500
+times faster'' than his implementation~\cite{Peltonen:2011}.
+
+We do not attempt here to add a new method to this list; instead, we
+concentrate on three practical aspects of FST-based CG. First, we report accurate
+measurements of the real-world performance of one of the methods above. Second,
+we endeavour to optimise the implementation of the selected method. All three
+works used \emph{foma}, an open source FST library~\cite{Hulden:2009a,Hulden:2009b}.
+We show that while \emph{foma} is fast,
+relying on specialised FST application code instead of a generic library
+clearly benefits performance. We also demonstrate what further improvements can
+be achieved by exploiting the peculiarities of CG. Lastly, our research also
+aims to fill the niche left by the lack of openly accessible finite-state CG
+implementations.
+
+Section~\ref{sec:fomacg} briefly introduces the method we chose to evaluate.
+In the rest of the paper, we present our optimisations in a way that mirrors the
+actual development process. We start out with a simple rule engine based on
+foma, and improve it step-by-step, benchmarking its performance after each
+modification, instead of a single evaluation chapter. We start in
+Section~\ref{sec:methodology} by describing our evaluation methodology.
+Section~\ref{sec:speed} follows the evolution of the rule engine, as it improves
+in terms of speed. Section~\ref{sec:complex} contains a complexity analysis
+and introduces an idea that theoretically allows us to improve the average- and
+best-case asymptotic bound.
+Section~\ref{sec:memory} demonstrates how memory savings can be derived from the
+steps taken in section~\ref{sec:speed}. Finally, Section~\ref{sec:conclusion}
+contains our conclusions and lists the problems that remain for future work.
+
+\section{The \emph{fomacg} compiler and \emph{fomacg-proc}}
+\label{sec:fomacg}
+
+We have chosen Hulden's \emph{fomacg} compiler for our study. Our
+reasons for this are twofold. The transducers generated by \emph{fomacg} were
+meant to be run on the input directly, but they could also be applied to a
+finite-state automaton (FSA) representation of the input sentence via FST
+composition, thereby giving us more space to experiment. Peltonen's method,
+on the other hand, works only through FST intersection. More importantly,
+\emph{fomacg} was the only compiler that is openly
+available.\footnote{In the Apertium software repository:
+\url{https://svn.code.sf.net/p/apertium/svn/branches/fomacg}}
+
+Here we briefly describe how \emph{fomacg} works; for further details refer to
+\cite{Hulden:2011}. A CG used for morphological disambiguation takes as input
+a morphologically analysed text, which consists of \emph{cohorts}: a word with
+its possible readings. A reading is
+represented by a lemma and a set of morphosyntactic \emph{tags}. For example, the cohort of
+the ambiguous Hungarian word \textit{szív} with two readings ``heart'' and
+``to suck'' would be
+\texttt{\^{}szív/szív<n><sg><nom>/szív<vblex><pres><s3p>\$}.\footnote{
+The example is in the Apertium stream format, not in CG-2 style.} The text is
+tokenised into sentences based on a set of \emph{delimiters}. CG rules
+operate on a sentence, removing readings from cohorts based on their context.
+The rules can be divided into priority levels called \emph{section}. Most
+implementations apply the rules one-by-one in a loop, until no rules can further
+modify the sentence.
+
+\emph{fomacg} expects cohorts to be encoded in a different format; the cohort in
+the example above would be represented as
+\begin{verbatim}
+    $0$ "<szív>" #BOC#        |
+    #0# "szív" n sg nom       |
+    #0# "szív" vblex pres s3p | #EOC#
+\end{verbatim}
+The rule transducers mark readings for removal by replacing the \texttt{\#0\#}
+in front of the reading by \texttt{\#X\#}; they act as identity for sentences
+they cannot be applied to.
+
+\emph{fomacg} is only a compiler, which reads a CG rule file and emits a
+\emph{foma} FST for each rule. The actual disambiguator program that applies the
+transducers to text we implemented ourselves. It reads the morphologically
+analysed input in the Apertium stream format, converts it into the format
+expected by \emph{fomacg}, applies the transducers to it, and then converts the
+result back to the stream format. To emphasise its similarity to \emph{cg-proc},
+VISL CG's rule applier, we named our program \emph{fomacg-proc}.
+
+%\section{Bridging the gaps}
+%\label{sec:bridging}
+%% TODO: what Måns did not cover in his paper (IFF, delimiters)?
+
+\section{Methodology}
+\label{sec:methodology}
+
+Apertium includes constraint grammars for several
+languages.\footnote{\url{http://wiki.apertium.org/wiki/Constraint_grammar}} While
+most of these are wide-coverage grammars, and are being actually used for morphological
+disambiguation in Apertium, they are also too big and complex to be easily used
+for the early stages of parser development. Therefore, we have written a small
+Hungarian CG, aimed to fully disambiguate a short Hungarian story, which was used
+as the development corpus. Since Hungarian is not properly supported by Apertium
+yet, morphological analysis was carried out by Hunmorph~\cite{Tron:2005}, and
+the tags were translated to the Apertium tagset with a transducer in \texttt{foma}.
+
+The performance of \texttt{fomacg-proc} has been measured against that of
+VISL CG. The programs were benchmarked with three Apertium CG grammars: the toy
+Hungarian grammar mentioned earlier, the Breton grammar from the \texttt{br-fr}
+language pair~\cite{Tyers:2010}, and the version of the Finnish grammar originally written
+by Karlsson in the North~Sámi--Finnish (\texttt{sme-fin}) pair. % TODO: what is sme? Citations!
+Seeing that in the early phases, only the Hungarian grammar was used for
+development, results for the other two languages are reported only for the later
+steps.
+
+Each grammar was run on a test corpus. For Breton, we used the corpus
+in the \texttt{br-fr} language pair, which consists of 1,161 sentences. There
+are no Finnish and Hungarian corpora in Apertium; for the former, we used a
+1,620-sentence excerpt from the 2013-Nov-14 snapshot of the Finnish Wikipedia,
+while for the latter, the short test corpus used for grammar development. Since
+the latter contains a mere 11 sentences, it was repeated 32 times to produce
+a corpus similar in size to the other two.\footnote{Although we used the same
+corpus for development and testing for Hungarian, the experimental setup was
+the same for VISL-CG and fomacg. While the numbers we acquired for Hungarian
+are not representative of how a proper Hungarian CG would perform on unseen
+data, they clearly show which of our steps benefit performance.} The Breton and Finnish corpora
+were tagged by Apertium's morphological analyser tools.
+
+Since VISL CG implements CG-3, and \emph{fomacg} only supports CG-2, a one-to-one
+comparison with the grammars above was not feasible. Therefore, we extracted the
+subset of rules from each that compiled under \emph{fomacg}, and carried out the tests
+on these subsets. Table~\ref{tab:grammar_size} shows the number of rules in the
+original and the CG-2 grammars.
+
+\begin{table*}[h]
+  \centering
+  \caption{Grammar sizes with the running time and binary size of the respective
+           VISL-CG grammars}
+  \label{tab:grammar_size}
+  \begin{tabular}{ | l | r | r | r | r | }
+  \hline
+  \textbf{Language} & \textbf{Rules} & \textbf{CG-2 rules} &
+  \textbf{Binary} & \textbf{Time} \\
+  \hline
+  Hungarian &   33 &   33 &   8kB & 0.284s \\
+  Breton    &  251 &  226 &  36kB & 0.77s \\
+  Finnish   & 1207 & 1172 & 184kB & 1.78s \\
+  \hline
+  \end{tabular}
+\end{table*}
+
+We recorded both initialisation and rule application time for the two programs,
+via instrumentation in case of \emph{fomacg-proc} and by running the grammar
+first on an empty file and then on the test corpus in case of \emph{cg-proc}.
+However, as initialisation is a one-time cost, in the following we are mainly
+concerned with the time required for applying rules. The tests were conducted on
+a consumer-grade laptop with a 2.2GHz Core2Duo CPU and 4GB RAM, running Linux.
+
+%TODO: delete the While's, However's, etc.
+\section{Performance optimisations}
+\label{sec:speed}
+
+% TODO: this to the second section
+Our implementation, much like that of \emph{fomacg} (and indeed, all recent
+work on finite state CG) is based on the \emph{foma} library. We started out
+with a naïve implementation that used solely stock \emph{foma} functions. Most
+of the improvements below stem from the fact that we have replaced these
+functions with custom versions that run much faster. The final implementation
+abandons \emph{foma} entirely, but for the data structures. In the future, we
+plan to discard those as well, making our code self-contained.
+
+The program loads the transducers produced by \emph{fomacg} and applies them
+to the text. The input is in the Apertium stream
+format\footnote{\url{http://wiki.apertium.org/wiki/Apertium_stream_format}}
+and it is read cohort-by-cohort. A \emph{foma} FST is used to convert each
+cohort to the format expected by the rule transducers, and to convert the final
+result back.
+
+To tokenise the text to sentences, we modified \emph{fomacg} to compile the
+\emph{delimiters} set and emit it as the first FSA in the binary representation
+of the grammar. \emph{fomacg-proc} reads the input until a cohort matches this
+set and then sends the accumulated sentence to the rule applier engine.
+
+The rules are tested one-by-one, section-by-section, to see if any of them can
+be applied to the text. Once such a rule is found, the associated FST is
+executed on the text. As it is possible that a rule that was not applicable to
+the original text would now run on the modified one, testing is restarted from the
+first section after each rule application. The process ends when no more
+applicable rules are found.
+
+% TODO Two subsections: FST & CG-specific optimisations (?)
+\subsection{Naïve implementation}
+\label{sec:speed_naive}
+
+The first version of the program used the \texttt{apply\_down()} \emph{foma}
+function both for rule application and format conversion. As \emph{fomacg}
+generated a single FST for a rule, rule testing and execution was done in the
+same step, by applying the FST. Whether the rule was actually applied or not was
+decided by comparing the original sentence to the one returned by the function.
+
+The first row in Table~\ref{tab:evaluation} shows the running time for the
+Hungarian grammar. At 6.4s, the naïve implementation runs more than 20 times
+slower than VISL-CG (see Table~\ref{tab:grammar_size}). Luckily a far cry from
+the 1,500 reported by Peltonen, but clearly too slow to be of practical use.
+
+\subsection{FST composition}
+\label{sec:speed_composition}
+
+Another way to apply a rule is to convert the input sentence into a
+single-path FSA with the same alphabet as the rules and compose the rule FST
+on top of it. To check if the rule has actually be applied, the input
+automaton was intersected with the result. Unfortunately, this method proved to
+be much slower than the application-based one; composition alone took 28.3
+seconds on our corpus, while the intersection pushed it up to 45s. Therefore we
+decided to abandon this path altogether.
+
+\subsection{Deletion of discarded readings}
+\label{sec:speed_deletex}
+
+The original transducers replace the \texttt{\#0\#} in front of discarded readings
+with \texttt{\#X\#}. Our first optimisation comes from the observation that
+deleting these readings instead would not make the transducers any more complex,
+but would shorten the resulting sentence, making subsequent tests faster.
+Moreover, it allows the engine to recognise actual rule application by simply
+testing the length of the output to the input sentence, an operation slightly
+faster than byte-for-byte comparison.
+
+Table~\ref{tab:evaluation} reports an approximately 8\% improvement. While not
+self-evident, this benefit remained in effect after our subsequent optimisations.
+
+\subsection{FSA-based rule testing}
+\label{sec:speed_fsa}
+
+Theoretically, further speed-ups could be achieved by separating rule testing
+and application, using finite-state automata for the former. Automata are faster
+than transducers for two reasons: first, there is no need to assemble an output;
+and second, a FSA can be determinised and minimised, while \emph{foma} can
+only make a FST deterministic by treating it as a FSA with an alphabet of the
+original input:output pairs, which does not entail determinism in the input.
+
+As the fourth row in table~\ref{tab:evaluation} shows, the idea does not immediately
+translate well to practice. The fault lies with the \texttt{apply\_down()}
+function, which, being the only method of running a finite-state machine in
+\emph{foma}, was designed to support all features of the library. It treats
+automata as identity transducers, and fails to capitalise
+on the aforementioned advantages of the former. In order to benefit from 
+FSA-based testing then, a custom function is required.
+
+\subsection{Custom FSA/FST application}
+\label{sec:speed_custom}
+
+The \texttt{apply\_down()} function supports the following features~\cite{Hulden:2009b}:
+\begin{itemize}
+  \item Conversion of the text to symbols (single- and multi-character)
+  \item Regular transitions and flag diacritics
+  \item Three types of search in the transition matrix (linear, binary and indexed)
+  \item Deterministic and non-deterministic operation
+  \item Iterators (multiple invocations iterate the non-deterministic outputs)
+\end{itemize}
+
+Our use-case makes most of these features surplus to requirements. \emph{fomacg} uses
+multi-character symbols, but not flag diacritics. To maximise the performance
+gains, the rule testing automata must be minimal (hence deterministic), so
+there was no need for non-determinism and iterators. Finally, by modifying
+\emph{fomacg} to sort the edges of all grammar machines, we could ensure that
+binary transition search alone suffices.
+% TODO: explain that indexed is not much better?
+
+The custom FSA applier function that implements only the necessary features
+was employed for both rule testing and finding the delimiter cohort. As a result,
+running time went down to 1.45 seconds (see table~\ref{tab:evaluation}), a 75\%
+improvement.
+
+A similar function was written for input-deterministic minimal transducers.
+While not applicable to the non-deterministic rule FSTs, it could
+replace \texttt{apply\_down()} for the conversion between the Apertium and  % TODO: eh
+the \emph{fomacg} formats, further reducing the running time to 1.275 seconds.
+
+% TODO: rule runner to here, too? Enumarate where we use FSM's?
+% TODO TODO TODO BIMACHINE!!!!!
+
+% TODO: br
+What we can take home from the last two sections is that when speed is paramount,
+relying blindly on generic libraries may not only lead to suboptimal performance,
+but may also produce counterintuitive results.
+
+Conversely, libraries may benefit from including specialised implementations
+for different use-cases. For example, \emph{foma} has all the information at hand
+to decide if a FST is deterministic, whether it supports binary search or not,
+etc. and so, providing specialised functions (even private ones hidden behind
+\texttt{apply\_down()}) would improve its performance substantially in certain
+situations.
+% TODO TODO All configurations in the list above could have specialized functions.
+
+\subsection{Exploiting CG structure}  % TODO: ?
+\label{sec:speed_cg}
+
+In this chapter, we review the improvements made available by the
+characteristics of our CG representation. The first of these is functionality:
+even though the rule FSTs are non-deterministic, the input-output mapping is
+one-to-one~\cite{Hulden:2011}. It was thus possible to implement the
+non-deterministic version of the FST runner function described in the last
+section without the need for an iterator feature, and to use it for rule
+application. The last usage of the generic \texttt{apply\_down()} function  % TODO: usage
+thus eradicated, the running time dropped to 1.05 seconds (see
+table~\ref{tab:evaluation}).
+
+% TODO: is this true for SFST and OpenFST? cite!
+Internally \emph{foma}, similarly to other FST toolkits, represents elements
+of the $\Sigma$ alphabet as integers. The conversion of text into tokens in
+$\Sigma$ is a step usually taken for granted in the literature, but it
+contributes to the execution time of an FST to a significant extent. In
+\emph{foma}, token matching is performed by a trie built from the symbols in
+the automaton's alphabet. Our custom DFSA runner function (see
+section~\ref{sec:speed_custom}) spends about 60\% of its time applying this trie.
+
+The two enhancements below have helped to all but negate the cost of token
+conversion. The first of these exploits the fact that in the \texttt{fomacg}
+format, symbols are separated by space characters. Instead of passing the
+input string to each FSM, we split it along the spaces, and pass the resulting
+string vector to the machines. This is a rather small change, and while the
+Hungarian grammar benefited almost nothing, the running time of the Breton
+grammar improved by 40\%.
+
+The second enhancement came from the observation that all rule testing automata
+and rule transducers accept the same CG tags. It is thus possible to generate an
+automaton whose alphabet is the union of those of the other machines. This
+automaton could be used to convert the input sentence into a vector of $\Sigma$
+ids, and then this vector could be sent to the other machines, relinquishing the
+need of repeated conversions.
+
+Both \emph{fomacg} and \emph{fomacg-proc} had to be modified to account for the
+changes. The former now creates the converter FSA and saves it as the
+second machine in the binary grammar file. Also, since the ids that correspond
+to a symbol are unique to each machine, we added a post-processing phase that
+replaces the ids with the ``canonical'' ones in the converter FSA. 
+\emph{fomacg-proc} then converts the input to ids using the converter
+automaton's trie, and sends the vector to the rule machines. The rule machines
+treat the vector as their input, with a caveat: ids not in the alphabet of the
+machine in question are replaced by \texttt{@IDENTITY\_SYMBOL@}, so that they
+are handled in the same way as before.
+
+Table~\ref{tab:evaluation} shows that factoring the symbol conversion out from
+the individual machines resulted in huge savings: the running time of the
+Hungarian setup improved by 70\% to 0.32 second; the Breton one by 40\% to 1.55
+seconds.
+
+\begin{table}[h]
+  \centering
+  \caption{Effects of the optimisations on running time}
+  \label{tab:evaluation}
+  \begin{tabular}{ | l | r | r | }
+  \hline
+  \textbf{Version} & \textbf{Hungarian} & \textbf{Breton} \\
+  \hline
+  Naïve (\ref{sec:speed_naive})                 & 6.4s   & -- \\
+  Composition (\ref{sec:speed_composition})     & 45s    & -- \\
+  Delete readings (\ref{sec:speed_deletex})     & 5.9s   & -- \\
+  FSA rule testing (\ref{sec:speed_fsa})        & 10s    & -- \\
+  Custom FSA runner (\ref{sec:speed_custom})    & 1.45s  & -- \\
+  Custom format-FST (\ref{sec:speed_custom})    & 1.275s & 6.8s \\
+  Input partitioning (\ref{sec:speed_cg})       & 1.15s  & 4s \\
+  Custom rule applier (\ref{sec:speed_cg})      & 1.05s  & 2.6s \\
+  One-time conversion (\ref{sec:speed_cg})      & 0.32s  & 1.55s \\
+  \hline
+  \end{tabular}
+\end{table}
+
+\section{Complexity analysis}
+\label{sec:complex}
+
+Tapanainen~\shortcite{Tapanainen:1999} proves that the worst-case time complexity
+for disambiguating a sentence in his CG-2 parser is $\mathcal{O}(n^3k^2G)$,
+where $n$ is the length of the sentence, $k$ is the maximum number of readings
+per word, and the grammar consists of $G$ rules. The explanation is as follows:
+testing a cohort with a single rule can be done in $\mathcal{O}(nk)$; 
+the whole sentence in $\mathcal{O}(n^2k)$. This process must be repeated for
+each rule, yielding $\mathcal{O}(n^2kG)$. Finally, in the worst case, a rule
+only removes a single reading, so it takes $n(k - 1)$ rounds to disambiguate the
+sentence, resulting in the aforementioned bound.
+
+Hulden~\shortcite{Hulden:2011} showed that if the rules are compiled to
+transducers, they can be applied to the whole sentence in $\mathcal{O}(nk)$
+time, thus decreasing the complexity to $O(n^{2}k^{2}G)$, instead of the
+$O(n^{2}k)$ suggested by Tapanainen. To be more precise, applying a rule
+transducer takes $O(nkT)$ time, where the constant $T$ is the size of the FST.
+While $T$ may be rather large, rule transducers may be factored into
+bimachines, which removes the constant. Hence, a disambiguating bimachine for
+one CG rule can be applied to a sentence of $nk$ tokens in $O(nk)$
+(linear) time. However, \textit{fomacg} only includes CG
+rule-to-transducer compilation and does not include bimachine
+factorization as of yet.
+
+While this work has left the theoretical limit untouched thus far, it improved
+on three aspects of the complexity.
+First, unlike \emph{foma}, our specialised FST application functions can take
+advantage of the properties of automata and bimachines, and actually run them
+in $\mathcal{O}(nk)$ time.
+Second, the constant in the $\mathcal{O}$ has been decreased as a result of
+extensive optimisation.
+Third, rule testing automata have been introduced which, being minimal,
+can also be applied in $\mathcal{O}(nk)$ time. Assume that in a round $G_a$
+rules can be applied to the sentence and $G_u$ cannot, $G_a + G_u = G$. With
+minimal automata for rule testing the round finishes with $2G_a + G_u$ machine
+applications, instead of the $2G$ required by bimachines. The facts that usually
+$G_a << G$ and that automata can be applied faster than transducers result in a
+performance improvement over the pure bimachine setup.
+
+% TODO: Anssi
+% TODO: SuperTagger -> prefiltering Finite State to the Rescue (Extended Finite
+%       State Models of Language)
+
+\subsection{Beyond the $\mathcal{O}(n^2k^2G)$ bound}
+\label{sec:complex_idea}
+
+This section presents an idea that allows the system to
+theoretically overcome the $\mathcal{O}(n^2k^2G)$ average complexity bound.
+This section describes the method, and investigates its feasibility; the
+next section contains the evaluation.
+
+The idea is based on the fact that regular languages are closed under the union
+operator. If there are two automata, $\mathrm{FSA}_{G_a}$ and $\mathrm{FSA}_{G_b}$ that test the
+rules $G_a$ and $G_b$, respectively, then it follows that their union,
+$\mathrm{FSA}_{G_{ab}}$, accepts a sentence iff either $G_a$ or $G_b$ is applicable to it.
+If $\mathrm{FSA}_{G_{ab}}$ is minimised, it runs in $\mathcal{O}(nk)$ time, the same as
+$\mathrm{FSA}_{G_a}$ and $\mathrm{FSA}_{G_b}$.
+
+% TODO: allows us -> enables decreasing?
+The union FSA allows us to implement hierarchical rule checking. In this example,
+testing if any of the two rules match a sentence with only the original
+automata requires a check with both. Instead, we can apply $\mathrm{FSA}_{G_{ab}}$ first.
+If neither rule is applicable, the automaton will not accept the sentence, and
+no further testing is required. If one of the rules is, $\mathrm{FSA}_{G_a}$ (or
+equivalently, $\mathrm{FSA}_{G_b}$) must be run against the sentence to see which. In
+practice, if we pick two rules from a CG in random, we shall find that the
+majority of the sentences will not match either, hence the number of tests may
+be reduced substantially.
+
+There is no need to stop here: we can take two union automata, and merge them
+again. It is easy to see that if we represent the rule testing automata in a
+graph, where a node is a FSA, and two nodes are connected iff one was created
+from the other via union, then we get a binary tree. For a grammar of $G$ rules,
+a binary tree of $\log G$ levels can be built. Such a tree can confirm with a
+single test if a sentence does not match any of the rules, or find the matching
+rule in $\log G + 1$ tests, if one does. Accordingly, in theory this method
+allows us to improve the average- and best-case complexity bounds of the system
+to $\mathcal{O}(n^2k^2\log G)$ and $\mathcal{O}(nk)$, respectively.  % TODO: rewrite this
+(Clearly, for grammars with several sections, instead of a single tree that
+contains all rules, one tree must be built for each section to preserve rule
+priorities. However, this does not affect the reasoning above).  % TODO: reasoning?
+
+The bottleneck in this method is memory consumption. The size of the FSA
+resulting from a non-deterministic union operation is simply the sum of the
+sizes of the original automata. To achieve the speed-up described above, however,
+the rule checking automata must be determinised, which may cause them to blow up in size
+exponentially. Therefore, building a single tree from all rules is not feasible.
+A compromise solution is to construct a forest of 2--4 level trees, which still
+fits into the memory and provides similar benefits to a single tree, though to
+a smaller extent.
+
+\subsection{Evaluation}
+
+The forest can be assembled in several ways; we experimented with two simple
+algorithms. Both take as input a list of rule testing automata, which are
+encapsulated into single-node trees. Before each step, the trees are sorted by
+the size of the automata in their roots.
+
+The first algorithm, \textit{SmallestFirst}, unifies the two smallest trees in
+each step, until the root FSA in each tree is above a size limit (1,000 states in
+our case).
+The second, \textit{FixedLevel}, aims to create full, balanced binary trees:
+in a single step, it unifies the smallest tree with the largest, the second
+smallest with the second largest, etc, and repeats the process until the trees
+reach a predefined height.
+
+% TODO: it can be seen?
+Table~\ref{tab:trees} lists the running times and memory requirements of the
+resulting forests. It can be seen that hierarchical rule testing
+indeed improves performance: even a single level of merging results in 30-42\%
+speedup. However, it is also immediately evident that aside from special cases,
+the disadvantages overweight the benefits: memory usage and binary size grow
+exponentially, affecting compilation and grammar loading time as well, and very
+soon we run into the limits of physical memory. Unless a method is found that
+reduces memory usage substantially, we have to give up on hierarchical rule
+testing.
+
+\begin{table*}[h]
+  \centering
+  \caption{Performance and storage requirements of rule testing trees\\
+           $^\ast$ State count limit was 500\hspace{3em}
+           $^\dagger$ Reached limit of physical memory}
+  \label{tab:trees}
+  \begin{tabular}{ | l | r | r | r | r | r | }
+  \hline
+  \textbf{Language} & \textbf{Algorithm} & \textbf{Initialisation} &
+  \textbf{Disambiguation} & \textbf{Memory} & \textbf{File size} \\
+  \hline
+  Hungarian & (flat) & 0.028s & 0.32s & 0.5\% & 60kB \\
+  Hungarian & FixedLevel(3) & 0.77s & 0.235s & 2.1\% & 7.1MB \\
+  Hungarian & Smallest First & 0.62s & 0.234s & 1.9\% & 5.9MB \\
+\hline
+  Breton    & (flat) & 0.5s & 1.55s & 5.1\% & 1.5MB \\
+  Breton    & FixedLevel(2) & 1.8s & 1.09s & 9.6\% & 7.4MB \\
+  Breton    & Smallest First & 11.14s & 1.05s & 28.7\% & 60MB \\
+\hline
+  Finnish   & (flat) & 1.5s & 22.87s & 21.8\% & 7.2MB \\
+  Finnish   & FixedLevel(2) & 3.64s & 13.28s & 32.3\% & 28MB \\
+  Finnish   & SmallestFirst$^\ast$ & 20.75s & 9.95s & --$^\dagger$ & 198MB \\
+  \hline
+  \end{tabular}
+\end{table*}
+
+\section{Memory savings}
+\label{sec:memory}
+
+The use of a single converter automaton has not only resulted in improved
+performance, but it has also opened a way to decrease the storage space
+requirements of the grammar as well. The trie that converts the 
+machine's alphabet to integer ids in \emph{foma} takes up space; depending on
+the number and length of the symbols in bytes, this trie may be responsible for
+a considerable portion of the memory
+footprint of an automaton. Given the number of rules in an average CG grammar,
+it is easy to see how this trivial sub-task may affect the memory consumption of
+the application, as well as the size of the grammar binary.
+As the job of token matching has been delegated to the symbol
+automaton (see section \ref{sec:speed_cg}), we no longer maintain
+separate tries for all individual FSAs. 
+
+Table \ref{tab:sigma_memory} presents the resulting memory savings.
+We report numbers for the raw grammars (L1), as well as for two- and three-level
+condition trees (L2-3). It is not surprising that the raw grammars see the
+largest improvements; here the tries accounted for 70-80\% of the memory
+usage. As the trees get higher, the number of states and edges grows more
+rapidly than does the number of tries and the savings become more modest.
+
+\begin{table}[h]
+  \centering
+  \caption{Improvements in memory usage due to removing the sigma trie. Memory
+           consumption is measured as a percentage of the 4GB system memory}
+  \label{tab:sigma_memory}
+  \begin{tabular}{ | l | l | r | r | r | }
+  \hline
+  \textbf{Language} & \textbf{Method} & \textbf{Before} & \textbf{After} & \textbf{Reduction} \\
+  \hline
+  Hungarian & L1 & 0.5\% & 0.1\% & 80\% \\
+  Hungarian&  L3 & 2.1\% & 1.5\% & 28.57\% \\
+  Breton & L1 & 5.1\% & 1.3\% & 74.5\% \\
+  Breton & L2 & 9.6\% & 4.4\% & 54.16\% \\
+  Finnish & L1 & 21\% & 4.1\% & 80.47\% \\
+  Finnish & L2 & 32.3\% & 8.9\% & 72.44\% \\
+  \hline
+  \end{tabular}
+\end{table}
+
+We explored other options as well to reduce the size of rule condition trees.
+Unfortunately, most methods aimed at FSA compression in the literature are
+either already implemented in \emph{foma} (e.g. as row-indexed transition matrix,
+see Kiraz~\shortcite{Kiraz:2001}), or are aimed at automata with a regular structure,
+such as morphological analysers~\cite{Huet:2003,Huet:2005,Drobac:2014}. Without
+further support, the approximately 30\% saving achieved by our method for a
+three-level condition tree alone is not enough to redeem hierarchical rule
+checking.
+
+A task-specific framework, one based on inward deterministic automata has
+been proposed for CG parsing~\cite{Yli-Jyra:2011}. The paper reports a binary
+size similar to the original grammar size. However, as the framework breaks away
+from the practice of direct rule application followed in this paper and
+in related literature \cite{Hulden:2011,Peltonen:2011}, closer inspection remains as future work. 
+
+% TODO: read
+%       Reducing memory requirements in reachability-based finite automata operations (http://onlinelibrary.wiley.com/doi/10.1002/spe.561/abstract)
+%       On the state complexity of semi-quantum finite automata (http://arxiv.org/abs/1307.2499)
+%       State Complexity Research and Approximation (http://link.springer.com/chapter/10.1007/978-3-642-22321-1_5)
+%       State Complexity: Recent Results and Open Problems (http://iospress.metapress.com/content/veemqfxm6n48cpxn/)
+%       Experiments with Automata Compression (http://link.springer.com/chapter/10.1007/3-540-44674-5_8)
+
+\section{Conclusions}
+\label{sec:conclusion}
+We set out with the goal of creating a fast constraint grammar parser based on
+finite-state technology. Our aim was to achieve better performance on the task
+of morphological disambiguation than the current state-of-the-art parser
+VISL CG-3. We used the CG grammars available in the Apertium machine translation
+project.
+
+Our goals were partially fulfilled: while the speed of our parser falls short
+of that of VISL CG-3 --- with the exception of the execution of very small grammars --- we have made advances on the state-of-the-art
+free/open-source FST implementations of CG. We based our system on the
+\emph{fomacg} compiler, and extended it in several ways. Our parser  % TODO bimachines?
+uses optimised FST application methods instead of the generic \emph{foma} variant
+used by previous implementations, thereby achieving better performance.
+Further optimisations, both memory and runtime, were made
+by exploiting the properties of FSTs generated from a CG. We report real-world
+performance measurements with and without these optimisations, so their efficacy
+can be accurately evaluated.
+A new method for rule testing has also been proposed, which in theory is capable
+of reducing the worst-case complexity bound of CG application to
+$\mathcal{O}(n^2k^2\log G$). Unfortunately, the method has yet to be proven feasible in
+practice.
+
+Our main finding is that implementation matters: an FST library which is too generic
+hinders performance and can even make a theoretically faster algorithm slower
+in practice. Using bimachines and rule testing automata should have sped up
+rule application, but only did so after we implemented our own, specialised
+FST functions. Since \emph{foma} has all necessary information about an FST in
+place to decide the right application method, incorporating our functions into
+it, or other FST libraries, could benefit applications beyond the scope of CG.
+
+% TODO: Read and add Yli-Jyra:2011 -- a different method (I also was thinking
+%       about a two-step method, where the first level converts cohorts to 
+%       some representation (the sets it contains, etc.), and the second level
+%       does something else).
+
+\section*{Acknowledgements}
+This research was supported through an Apertium project in the 2013 Google Summer of Code.\footnote{\url{https://google-melange.appspot.com/gsoc/project/details/google/gsoc2013/davidnemeskey/5764017909923840}}
+
+\bibliographystyle{acl}
+\bibliography{apertium_cg}
+\end{document}
