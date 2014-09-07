@@ -15,5 +15,5 @@ $(SUBDIRS):
 	$(MAKE) -C $@
 
 clean:
-	rm fomacg2 fomacg-proc
+	rm -f fomacg2 fomacg-proc factorize
 #-I/usr/local/include/ -I. 
