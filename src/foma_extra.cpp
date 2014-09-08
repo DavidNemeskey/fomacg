@@ -622,17 +622,17 @@ bool common_apply_down_lrs(LeftRightSequential* lrs,
                            const std::vector<Symbol>& sentence,
                            std::vector<Symbol>& result) {
   std::cerr << "Sentence is: " << std::endl;
-  std::cerr << join(sentence, "\n");
+  std::cerr << join(sentence, "\n") << std::endl;
   std::vector<Symbol> intermediate =
       common_apply_down_lrs_inner(lrs->T_1, sentence);
-  std::cerr << "Reverse intermediate is: " << std::endl;
-  std::cerr << join(intermediate, "\n");
+  std::cerr << std::endl << "Reverse intermediate is: " << std::endl;
+  std::cerr << join(intermediate, "\n") << std::endl;
   std::reverse(intermediate.begin(), intermediate.end());
   std::vector<Symbol> output =
       common_apply_down_lrs_inner(lrs->T_2, intermediate);
   std::reverse(output.begin(), output.end());
   std::cerr << std::endl << "Output is: " << std::endl;
-  std::cerr << join(output, "\n");
+  std::cerr << join(output, "\n") << std::endl << std::endl;
   result.swap(output);
   return true;
 }
