@@ -611,7 +611,8 @@ std::vector<Symbol> common_apply_down_lrs_inner(
   for (std::vector<Symbol>::const_iterator symbol = input.begin();
        symbol != input.end(); ++symbol) {
     int trans_offset = find_transition_lrs(fst, q, symbol->number);
-    std::cerr << "trans_offset " << trans_offset << std::endl;
+    std::cerr << "trans_offset " << trans_offset << ", q = " << q
+              << ", out = " << (fst->states + trans_offset)->out << std::endl;
     q = (fst->states + trans_offset)->target;
     output.push_back((fst->states + trans_offset)->out);
   }
