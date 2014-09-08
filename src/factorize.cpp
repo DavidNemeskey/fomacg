@@ -106,6 +106,7 @@ std::vector<SigmaSymbol> fst_apply_down(struct fsm* fst,
   for (std::vector<SigmaSymbol>::const_iterator symbol = input.begin();
        symbol != input.end(); ++symbol) {
     int trans_offset = find_transition(fst, q, *symbol);
+    std::cout << "trans_offset " << trans_offset << std::endl;
     q = (fst->states + trans_offset)->target;
     output.push_back((fst->states + trans_offset)->out);
   }
@@ -458,45 +459,6 @@ LeftRightSequential::~LeftRightSequential() {
   }
 }
 
-/**
- * "Collapses" the intermediate alphabet by identifying symbols whose
- * distribution matches that of another one. Returns a set of the
- * representattive symbols and the mapping
- * {<symbol>: <representative symbol>}.
- */
-void collapse_intermediate_alphabet(const std::vector<Transition>& edges,
-                                    std::set<SigmaSymbol>& representatives,
-                                    std::map<SigmaSymbol, SigmaSymbol>& mapping) {
-  std::map<SigmaSymbol, std::vector<std::string> > labeler;
-  std::stringstream ss;
-  /* Group the intermediate symbols, label them by source, target, out. */
-  for (std::vector<Transition>::const_iterator edge = edges.begin();
-       edge != edges.end(); ++edge) {
-    ss.str("");
-    ss << "(" << edge->source << ", " << edge->target << ", " << edge->out << ")";
-    labeler[edge->in].push_back(ss.str());
-  }
-  /* Sort the labels and join them. */
-  std::map<std::string, std::set<SigmaSymbol> > merger;
-  for (std::map<SigmaSymbol, std::vector<std::string> >::iterator
-       it = labeler.begin(); it != labeler.end(); ++it) {
-    std::sort(it->second.begin(), it->second.end());
-    merger[join(it->second, "; ")].insert(it->first);
-  }
-  /* Now print the merger. */
-  std::cout << std::endl << "Merger:" << std::endl;
-  for (std::map<std::string, std::set<SigmaSymbol> >::const_iterator it =
-       merger.begin(); it != merger.end(); ++it) {
-    std::cout << it->first << " ::: " << join(it->second) << std::endl;
-    const SigmaSymbol& representative = *(it->second.begin());
-    representatives.insert(representative);
-    for (std::set<SigmaSymbol>::const_iterator sym = it->second.begin();
-         sym != it->second.end(); ++sym) {
-      mapping[*sym] = representative;
-    }
-  }
-}
-
 void LeftRightSequential::compute_ts(const struct fsm* fst,
                                      const BiMachine& bimachine) {
   T_1 = fsm_copy(bimachine.A_1);
@@ -542,57 +504,22 @@ void LeftRightSequential::compute_ts(const struct fsm* fst,
   for (std::map<BiTrans, SigmaSymbol>::const_iterator it = bimachine.delta.begin();
        it != bimachine.delta.end(); ++it) {
     /* The usual UNKNOWN -> IDENTITY conversion. */
-    SigmaSymbol a = it->first.a;
-    if (a == UNKNOWN) {
-      a = IDENTITY;
-    }
+    const SigmaSymbol& in = it->first.a == UNKNOWN ? IDENTITY : it->first.a;
+    const SigmaSymbol& out = it->second;
+    const State& q_1 = it->first.q_1;
+    const State& q_2 = it->first.q_2;
     /* We search in A_2, because it remains unchanged, while T_2 does not. */
-    int trans_offset = find_transition(bimachine.A_2, it->first.q_2, a);
+    int trans_offset = find_transition(bimachine.A_2, q_2, in);
     struct fsm_state* T_2_trans = T_2->states + trans_offset;
-    T_2_trans->in  = alphabet[Trans(it->first.q_1, a)];
-    T_2_trans->out = it->second;
+    T_2_trans->in  = alphabet[Trans(q_1, in)];
+    T_2_trans->out = out;
     edges.push_back(Transition(T_2_trans->state_no, T_2_trans->target,
-                               alphabet[Trans(it->first.q_1, a)], it->second));
+                               alphabet[Trans(q_1, in)], out));
   }
 
   std::sort(edges.begin(), edges.end());
   std::cout << std::endl << "Edges:" << std::endl << join(edges, "\n")
             << std::endl << std::endl;
-
-  /* Identify the duplicate input symbols. */
-  std::set<SigmaSymbol> duplicate_representatives;
-  std::map<SigmaSymbol, SigmaSymbol> duplicate_mapping;
-  collapse_intermediate_alphabet(
-      edges, duplicate_representatives, duplicate_mapping);
-
-  /* Remove the edges from T_2 with duplicate symbols. */
-  std::vector<Transition> edges2;
-  std::copy_if(edges.begin(), edges.end(), std::back_inserter(edges2),
-      [duplicate_representatives](const Transition& edge) {
-        return (duplicate_representatives.count(edge.in) > 0);
-      });
-  edges.swap(edges2);
-  edges2.clear();
-//  for (std::vector<Transition>::reverse_iterator edge = edges.rbegin();
-//       edge != edges.rend(); ++edge) {
-//    if (duplicate_representatives.count(edge->in) == 0) {
-//      edges.erase(edge);  // TODO: does this work?
-//    }
-//  }
-  std::cout << std::endl << "Edges2:" << std::endl << join(edges, "\n")
-            << std::endl << std::endl;
-  /* Rewrite the duplicates to their representative in T_1. */
-  T_1_transitions = T_1->states;
-  for (int i = 0; (T_1_transitions + i)->state_no != -1; i++) {
-    if ((T_1_transitions + i)->in == -1) {
-      std::cout << "EOP: " << (T_1_transitions + i)->state_no << " -- "
-                << (T_1_transitions + i)->in << " : "
-                << (T_1_transitions + i)->out << " --> "
-                << (T_1_transitions + i)->target << std::endl;
-      continue;  // End-of-path state
-    }
-    (T_1_transitions + i)->out = duplicate_mapping[(T_1_transitions + i)->out];
-  }
 
   xxfree(T_2->states);
   T_2->states = static_cast<fsm_state*>(xxmalloc(sizeof(struct fsm_state) * (edges.size() + 1)));
