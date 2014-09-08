@@ -106,6 +106,7 @@ std::vector<SigmaSymbol> fst_apply_down(struct fsm* fst,
   for (std::vector<SigmaSymbol>::const_iterator symbol = input.begin();
        symbol != input.end(); ++symbol) {
     int trans_offset = find_transition(fst, q, *symbol);
+    std::cout << "trans_offset " << trans_offset << std::endl;
     q = (fst->states + trans_offset)->target;
     output.push_back((fst->states + trans_offset)->out);
   }
@@ -542,17 +543,17 @@ void LeftRightSequential::compute_ts(const struct fsm* fst,
   for (std::map<BiTrans, SigmaSymbol>::const_iterator it = bimachine.delta.begin();
        it != bimachine.delta.end(); ++it) {
     /* The usual UNKNOWN -> IDENTITY conversion. */
-    SigmaSymbol a = it->first.a;
-    if (a == UNKNOWN) {
-      a = IDENTITY;
-    }
+    const SigmaSymbol& in = it->first.a == UNKNOWN ? IDENTITY : it->first.a;
+    const SigmaSymbol& out = it->second;
+    const State& q_1 = it->first.q_1;
+    const State& q_2 = it->first.q_2;
     /* We search in A_2, because it remains unchanged, while T_2 does not. */
-    int trans_offset = find_transition(bimachine.A_2, it->first.q_2, a);
+    int trans_offset = find_transition(bimachine.A_2, q_2, in);
     struct fsm_state* T_2_trans = T_2->states + trans_offset;
-    T_2_trans->in  = alphabet[Trans(it->first.q_1, a)];
-    T_2_trans->out = it->second;
+    T_2_trans->in  = alphabet[Trans(q_1, in)];
+    T_2_trans->out = out;
     edges.push_back(Transition(T_2_trans->state_no, T_2_trans->target,
-                               alphabet[Trans(it->first.q_1, a)], it->second));
+                               alphabet[Trans(q_1, in)], out));
   }
 
   std::sort(edges.begin(), edges.end());
