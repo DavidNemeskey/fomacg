@@ -9,6 +9,9 @@
 #include "fomacg_common.h"
 #include "foma_extra.h"
 
+const std::string begin_cohort =
+    std::string("$0$ \">>>\" #BOC# | #0# \">>>\" <>>>> | #EOC# ");
+
 FstPair load_rule_fst(const std::string& fst_file) throw (std::invalid_argument) {
   fsm_read_binary_handle fsrh;
   if ((fsrh = fsm_read_binary_file_multiple_init(fst_file.c_str())) == NULL) {
@@ -152,6 +155,8 @@ int main(int argc, char* argv[]) {
   }
 
   std::string fomacg_sent = apply_detmin_fst_down(transformer.ah, sentence.c_str());
+  fomacg_sent = begin_cohort + fomacg_sent.substr(0, fomacg_sent.length() - 8) +
+                "<<<<> " + fomacg_sent.substr(fomacg_sent.length() - 8);
   transformer.cleanup();
   std::cout << std::endl << std::endl << "Rule FST:" << std::endl;
   print_fst(fst.fst);
@@ -240,6 +245,7 @@ int main(int argc, char* argv[]) {
 
   std::cout << std::endl << std::endl << "Before" << std::endl;
   std::vector<short int> input = transform_sentence(fomacg_sent, rsigmas);
+  std::cout << std::endl << "Fomacg input:" << std::endl << fomacg_sent << std::endl;
   print_sentence("Input", input, sigmas);
 
   std::vector<short int> output = bi.bi_apply_down(input);
