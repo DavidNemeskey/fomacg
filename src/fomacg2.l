@@ -1246,11 +1246,12 @@ int save_rules_fsm(char *filename) {
   foma_net_print(delimiter_rule, (gzFile*)outfile);
   printf("Printing delimiter net...\n");
 
-  /* ... then the deserialized rule tree. */
+  /* ... then the sigma converter... */
   printf("Printing allsigma net...\n");
   foma_net_print(allsigma, (gzFile*)outfile);
   fsm_destroy(allsigma);
 
+  /* ... then the deserialized rule tree. */
   for (i = 0; i < num_rules; i++) {
     printf("Printing net %d (%s, states: %d, arcs: %d)\n",
            i, to_print[i]->name, to_print[i]->statecount, to_print[i]->arccount);
