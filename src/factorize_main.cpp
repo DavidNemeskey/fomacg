@@ -211,6 +211,9 @@ int main(int argc, char* argv[]) {
 
   LeftRightSequential* lrs2 = fst_to_left_right(fsm_copy(fst.fst));
 
+  std::cout << std::endl << std::endl << "LRS T1:" << std::endl;
+  print_fst(lrs.T_1);
+
 //  std::cout << std::endl << std::endl << "fst" << std::endl << std::endl;
 //  print_fst(fst);
 
