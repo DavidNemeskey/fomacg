@@ -847,10 +847,17 @@ static void replace_sigma(struct fsm* fsm, std::map<std::string, int> sigmas) {
       s->number = new_number;
     }
   }
+  // We do not modify the inner alphabet of the LRS transducers.
+  // TODO: this shouldn't be here; but let's get the bimachines working first!
+  char* place_t1 = strstr(fsm->name, "T_1");
+  char* place_t2 = strstr(fsm->name, "T_2");
+  bool t1 = place_t1 != NULL && place_t1 == &(fsm->name[strlen(fsm->name) - 3]);
+  bool t2 = place_t2 != NULL && place_t2 == &(fsm->name[strlen(fsm->name) - 3]);
+
   for (int i = 0; (fsm->states + i)->state_no != -1; i++) {
-    if ((fsm->states + i)->in > IDENTITY)
+    if ((fsm->states + i)->in > IDENTITY && !t2)
       (fsm->states + i)->in = sigma_mapping[(fsm->states + i)->in];
-    if ((fsm->states + i)->out > IDENTITY)
+    if ((fsm->states + i)->out > IDENTITY && !t1)
       (fsm->states + i)->out = sigma_mapping[(fsm->states + i)->out];
   }
 
