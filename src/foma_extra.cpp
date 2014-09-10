@@ -663,7 +663,7 @@ bool common_apply_down_lrs(LeftRightSequential* lrs,
   std::cerr << std::endl << std::endl << "LRS T1:" << std::endl;
   print_fst2(lrs->T_1);
   std::cerr << "Sentence is: " << std::endl;
-//  std::cerr << join(sentence, "\n") << std::endl;
+  std::cerr << join(sentence, "\n") << std::endl;
   for (size_t i = 0; i < sentence.size(); i++) {
     std::cerr << sentence[i].number << " ";
   }
