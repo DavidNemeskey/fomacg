@@ -1,5 +1,7 @@
 #include "foma_extra.h"
 
+#include <cassert>
+
 #include <set>
 #include <map>
 #include <iostream>
@@ -681,12 +683,23 @@ bool common_apply_down_lrs(LeftRightSequential* lrs,
   std::vector<Symbol> output =
       common_apply_down_lrs_inner(lrs->T_2, intermediate);
   std::reverse(output.begin(), output.end());
-  std::cerr << std::endl << "Output is(" << output.size() << "): " << std::endl;
-  std::cerr << join(output, "\n") << std::endl << std::endl;
+
+  /* Copy the content of the identity symbols from input to output. */
+  assert(sentence.size() == output.size());
+  result.clear();
   for (size_t i = 0; i < output.size(); i++) {
-    std::cerr << output[i].number << " ";
+    switch (output[i].number) {
+      case EPSILON: break;
+      case IDENTITY: result.push_back(sentence[i]);
+                     break;
+      default: result.push_back(output[i]);
+    }
   }
-  result.swap(output);
+  std::cerr << std::endl << "Output is(" << result.size() << "): " << std::endl;
+  std::cerr << join(result, "\n") << std::endl << std::endl;
+  for (size_t i = 0; i < result.size(); i++) {
+    std::cerr << result[i].number << " ";
+  }
   return true;
 }
 
