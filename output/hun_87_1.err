@@ -1,0 +1,489 @@
+Rule found: R_1_43_T_1
+Sentence is: 
+Symbol(10, 0, 4, $0$ )
+Symbol(2, 4, 6, ">>>" )
+Symbol(7, 10, 6, #BOC# )
+Symbol(17, 16, 2, | )
+Symbol(3, 18, 4, #0# )
+Symbol(2, 22, 6, ">>>" )
+Symbol(15, 28, 6, <>>>> )
+Symbol(17, 34, 2, | )
+Symbol(8, 36, 6, #EOC# )
+Symbol(10, 42, 4, $0$ )
+Symbol(2, 46, 11, "<Jancsi>" )
+Symbol(7, 57, 6, #BOC# )
+Symbol(17, 63, 2, | )
+Symbol(3, 65, 4, #0# )
+Symbol(2, 69, 9, "Jancsi" )
+Symbol(16, 78, 5, <np> )
+Symbol(2, 83, 5, <sg> )
+Symbol(2, 88, 6, <nom> )
+Symbol(17, 94, 2, | )
+Symbol(8, 96, 6, #EOC# )
+Symbol(10, 102, 4, $0$ )
+Symbol(2, 106, 8, "<és>" )
+Symbol(7, 114, 6, #BOC# )
+Symbol(17, 120, 2, | )
+Symbol(3, 122, 4, #0# )
+Symbol(2, 126, 6, "és" )
+Symbol(2, 132, 9, <cnjcoo> )
+Symbol(17, 141, 2, | )
+Symbol(8, 143, 6, #EOC# )
+Symbol(10, 149, 4, $0$ )
+Symbol(2, 153, 9, "<Mari>" )
+Symbol(7, 162, 6, #BOC# )
+Symbol(17, 168, 2, | )
+Symbol(3, 170, 4, #0# )
+Symbol(2, 174, 7, "mari" )
+Symbol(2, 181, 6, <adj> )
+Symbol(2, 187, 5, <sg> )
+Symbol(2, 192, 6, <nom> )
+Symbol(17, 198, 2, | )
+Symbol(3, 200, 4, #0# )
+Symbol(2, 204, 7, "mari" )
+Symbol(2, 211, 4, <n> )
+Symbol(2, 215, 5, <sg> )
+Symbol(2, 220, 6, <nom> )
+Symbol(17, 226, 2, | )
+Symbol(3, 228, 4, #0# )
+Symbol(2, 232, 7, "Mari" )
+Symbol(16, 239, 5, <np> )
+Symbol(2, 244, 5, <sg> )
+Symbol(2, 249, 6, <nom> )
+Symbol(17, 255, 2, | )
+Symbol(8, 257, 6, #EOC# )
+Symbol(10, 263, 4, $0$ )
+Symbol(2, 267, 6, "<a>" )
+Symbol(7, 273, 6, #BOC# )
+Symbol(17, 279, 2, | )
+Symbol(3, 281, 4, #0# )
+Symbol(2, 285, 4, "a" )
+Symbol(2, 289, 6, <det> )
+Symbol(2, 295, 6, <def> )
+Symbol(17, 301, 2, | )
+Symbol(8, 303, 6, #EOC# )
+Symbol(10, 309, 4, $0$ )
+Symbol(2, 313, 12, "<kertben>" )
+Symbol(7, 325, 6, #BOC# )
+Symbol(17, 331, 2, | )
+Symbol(3, 333, 4, #0# )
+Symbol(2, 337, 7, "kert" )
+Symbol(2, 344, 4, <n> )
+Symbol(2, 348, 5, <sg> )
+Symbol(2, 353, 6, <ine> )
+Symbol(17, 359, 2, | )
+Symbol(8, 361, 6, #EOC# )
+Symbol(10, 367, 4, $0$ )
+Symbol(2, 371, 11, "<vannak>" )
+Symbol(7, 382, 6, #BOC# )
+Symbol(17, 388, 2, | )
+Symbol(3, 390, 4, #0# )
+Symbol(2, 394, 6, "van" )
+Symbol(2, 400, 8, <vbser> )
+Symbol(2, 408, 7, <pres> )
+Symbol(2, 415, 5, <pl> )
+Symbol(2, 420, 6, <s3p> )
+Symbol(2, 426, 6, <ind> )
+Symbol(17, 432, 2, | )
+Symbol(8, 434, 6, #EOC# )
+Symbol(10, 440, 4, $0$ )
+Symbol(2, 444, 6, "<.>" )
+Symbol(7, 450, 6, #BOC# )
+Symbol(17, 456, 2, | )
+Symbol(3, 458, 4, #0# )
+Symbol(2, 462, 4, "." )
+Symbol(2, 466, 7, <sent> )
+Symbol(2, 473, 6, <<<<> )
+Symbol(17, 479, 2, | )
+Symbol(8, 481, 6, #EOC# )
+trans_offset 1, q = 0, out = 0
+trans_offset 4, q = 1, out = 7
+trans_offset 5, q = 1, out = 8
+trans_offset 8, q = 2, out = 0
+trans_offset 9, q = 3, out = 0
+trans_offset 10, q = 4, out = 0
+trans_offset 11, q = 4, out = 0
+trans_offset 17, q = 5, out = 16
+trans_offset 29, q = 9, out = 0
+trans_offset 43, q = 15, out = 0
+trans_offset 52, q = 18, out = 7
+trans_offset 53, q = 18, out = 8
+trans_offset 56, q = 19, out = 0
+trans_offset 57, q = 20, out = 0
+trans_offset 58, q = 21, out = 0
+trans_offset 60, q = 21, out = 15
+trans_offset 58, q = 21, out = 0
+trans_offset 58, q = 21, out = 0
+trans_offset 61, q = 21, out = 0
+trans_offset 67, q = 23, out = 0
+trans_offset 36, q = 12, out = 0
+trans_offset 4, q = 1, out = 7
+trans_offset 5, q = 1, out = 8
+trans_offset 8, q = 2, out = 0
+trans_offset 9, q = 3, out = 0
+trans_offset 10, q = 4, out = 0
+trans_offset 10, q = 4, out = 0
+trans_offset 13, q = 4, out = 16
+trans_offset 23, q = 7, out = 0
+trans_offset 36, q = 12, out = 0
+trans_offset 4, q = 1, out = 7
+trans_offset 5, q = 1, out = 8
+trans_offset 8, q = 2, out = 0
+trans_offset 9, q = 3, out = 0
+trans_offset 10, q = 4, out = 0
+trans_offset 10, q = 4, out = 0
+trans_offset 10, q = 4, out = 0
+trans_offset 10, q = 4, out = 0
+trans_offset 13, q = 4, out = 16
+trans_offset 22, q = 7, out = 0
+trans_offset 32, q = 11, out = 0
+trans_offset 32, q = 11, out = 0
+trans_offset 32, q = 11, out = 0
+trans_offset 32, q = 11, out = 0
+trans_offset 35, q = 11, out = 16
+trans_offset 22, q = 7, out = 0
+trans_offset 32, q = 11, out = 0
+trans_offset 34, q = 11, out = 15
+trans_offset 18, q = 6, out = 0
+trans_offset 18, q = 6, out = 0
+trans_offset 21, q = 6, out = 0
+trans_offset 31, q = 10, out = 0
+trans_offset 36, q = 12, out = 0
+trans_offset 4, q = 1, out = 7
+trans_offset 5, q = 1, out = 8
+trans_offset 8, q = 2, out = 0
+trans_offset 9, q = 3, out = 0
+trans_offset 10, q = 4, out = 0
+trans_offset 10, q = 4, out = 0
+trans_offset 10, q = 4, out = 0
+trans_offset 13, q = 4, out = 16
+trans_offset 23, q = 7, out = 0
+trans_offset 36, q = 12, out = 0
+trans_offset 4, q = 1, out = 7
+trans_offset 5, q = 1, out = 8
+trans_offset 8, q = 2, out = 0
+trans_offset 9, q = 3, out = 0
+trans_offset 10, q = 4, out = 0
+trans_offset 10, q = 4, out = 0
+trans_offset 10, q = 4, out = 0
+trans_offset 10, q = 4, out = 0
+trans_offset 13, q = 4, out = 16
+trans_offset 23, q = 7, out = 0
+trans_offset 36, q = 12, out = 0
+trans_offset 4, q = 1, out = 7
+trans_offset 5, q = 1, out = 8
+trans_offset 8, q = 2, out = 0
+trans_offset 9, q = 3, out = 0
+trans_offset 10, q = 4, out = 0
+trans_offset 10, q = 4, out = 0
+trans_offset 10, q = 4, out = 0
+trans_offset 10, q = 4, out = 0
+trans_offset 10, q = 4, out = 0
+trans_offset 10, q = 4, out = 0
+trans_offset 13, q = 4, out = 16
+trans_offset 23, q = 7, out = 0
+trans_offset 36, q = 12, out = 0
+trans_offset 4, q = 1, out = 7
+trans_offset 5, q = 1, out = 8
+trans_offset 8, q = 2, out = 0
+trans_offset 9, q = 3, out = 0
+trans_offset 10, q = 4, out = 0
+trans_offset 10, q = 4, out = 0
+trans_offset 10, q = 4, out = 0
+trans_offset 13, q = 4, out = 16
+trans_offset 23, q = 7, out = 0
+
+Reverse intermediate is: 
+Symbol(0, 0, 0, )
+Symbol(7, 0, 0, )
+Symbol(8, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(16, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(7, 0, 0, )
+Symbol(8, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(15, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(7, 0, 0, )
+Symbol(8, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(16, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(7, 0, 0, )
+Symbol(8, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(16, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(16, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(15, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(7, 0, 0, )
+Symbol(8, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(16, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(7, 0, 0, )
+Symbol(8, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(16, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(7, 0, 0, )
+Symbol(8, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(16, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(7, 0, 0, )
+Symbol(8, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(16, 0, 0, )
+Symbol(0, 0, 0, )
+trans_offset 0, q = 0, out = 8
+trans_offset 3, q = 1, out = 17
+trans_offset 9, q = 2, out = 3
+trans_offset 14, q = 3, out = 17
+trans_offset 28, q = 5, out = 2
+trans_offset 9, q = 2, out = 3
+trans_offset 14, q = 3, out = 17
+trans_offset 34, q = 5, out = 7
+trans_offset 44, q = 7, out = 2
+trans_offset -1, q = 7, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 864, out = 0
+trans_offset -1, q = 864, out = 0
+trans_offset -1, q = 864, out = 0
+trans_offset -1, q = 864, out = 0
+trans_offset -1, q = 864, out = 0
+trans_offset -1, q = 864, out = 0
+trans_offset -1, q = 864, out = 0
+trans_offset -1, q = 864, out = 0
+trans_offset -1, q = 864, out = 0
+trans_offset -1, q = 864, out = 0
+trans_offset -1, q = 864, out = 0
+trans_offset -1, q = 864, out = 0
+trans_offset -1, q = 864, out = 0
+trans_offset -1, q = 864, out = 0
+trans_offset -1, q = 864, out = 0
+trans_offset -1, q = 864, out = 0
+trans_offset -1, q = 864, out = 0
+trans_offset -1, q = 864, out = 0
+trans_offset -1, q = 864, out = 0
+trans_offset -1, q = 864, out = 0
+trans_offset -1, q = 864, out = 0
+trans_offset -1, q = 864, out = 0
+trans_offset -1, q = 864, out = 0
+trans_offset -1, q = 864, out = 0
+trans_offset -1, q = 864, out = 0
+trans_offset -1, q = 864, out = 0
+trans_offset -1, q = 864, out = 0
+trans_offset -1, q = 864, out = 0
+trans_offset -1, q = 864, out = 0
+trans_offset -1, q = 864, out = 0
+trans_offset -1, q = 864, out = 0
+trans_offset -1, q = 864, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+trans_offset -1, q = 1896, out = 0
+
+Output is: 
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(0, 0, 0, )
+Symbol(2, 0, 0, )
+Symbol(7, 0, 0, )
+Symbol(17, 0, 0, )
+Symbol(3, 0, 0, )
+Symbol(2, 0, 0, )
+Symbol(17, 0, 0, )
+Symbol(3, 0, 0, )
+Symbol(17, 0, 0, )
+Symbol(8, 0, 0, )
+
+Init time: 0.001250
+Run time: 0.016200
