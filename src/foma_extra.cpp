@@ -603,22 +603,6 @@ int find_transition_lrs(struct fsm *fst, State state_no, int signum) {
   return -1;
 }
 
-std::vector<Symbol> common_apply_down_lrs_inner(
-    struct fsm* fst, const std::vector<Symbol>& input) {
-  std::vector<Symbol> output;
-  State q = 0;
-  struct fsm_state* start = fst->states;
-  for (std::vector<Symbol>::const_iterator symbol = input.begin();
-       symbol != input.end(); ++symbol) {
-    int trans_offset = find_transition_lrs(fst, q, symbol->number);
-    std::cerr << "trans_offset " << trans_offset << ", q = " << q
-              << ", out = " << (fst->states + trans_offset)->out << std::endl;
-    q = (fst->states + trans_offset)->target;
-    output.push_back((fst->states + trans_offset)->out);
-  }
-  return output;
-}
-
 void print_fst2(struct fsm* fst) {
   std::cerr << "Name: " << fst->name << std::endl;
   std::cerr << "arity: " << fst->arity << std::endl;
@@ -657,12 +641,28 @@ void print_fst2(struct fsm* fst) {
   }
 }
 
+std::vector<Symbol> common_apply_down_lrs_inner(
+    struct fsm* fst, const std::vector<Symbol>& input) {
+  std::vector<Symbol> output;
+  State q = 0;
+  struct fsm_state* start = fst->states;
+  for (std::vector<Symbol>::const_iterator symbol = input.begin();
+       symbol != input.end(); ++symbol) {
+    int trans_offset = find_transition_lrs(fst, q, symbol->number);
+    std::cerr << "trans_offset " << trans_offset << ", q = " << q
+              << ", out = " << (fst->states + trans_offset)->out << std::endl;
+    q = (fst->states + trans_offset)->target;
+    output.push_back((fst->states + trans_offset)->out);
+  }
+  return output;
+}
+
 bool common_apply_down_lrs(LeftRightSequential* lrs,
                            const std::vector<Symbol>& sentence,
                            std::vector<Symbol>& result) {
   std::cerr << std::endl << std::endl << "LRS T1:" << std::endl;
   print_fst2(lrs->T_1);
-  std::cerr << "Sentence is: " << std::endl;
+  std::cerr << "Sentence is(" << sentence.size() << "): " << std::endl;
   std::cerr << join(sentence, "\n") << std::endl;
   for (size_t i = 0; i < sentence.size(); i++) {
     std::cerr << sentence[i].number << " ";
@@ -670,7 +670,8 @@ bool common_apply_down_lrs(LeftRightSequential* lrs,
   std::cerr << std::endl << std::endl;
   std::vector<Symbol> intermediate =
       common_apply_down_lrs_inner(lrs->T_1, sentence);
-  std::cerr << std::endl << "Intermediate is: " << std::endl;
+  std::cerr << std::endl << "Intermediate is(" << intermediate.size()
+            << "): " << std::endl;
 //  std::cerr << join(intermediate, "\n") << std::endl;
   for (size_t i = 0; i < intermediate.size(); i++) {
     std::cerr << intermediate[i].number << " ";
@@ -680,8 +681,11 @@ bool common_apply_down_lrs(LeftRightSequential* lrs,
   std::vector<Symbol> output =
       common_apply_down_lrs_inner(lrs->T_2, intermediate);
   std::reverse(output.begin(), output.end());
-  std::cerr << std::endl << "Output is: " << std::endl;
+  std::cerr << std::endl << "Output is(" << output.size() << "): " << std::endl;
   std::cerr << join(output, "\n") << std::endl << std::endl;
+  for (size_t i = 0; i < output.size(); i++) {
+    std::cerr << output[i].number << " ";
+  }
   result.swap(output);
   return true;
 }
