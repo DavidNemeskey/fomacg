@@ -627,7 +627,7 @@ void print_fst2(struct fsm* fst) {
   }
   struct fsm_state* elem = fst->states;
   for (int i = 0; ; i++) {
-    std::cerr << "Elem:" << std::endl;
+    std::cerr << "Elem(" << i << "):" << std::endl;
     std::cerr << "  state_no: " << (elem + i)->state_no << std::endl;
     std::cerr << "  in: " << (elem + i)->in << " -- "
               << sigmas[(elem + i)->in] << std::endl;
