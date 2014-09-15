@@ -605,6 +605,44 @@ int find_transition_lrs(struct fsm *fst, State state_no, int signum) {
   return -1;
 }
 
+std::vector<Symbol> common_apply_down_lrs_left(
+    LeftRightSequential* lrs, const std::vector<Symbol>& input) {
+  std::vector<Symbol> output;
+  State q = 0;
+  struct fsm_state* start = lrs->T_1->states;
+  for (std::vector<Symbol>::const_iterator symbol = input.begin();
+       symbol != input.end(); ++symbol) {
+    /*
+     * Symbols in the "universal" alphabet, but not in this machine's are
+     * replaced by IDENTITY.
+     */
+    int signum = lrs->sigma[symbol->number];
+    int trans_offset = find_transition_lrs(lrs->T_1, q, signum);
+    std::cerr << "trans_offset " << trans_offset << ", signum = " << signum
+              << ", q = " << q << ", out = "
+              << (lrs->T_1->states + trans_offset)->out << std::endl;
+    q = (lrs->T_1->states + trans_offset)->target;
+    output.push_back((lrs->T_1->states + trans_offset)->out);
+  }
+  return output;
+}
+
+std::vector<Symbol> common_apply_down_lrs_right(
+    LeftRightSequential* lrs, const std::vector<Symbol>& input) {
+  std::vector<Symbol> output;
+  State q = 0;
+  struct fsm_state* start = lrs->T_2->states;
+  for (std::vector<Symbol>::const_iterator symbol = input.begin();
+       symbol != input.end(); ++symbol) {
+    int trans_offset = find_transition_lrs(lrs->T_2, q, symbol->number);
+    std::cerr << "trans_offset " << trans_offset << ", q = " << q
+              << ", out = " << (lrs->T_2->states + trans_offset)->out << std::endl;
+    q = (lrs->T_2->states + trans_offset)->target;
+    output.push_back((lrs->T_2->states + trans_offset)->out);
+  }
+  return output;
+}
+
 void print_fst2(struct fsm* fst) {
   std::cerr << "Name: " << fst->name << std::endl;
   std::cerr << "arity: " << fst->arity << std::endl;
@@ -643,22 +681,6 @@ void print_fst2(struct fsm* fst) {
   }
 }
 
-std::vector<Symbol> common_apply_down_lrs_inner(
-    struct fsm* fst, const std::vector<Symbol>& input) {
-  std::vector<Symbol> output;
-  State q = 0;
-  struct fsm_state* start = fst->states;
-  for (std::vector<Symbol>::const_iterator symbol = input.begin();
-       symbol != input.end(); ++symbol) {
-    int trans_offset = find_transition_lrs(fst, q, symbol->number);
-    std::cerr << "trans_offset " << trans_offset << ", q = " << q
-              << ", out = " << (fst->states + trans_offset)->out << std::endl;
-    q = (fst->states + trans_offset)->target;
-    output.push_back((fst->states + trans_offset)->out);
-  }
-  return output;
-}
-
 bool common_apply_down_lrs(LeftRightSequential* lrs,
                            const std::vector<Symbol>& sentence,
                            std::vector<Symbol>& result) {
@@ -671,7 +693,7 @@ bool common_apply_down_lrs(LeftRightSequential* lrs,
   }
   std::cerr << std::endl << std::endl;
   std::vector<Symbol> intermediate =
-      common_apply_down_lrs_inner(lrs->T_1, sentence);
+      common_apply_down_lrs_left(lrs, sentence);
   std::cerr << std::endl << "Intermediate is(" << intermediate.size()
             << "): " << std::endl;
 //  std::cerr << join(intermediate, "\n") << std::endl;
@@ -681,7 +703,7 @@ bool common_apply_down_lrs(LeftRightSequential* lrs,
   std::cerr << std::endl << std::endl;
   std::reverse(intermediate.begin(), intermediate.end());
   std::vector<Symbol> output =
-      common_apply_down_lrs_inner(lrs->T_2, intermediate);
+      common_apply_down_lrs_right(lrs, intermediate);
   std::reverse(output.begin(), output.end());
 
   /* Copy the content of the identity symbols from input to output. */
