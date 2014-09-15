@@ -442,12 +442,12 @@ void BiMachine::compute_delta(const struct fsm* fst,
 /**************************** LeftRightSequential *****************************/
 
 LeftRightSequential::LeftRightSequential(const struct fsm* fst,
-                                         const BiMachine& bimachine) {
+                                         const BiMachine& bimachine) : sigma(std::vector<int>()) {
   compute_ts(fst, bimachine);
 }
 
 LeftRightSequential::LeftRightSequential(
-    struct fsm* T_1_, struct fsm* T_2_) : T_1(T_1_), T_2(T_2_) {}
+    struct fsm* T_1_, struct fsm* T_2_) : T_1(T_1_), T_2(T_2_), sigma(std::vector<int>()) {}
 
 LeftRightSequential::~LeftRightSequential() {
   if (T_1 != NULL) {
