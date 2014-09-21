@@ -1,7 +1,6 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
-#include <fomalib.h>
 
 #include <string>
 #include <stdexcept>
@@ -11,6 +10,7 @@
 #include <set>
 #include <map>
 #include <algorithm>
+#include <fomalib.h>
 
 #include "factorize.h"
 #include "stl_extra.h"
@@ -442,12 +442,12 @@ void BiMachine::compute_delta(const struct fsm* fst,
 /**************************** LeftRightSequential *****************************/
 
 LeftRightSequential::LeftRightSequential(const struct fsm* fst,
-                                         const BiMachine& bimachine) {
+                                         const BiMachine& bimachine) : sigma(std::vector<int>()) {
   compute_ts(fst, bimachine);
 }
 
 LeftRightSequential::LeftRightSequential(
-    struct fsm* T_1_, struct fsm* T_2_) : T_1(T_1_), T_2(T_2_) {}
+    struct fsm* T_1_, struct fsm* T_2_) : T_1(T_1_), T_2(T_2_), sigma(std::vector<int>()) {}
 
 LeftRightSequential::~LeftRightSequential() {
   if (T_1 != NULL) {
@@ -648,13 +648,13 @@ void LeftRightSequential::compute_ts(const struct fsm* fst,
 
 std::vector<SigmaSymbol> LeftRightSequential::ts_apply_down(
     std::vector<SigmaSymbol> input) {
-  std::cout << "Sentence is: " << std::endl;
+  std::cout << "Sentence is(" << input.size() << "): " << std::endl;
   for (size_t i = 0; i < input.size(); i++) {
     std::cout << input[i] << " ";
   }
   std::cout << std::endl << std::endl;
   std::vector<SigmaSymbol> intermediate = fst_apply_down(T_1, input);
-  std::cout << "Intermediate: ";
+  std::cout << "Intermediate is(" << intermediate.size() << "): " << std::endl;
   for (size_t i = 0; i < intermediate.size(); i++) {
     std::cout << intermediate[i] << " ";
   }
@@ -667,9 +667,9 @@ std::vector<SigmaSymbol> LeftRightSequential::ts_apply_down(
 //  std::cout << std::endl;
   std::vector<SigmaSymbol> output = fst_apply_down(T_2, intermediate);
   std::reverse(output.begin(), output.end());
-  std::cout << "Output is: " << std::endl;
-  for (size_t i = 0; i < input.size(); i++) {
-    std::cout << input[i] << " ";
+  std::cout << "Output is(" << output.size() << "): " << std::endl;
+  for (size_t i = 0; i < output.size(); i++) {
+    std::cout << output[i] << " ";
   }
   std::cout << std::endl << std::endl;
   return output;
