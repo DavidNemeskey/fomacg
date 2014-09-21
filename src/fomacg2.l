@@ -1233,25 +1233,26 @@ int save_rules_fsm(char *filename) {
   SortedFixLevelTreeMerger merger(1);
 
   struct Node* trees = merger.merge(cg_rules, total_rules);
-  size_t num_rules;
-  struct fsm** to_print = merger.serialize(trees, &num_rules);
-  printf("num_rules: %zu\n", num_rules);
+  size_t num_fsms;
+  struct fsm** to_print = merger.serialize(trees, &num_fsms);
+  printf("num_fsms: %zu\n", num_fsms);
   size_t i;
-  for (i = 0; i < num_rules; i++) {
+  for (i = 0; i < num_fsms; i++) {
     printf("FSM %s\n", to_print[i]->name);
   }
-  struct fsm* allsigma = merge_sigma(to_print, num_rules);
+  struct fsm* allsigma = merge_sigma(to_print, num_fsms);
 
   /* First the DELIMITERS... */
   foma_net_print(delimiter_rule, (gzFile*)outfile);
   printf("Printing delimiter net...\n");
 
-  /* ... then the deserialized rule tree. */
+  /* ... then the sigma converter... */
   printf("Printing allsigma net...\n");
   foma_net_print(allsigma, (gzFile*)outfile);
   fsm_destroy(allsigma);
 
-  for (i = 0; i < num_rules; i++) {
+  /* ... then the deserialized rule tree. */
+  for (i = 0; i < num_fsms; i++) {
     printf("Printing net %d (%s, states: %d, arcs: %d)\n",
            i, to_print[i]->name, to_print[i]->statecount, to_print[i]->arccount);
     foma_net_print(to_print[i], (gzFile*)outfile);

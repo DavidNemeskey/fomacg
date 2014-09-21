@@ -58,7 +58,7 @@ size_t RuleApplier::apply_rules(std::string& result,
    */
   result = begin_cohort + sentence.substr(0, sentence.length() - 8) + "<<<<> " +
            sentence.substr(sentence.length() - 8);
-//  fprintf(stderr, "Input: \n%s\n", sentence.c_str());
+  fprintf(stderr, "Input: \n%s\n", result.c_str());
 
   /* The sentence split into symbols. */
   std::vector<Symbol> split = common_create_sigmatch(allsigma.ah, result);

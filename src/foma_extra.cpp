@@ -1,5 +1,7 @@
 #include "foma_extra.h"
 
+#include <cassert>
+
 #include <set>
 #include <map>
 #include <iostream>
@@ -603,38 +605,123 @@ int find_transition_lrs(struct fsm *fst, State state_no, int signum) {
   return -1;
 }
 
-std::vector<Symbol> common_apply_down_lrs_inner(
-    struct fsm* fst, const std::vector<Symbol>& input) {
+std::vector<Symbol> common_apply_down_lrs_left(
+    LeftRightSequential* lrs, const std::vector<Symbol>& input) {
   std::vector<Symbol> output;
   State q = 0;
-  struct fsm_state* start = fst->states;
+  struct fsm_state* start = lrs->T_1->states;
   for (std::vector<Symbol>::const_iterator symbol = input.begin();
        symbol != input.end(); ++symbol) {
-    int trans_offset = find_transition_lrs(fst, q, symbol->number);
-    std::cerr << "trans_offset " << trans_offset << ", q = " << q
-              << ", out = " << (fst->states + trans_offset)->out << std::endl;
-    q = (fst->states + trans_offset)->target;
-    output.push_back((fst->states + trans_offset)->out);
+    /*
+     * Symbols in the "universal" alphabet, but not in this machine's are
+     * replaced by IDENTITY.
+     */
+    int signum = lrs->sigma[symbol->number];
+    int trans_offset = find_transition_lrs(lrs->T_1, q, signum);
+    std::cerr << "trans_offset " << trans_offset << ", signum = " << signum
+              << ", q = " << q << ", out = "
+              << (lrs->T_1->states + trans_offset)->out << std::endl;
+    q = (lrs->T_1->states + trans_offset)->target;
+    output.push_back((lrs->T_1->states + trans_offset)->out);
   }
   return output;
+}
+
+std::vector<Symbol> common_apply_down_lrs_right(
+    LeftRightSequential* lrs, const std::vector<Symbol>& input) {
+  std::vector<Symbol> output;
+  State q = 0;
+  struct fsm_state* start = lrs->T_2->states;
+  for (std::vector<Symbol>::const_iterator symbol = input.begin();
+       symbol != input.end(); ++symbol) {
+    int trans_offset = find_transition_lrs(lrs->T_2, q, symbol->number);
+    std::cerr << "trans_offset " << trans_offset << ", q = " << q
+              << ", out = " << (lrs->T_2->states + trans_offset)->out << std::endl;
+    q = (lrs->T_2->states + trans_offset)->target;
+    output.push_back((lrs->T_2->states + trans_offset)->out);
+  }
+  return output;
+}
+
+void print_fst2(struct fsm* fst) {
+  std::cerr << "Name: " << fst->name << std::endl;
+  std::cerr << "arity: " << fst->arity << std::endl;
+  std::cerr << "arccount: " << fst->arccount << std::endl;
+  std::cerr << "statecount: " << fst->statecount << std::endl;
+  std::cerr << "linecount: " << fst->linecount << std::endl;
+  std::cerr << "finalcount: " << fst->finalcount << std::endl;
+  std::cerr << "pathcount: " << fst->pathcount << std::endl;
+  std::cerr << "is_deterministic: " << fst->is_deterministic << std::endl;
+  std::cerr << "is_pruned: " << fst->is_pruned << std::endl;
+  std::cerr << "is_minimized: " << fst->is_minimized << std::endl;
+  std::cerr << "is_epsilon_free: " << fst->is_epsilon_free << std::endl;
+  std::cerr << "is_loop_free: " << fst->is_loop_free << std::endl;
+  std::cerr << "is_completed: " << fst->is_completed << std::endl;
+  std::cerr << "arcs_sorted_in: " << fst->arcs_sorted_in << std::endl;
+  std::cerr << "arcs_sorted_out: " << fst->arcs_sorted_out << std::endl;
+  std::map<short int, std::string> sigmas;
+  for (struct sigma* sigma = fst->sigma; sigma != NULL; sigma = sigma->next) {
+    sigmas[sigma->number] = sigma->symbol;
+  }
+  struct fsm_state* elem = fst->states;
+  for (int i = 0; ; i++) {
+    std::cerr << "Elem(" << i << "):" << std::endl;
+    std::cerr << "  state_no: " << (elem + i)->state_no << std::endl;
+    std::cerr << "  in: " << (elem + i)->in << " -- "
+              << sigmas[(elem + i)->in] << std::endl;
+    std::cerr << "  out: " << (elem + i)->out << " -- "
+              << sigmas[(elem + i)->out] << std::endl;
+    std::cerr << "  target: " << (elem + i)->target << std::endl;
+    std::cerr << "  final_state: " << (char)((elem + i)->final_state + 48) << std::endl;
+    std::cerr << "  start_state: " << (char)((elem + i)->start_state + 48) << std::endl;
+    if ((elem + i)->state_no == -1) break;
+  }
+  for (struct sigma* sigma = fst->sigma; sigma != NULL; sigma = sigma->next) {
+    std::cerr << "Sigma " << sigma->number << ": " << sigma->symbol << std::endl;
+  }
 }
 
 bool common_apply_down_lrs(LeftRightSequential* lrs,
                            const std::vector<Symbol>& sentence,
                            std::vector<Symbol>& result) {
-  std::cerr << "Sentence is: " << std::endl;
+  std::cerr << std::endl << std::endl << "LRS T1:" << std::endl;
+  print_fst2(lrs->T_1);
+  std::cerr << "Sentence is(" << sentence.size() << "): " << std::endl;
   std::cerr << join(sentence, "\n") << std::endl;
+  for (size_t i = 0; i < sentence.size(); i++) {
+    std::cerr << sentence[i].number << " ";
+  }
+  std::cerr << std::endl << std::endl;
   std::vector<Symbol> intermediate =
-      common_apply_down_lrs_inner(lrs->T_1, sentence);
-  std::cerr << std::endl << "Reverse intermediate is: " << std::endl;
-  std::cerr << join(intermediate, "\n") << std::endl;
+      common_apply_down_lrs_left(lrs, sentence);
+  std::cerr << std::endl << "Intermediate is(" << intermediate.size()
+            << "): " << std::endl;
+//  std::cerr << join(intermediate, "\n") << std::endl;
+  for (size_t i = 0; i < intermediate.size(); i++) {
+    std::cerr << intermediate[i].number << " ";
+  }
+  std::cerr << std::endl << std::endl;
   std::reverse(intermediate.begin(), intermediate.end());
   std::vector<Symbol> output =
-      common_apply_down_lrs_inner(lrs->T_2, intermediate);
+      common_apply_down_lrs_right(lrs, intermediate);
   std::reverse(output.begin(), output.end());
-  std::cerr << std::endl << "Output is: " << std::endl;
-  std::cerr << join(output, "\n") << std::endl << std::endl;
-  result.swap(output);
+
+  /* Copy the content of the identity symbols from input to output. */
+  assert(sentence.size() == output.size());
+  result.clear();
+  for (size_t i = 0; i < output.size(); i++) {
+    switch (output[i].number) {
+      case EPSILON: break;
+      case IDENTITY: result.push_back(sentence[i]);
+                     break;
+      default: result.push_back(output[i]);
+    }
+  }
+  std::cerr << std::endl << "Output is(" << result.size() << "): " << std::endl;
+  std::cerr << join(result, "\n") << std::endl << std::endl;
+  for (size_t i = 0; i < result.size(); i++) {
+    std::cerr << result[i].number << " ";
+  }
   return true;
 }
 
@@ -799,10 +886,17 @@ static void replace_sigma(struct fsm* fsm, std::map<std::string, int> sigmas) {
       s->number = new_number;
     }
   }
+  // We do not modify the inner alphabet of the LRS transducers.
+  // TODO: this shouldn't be here; but let's get the bimachines working first!
+  char* place_t1 = strstr(fsm->name, "T_1");
+  char* place_t2 = strstr(fsm->name, "T_2");
+  bool t1 = place_t1 != NULL && place_t1 == &(fsm->name[strlen(fsm->name) - 3]);
+  bool t2 = place_t2 != NULL && place_t2 == &(fsm->name[strlen(fsm->name) - 3]);
+
   for (int i = 0; (fsm->states + i)->state_no != -1; i++) {
-    if ((fsm->states + i)->in > IDENTITY)
+    if ((fsm->states + i)->in > IDENTITY && !t2)
       (fsm->states + i)->in = sigma_mapping[(fsm->states + i)->in];
-    if ((fsm->states + i)->out > IDENTITY)
+    if ((fsm->states + i)->out > IDENTITY && !t1)
       (fsm->states + i)->out = sigma_mapping[(fsm->states + i)->out];
   }
 
