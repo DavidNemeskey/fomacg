@@ -1,6 +1,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
+#include <ctime>
 
 #include <string>
 #include <stdexcept>
@@ -602,6 +603,7 @@ std::vector<SigmaSymbol> LeftRightSequential::ts_apply_down(
 }
 
 LeftRightSequential* fst_to_left_right(struct fsm* fst) {
+  std::cout << "Converting FST " << fst->name << "..." << std::endl;
   /* Sorting is needed because of the next step. */
   if (!fst->arcs_sorted_in) {
     fsm_sort_arcs(fst, 1);
@@ -612,9 +614,24 @@ LeftRightSequential* fst_to_left_right(struct fsm* fst) {
     curr_line->final_state = 0;
   }
 
+  // TODO check if it really is the case (i.e. the initial state was final)
   fst->finalcount--;
+
+  struct timespec start, middle, end;
+  clock_gettime(CLOCK_REALTIME, &start);
   BiMachine bi(fst);
+  clock_gettime(CLOCK_REALTIME, &middle);
+  double bi_elapsed = middle.tv_sec - start.tv_sec +
+                      (middle.tv_nsec - start.tv_nsec) / 1000000000.0;
+  std::cout << "  converted to bimachine in " << bi_elapsed << " seconds"
+            << std::endl;
   LeftRightSequential* lrs = new LeftRightSequential(fst, bi);
+  clock_gettime(CLOCK_REALTIME, &end);
+  double lrs_elapsed = end.tv_sec - middle.tv_sec +
+                       (end.tv_nsec - middle.tv_nsec) / 1000000000.0;
+  std::cout << "  converted to LRS in " << lrs_elapsed << " seconds"
+            << std::endl;
+  std::cout << "FST " << fst->name << " converted." << std::endl;
   fsm_destroy(fst);
   return lrs;
 }
