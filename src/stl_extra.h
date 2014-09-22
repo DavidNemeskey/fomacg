@@ -39,5 +39,5 @@ template <class T> bool set_in(const std::set<T>& first,
 template <class T> bool set_equal(const std::set<T>& first,
                                   const std::set<T>& second) {
   if (first.size() != second.size()) return false;
-  return set_in2(first, second);
+  return set_in(first, second);
 }
