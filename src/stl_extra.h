@@ -21,17 +21,23 @@ template <class C> std::string join(C c, const std::string& delim=", ") {
   return ret.substr(0, ret.size() - delim.size());
 }
 
-
 /** Returns @c true if @p first is fully included in @p second. */
-template <class T> bool set_in(const std::set<T>& first, const std::set<T>& second) {
-  std::set<T> intersect;
-  std::set_intersection(first.begin(), first.end(), second.begin(), second.end(),
-                        std::inserter(intersect, intersect.begin()));
-  return intersect.size() == first.size();
+template <class T> bool set_in(const std::set<T>& first,
+                               const std::set<T>& second) {
+  for (typename std::set<T>::const_iterator it = first.begin();
+       it != first.end(); ++it) {
+    if (second.count(*it) == 0) return false;
+  }
+  return true;
+//  std::set<T> intersect;
+//  std::set_intersection(first.begin(), first.end(), second.begin(), second.end(),
+//                        std::inserter(intersect, intersect.begin()));
+//  return intersect.size() == first.size();
 }
 
 /** Returns @c true if @p first == @p second. */
-template <class T> bool set_equal(const std::set<T>& first, const std::set<T>& second) {
+template <class T> bool set_equal(const std::set<T>& first,
+                                  const std::set<T>& second) {
   if (first.size() != second.size()) return false;
-  return set_in(first, second);
+  return set_in2(first, second);
 }
