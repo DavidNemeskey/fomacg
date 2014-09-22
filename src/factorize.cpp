@@ -277,7 +277,7 @@ std::vector<std::set<State> > BiMachine::compute_A_1(const struct fsm* fst) {
        it != d_A_1.end(); ++it) {
     eof_states.erase(it->first.source);
   }
-  printf("New finals: %s, EOPs: %s\n", join(new_finals).c_str(), join(eof_states).c_str());
+///  printf("New finals: %s, EOPs: %s\n", join(new_finals).c_str(), join(eof_states).c_str());
 
   A_1 = create_fsa("A_1", d_A_1, C_1, A_1_sigma, new_finals, eof_states, fst);
   return C_1;
@@ -292,7 +292,7 @@ std::vector<std::set<State> > BiMachine::compute_A_2(const struct fsm* fst) {
 
   for (State q = 0; q < static_cast<State>(C_2.size()); q++) {
     std::set<State> S = C_2[q];
-    printf("q: %d, S: (%s)\n", q, join(S).c_str());
+///    printf("q: %d, S: (%s)\n", q, join(S).c_str());
     /*
      * The algorithm loops by sigma, not source state, but that's not
      * convenient with struct fsm.
@@ -310,8 +310,8 @@ std::vector<std::set<State> > BiMachine::compute_A_2(const struct fsm* fst) {
          it != _S.end(); ++it) {
       State e = add_set(C_2, it->second);
       d_A_2[Trans(q, it->first)] = e;
-      printf("q: %d -- %d --> %d = set: (%s)\n", q, it->first,
-             e, join(it->second).c_str());
+///      printf("q: %d -- %d --> %d = set: (%s)\n", q, it->first,
+///             e, join(it->second).c_str());
     }
   }
 
@@ -429,14 +429,14 @@ void BiMachine::compute_delta(const struct fsm* fst,
     sigmas[sigma->number] = sigma->symbol;
   }
 
-  std::cout << std::endl << std::endl << "Delta:" << std::endl;
-  for (std::map<BiTrans, short int>::const_iterator it = delta.begin();
-       it != delta.end(); ++it) {
-    std::cout << "(" << it->first.q_1 << "(" << join(C_1[it->first.q_1])
-              << "), " << it->first.a << "[" << sigmas[it->first.a] << "], "
-              << it->first.q_2 << "(" << join(C_2[it->first.q_2]) << ")) -> "
-              << it->second << "[" << sigmas[it->second] << "]" << std::endl;
-  }
+///  std::cout << std::endl << std::endl << "Delta:" << std::endl;
+///  for (std::map<BiTrans, short int>::const_iterator it = delta.begin();
+///       it != delta.end(); ++it) {
+///    std::cout << "(" << it->first.q_1 << "(" << join(C_1[it->first.q_1])
+///              << "), " << it->first.a << "[" << sigmas[it->first.a] << "], "
+///              << it->first.q_2 << "(" << join(C_2[it->first.q_2]) << ")) -> "
+///              << it->second << "[" << sigmas[it->second] << "]" << std::endl;
+///  }
 }
 
 /**************************** LeftRightSequential *****************************/
@@ -488,12 +488,12 @@ void LeftRightSequential::compute_ts(const struct fsm* fst,
   }
 
   // XXX
-  std::cout << std::endl << "Alphabet:" << std::endl;
-  for (std::map<Trans, SigmaSymbol>::const_iterator it = alphabet.begin();
-       it != alphabet.end(); ++it) {
-    std::cout << "(" << it->first.source << ", " << it->first.in << ") -> "
-              << it->second << std::endl;
-  }
+///  std::cout << std::endl << "Alphabet:" << std::endl;
+///  for (std::map<Trans, SigmaSymbol>::const_iterator it = alphabet.begin();
+///       it != alphabet.end(); ++it) {
+///    std::cout << "(" << it->first.source << ", " << it->first.in << ") -> "
+///              << it->second << std::endl;
+///  }
 
   /*
    * And now we overwrite the input and output labels in T_2, based on delta.
@@ -519,8 +519,8 @@ void LeftRightSequential::compute_ts(const struct fsm* fst,
   }
 
   std::sort(edges.begin(), edges.end());
-  std::cout << std::endl << "Edges:" << std::endl << join(edges, "\n")
-            << std::endl << std::endl;
+///  std::cout << std::endl << "Edges:" << std::endl << join(edges, "\n")
+///            << std::endl << std::endl;
 
   xxfree(T_2->states);
   T_2->states = static_cast<fsm_state*>(xxmalloc(sizeof(struct fsm_state) * (edges.size() + 1)));

@@ -1237,9 +1237,9 @@ int save_rules_fsm(char *filename) {
   struct fsm** to_print = merger.serialize(trees, &num_fsms);
   printf("num_fsms: %zu\n", num_fsms);
   size_t i;
-  for (i = 0; i < num_fsms; i++) {
-    printf("FSM %s\n", to_print[i]->name);
-  }
+///  for (i = 0; i < num_fsms; i++) {
+///    printf("FSM %s\n", to_print[i]->name);
+///  }
   struct fsm* allsigma = merge_sigma(to_print, num_fsms);
 
   /* First the DELIMITERS... */

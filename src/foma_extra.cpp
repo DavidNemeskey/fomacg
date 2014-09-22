@@ -852,10 +852,10 @@ struct fsm* merge_sigma(std::vector<struct fsm*> fsms) {
   int last_id = IDENTITY;
   for (std::vector<struct fsm*>::const_iterator it = fsms.begin();
        it != fsms.end(); ++it) {
-    std::cout << "FST" << std::endl;
+///    std::cout << "FST" << std::endl;
     struct fsm* fsm = *it;
     for (struct sigma* s = fsm->sigma; s != NULL; s = s->next) {
-      std::cout << "SIGMA " << s->symbol << ": " << s->number << std::endl;
+///      std::cout << "SIGMA " << s->symbol << ": " << s->number << std::endl;
       if (s->number > IDENTITY && sigmas.find(s->symbol) == sigmas.end()) {
         sigmas[s->symbol] = ++last_id;
         ret = fsm_concat(ret, fsm_symbol(s->symbol));
@@ -863,10 +863,10 @@ struct fsm* merge_sigma(std::vector<struct fsm*> fsms) {
     }
   }
 
-  for (std::map<std::string, int>::const_iterator it = sigmas.begin();
-       it != sigmas.end(); ++it) {
-    std::cout << it->first << ": " << it->second << std::endl;
-  }
+///  for (std::map<std::string, int>::const_iterator it = sigmas.begin();
+///       it != sigmas.end(); ++it) {
+///    std::cout << it->first << ": " << it->second << std::endl;
+///  }
 
   /* Then, we replace the sigmas. */
   for (std::vector<struct fsm*>::const_iterator it = fsms.begin();
