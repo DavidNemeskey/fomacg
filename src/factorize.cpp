@@ -103,7 +103,6 @@ std::vector<SigmaSymbol> fst_apply_down(struct fsm* fst,
                                         const std::vector<SigmaSymbol>& input) {
   std::vector<SigmaSymbol> output;
   State q = 0;
-  struct fsm_state* start = fst->states;
   for (std::vector<SigmaSymbol>::const_iterator symbol = input.begin();
        symbol != input.end(); ++symbol) {
     int trans_offset = find_transition(fst, q, *symbol);

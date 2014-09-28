@@ -325,7 +325,7 @@ bool custom_detmin_fsa(struct apply_handle* h,
       struct fsm_state* tr = find_transition(
           h, (h->sigmatch_array + h->ipos)->signumber);
       if (tr == NULL) break;
-      
+
       h->ptr = tr->target;
 ///      h->ipos += (h->sigmatch_array + h->ipos)->consumes;
     }
@@ -359,7 +359,7 @@ bool common_detmin_fsa(FstPair& fst, const std::vector<Symbol>& sentence) {
     } else {
       struct fsm_state* tr = find_transition(h, signum);
       if (tr == NULL) break;
-      
+
       h->ptr = tr->target;
     }
     h->ipos++;
@@ -609,7 +609,6 @@ std::vector<Symbol> common_apply_down_lrs_left(
     LeftRightSequential* lrs, const std::vector<Symbol>& input) {
   std::vector<Symbol> output;
   State q = 0;
-  struct fsm_state* start = lrs->T_1->states;
   for (std::vector<Symbol>::const_iterator symbol = input.begin();
        symbol != input.end(); ++symbol) {
     /*
@@ -631,7 +630,6 @@ std::vector<Symbol> common_apply_down_lrs_right(
     LeftRightSequential* lrs, const std::vector<Symbol>& input) {
   std::vector<Symbol> output;
   State q = 0;
-  struct fsm_state* start = lrs->T_2->states;
   for (std::vector<Symbol>::const_iterator symbol = input.begin();
        symbol != input.end(); ++symbol) {
     int trans_offset = find_transition_lrs(lrs->T_2, q, symbol->number);

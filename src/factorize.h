@@ -132,7 +132,7 @@ private:
 
   /**
    * Adds @p x if it is not containted in @p C.
-   * 
+   *
    * @return the index of @p x in @p C.
    */
   int add_set(std::vector<std::set<State> >& C, const std::set<State>& x);
@@ -174,7 +174,7 @@ struct LeftRightSequential {
   struct fsm* T_1;
   struct fsm* T_2;
 
-  /** 
+  /**
    * Sigma mapping for @c T_1. Maps sigma ids to themselves, if they are part
    * of the alphabet of @c fst; to IDENTITY otherwise.
    */
