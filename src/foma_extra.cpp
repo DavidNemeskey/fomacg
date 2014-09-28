@@ -760,9 +760,9 @@ std::vector<Symbol> common_create_sigmatch(
       }  // for i
 
       if (signum != IDENTITY) {
-        ret.push_back(Symbol(signum, pos, found - pos + 1, sentence.substr(pos, found - pos + 1)));
+        ret.push_back(Symbol(signum));
       } else {
-        ret.push_back(Symbol(IDENTITY, pos, found - pos + 1, sentence.substr(pos, found - pos + 1)));
+        ret.push_back(Symbol(IDENTITY, pos, found - pos + 1));
       }
 
       pos = found + 1;
