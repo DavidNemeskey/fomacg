@@ -634,7 +634,7 @@ std::vector<Symbol> common_apply_down_lrs_right(
   State q = 0;
 //  for (std::vector<Symbol>::const_iterator symbol = input.begin();
 //       symbol != input.end(); ++symbol) {
-  for (size_t i = 0; i < input.size(); i++) {
+  for (int i = input.size() - 1; i >= 0; i--) {
     const Symbol& symbol = input[i];
     int trans_offset = find_transition_lrs(lrs->T_2, q, symbol.number);
 ///    std::cerr << "trans_offset " << trans_offset << ", q = " << q
@@ -703,10 +703,10 @@ bool common_apply_down_lrs(LeftRightSequential* lrs,
 ///    std::cerr << intermediate[i].number << " ";
 ///  }
 ///  std::cerr << std::endl << std::endl;
-  std::reverse(intermediate.begin(), intermediate.end());
+//  std::reverse(intermediate.begin(), intermediate.end());
   std::vector<Symbol> output =
       common_apply_down_lrs_right(lrs, intermediate);
-  std::reverse(output.begin(), output.end());
+//  std::reverse(output.begin(), output.end());
 
   /* Copy the content of the identity symbols from input to output. */
   assert(sentence.size() == output.size());
