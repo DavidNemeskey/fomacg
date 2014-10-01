@@ -607,36 +607,40 @@ int find_transition_lrs(struct fsm *fst, State state_no, int signum) {
 
 std::vector<Symbol> common_apply_down_lrs_left(
     LeftRightSequential* lrs, const std::vector<Symbol>& input) {
-  std::vector<Symbol> output;
+  std::vector<Symbol> output(input.size());
   State q = 0;
-  for (std::vector<Symbol>::const_iterator symbol = input.begin();
-       symbol != input.end(); ++symbol) {
+//  for (std::vector<Symbol>::const_iterator symbol = input.begin();
+//       symbol != input.end(); ++symbol) {
+  for (size_t i = 0; i < input.size(); i++) {
+    const Symbol& symbol = input[i];
     /*
      * Symbols in the "universal" alphabet, but not in this machine's are
      * replaced by IDENTITY.
      */
-    int signum = lrs->sigma[symbol->number];
+    int signum = lrs->sigma[symbol.number];
     int trans_offset = find_transition_lrs(lrs->T_1, q, signum);
 ///    std::cerr << "trans_offset " << trans_offset << ", signum = " << signum
 ///              << ", q = " << q << ", out = "
 ///              << (lrs->T_1->states + trans_offset)->out << std::endl;
     q = (lrs->T_1->states + trans_offset)->target;
-    output.push_back((lrs->T_1->states + trans_offset)->out);
+    output[i] = (lrs->T_1->states + trans_offset)->out;
   }
   return output;
 }
 
 std::vector<Symbol> common_apply_down_lrs_right(
     LeftRightSequential* lrs, const std::vector<Symbol>& input) {
-  std::vector<Symbol> output;
+  std::vector<Symbol> output(input.size());
   State q = 0;
-  for (std::vector<Symbol>::const_iterator symbol = input.begin();
-       symbol != input.end(); ++symbol) {
-    int trans_offset = find_transition_lrs(lrs->T_2, q, symbol->number);
+//  for (std::vector<Symbol>::const_iterator symbol = input.begin();
+//       symbol != input.end(); ++symbol) {
+  for (size_t i = 0; i < input.size(); i++) {
+    const Symbol& symbol = input[i];
+    int trans_offset = find_transition_lrs(lrs->T_2, q, symbol.number);
 ///    std::cerr << "trans_offset " << trans_offset << ", q = " << q
 ///              << ", out = " << (lrs->T_2->states + trans_offset)->out << std::endl;
     q = (lrs->T_2->states + trans_offset)->target;
-    output.push_back((lrs->T_2->states + trans_offset)->out);
+    output[i] = (lrs->T_2->states + trans_offset)->out;
   }
   return output;
 }
