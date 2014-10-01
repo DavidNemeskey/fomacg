@@ -605,7 +605,7 @@ int find_transition_lrs(struct fsm *fst, State state_no, int signum) {
   return -1;
 }
 
-std::vector<Symbol> common_apply_down_lrs_left(
+static std::vector<Symbol> common_apply_down_lrs_left(
     LeftRightSequential* lrs, const std::vector<Symbol>& input) {
   std::vector<Symbol> output(input.size());
   State q = 0;
@@ -628,7 +628,7 @@ std::vector<Symbol> common_apply_down_lrs_left(
   return output;
 }
 
-std::vector<Symbol> common_apply_down_lrs_right(
+static std::vector<Symbol> common_apply_down_lrs_right(
     LeftRightSequential* lrs, const std::vector<Symbol>& input) {
   std::vector<Symbol> output(input.size());
   State q = 0;
@@ -643,44 +643,6 @@ std::vector<Symbol> common_apply_down_lrs_right(
     output[i] = (lrs->T_2->states + trans_offset)->out;
   }
   return output;
-}
-
-void print_fst2(struct fsm* fst) {
-  std::cerr << "Name: " << fst->name << std::endl;
-  std::cerr << "arity: " << fst->arity << std::endl;
-  std::cerr << "arccount: " << fst->arccount << std::endl;
-  std::cerr << "statecount: " << fst->statecount << std::endl;
-  std::cerr << "linecount: " << fst->linecount << std::endl;
-  std::cerr << "finalcount: " << fst->finalcount << std::endl;
-  std::cerr << "pathcount: " << fst->pathcount << std::endl;
-  std::cerr << "is_deterministic: " << fst->is_deterministic << std::endl;
-  std::cerr << "is_pruned: " << fst->is_pruned << std::endl;
-  std::cerr << "is_minimized: " << fst->is_minimized << std::endl;
-  std::cerr << "is_epsilon_free: " << fst->is_epsilon_free << std::endl;
-  std::cerr << "is_loop_free: " << fst->is_loop_free << std::endl;
-  std::cerr << "is_completed: " << fst->is_completed << std::endl;
-  std::cerr << "arcs_sorted_in: " << fst->arcs_sorted_in << std::endl;
-  std::cerr << "arcs_sorted_out: " << fst->arcs_sorted_out << std::endl;
-  std::map<short int, std::string> sigmas;
-  for (struct sigma* sigma = fst->sigma; sigma != NULL; sigma = sigma->next) {
-    sigmas[sigma->number] = sigma->symbol;
-  }
-  struct fsm_state* elem = fst->states;
-  for (int i = 0; ; i++) {
-    std::cerr << "Elem(" << i << "):" << std::endl;
-    std::cerr << "  state_no: " << (elem + i)->state_no << std::endl;
-    std::cerr << "  in: " << (elem + i)->in << " -- "
-              << sigmas[(elem + i)->in] << std::endl;
-    std::cerr << "  out: " << (elem + i)->out << " -- "
-              << sigmas[(elem + i)->out] << std::endl;
-    std::cerr << "  target: " << (elem + i)->target << std::endl;
-    std::cerr << "  final_state: " << (char)((elem + i)->final_state + 48) << std::endl;
-    std::cerr << "  start_state: " << (char)((elem + i)->start_state + 48) << std::endl;
-    if ((elem + i)->state_no == -1) break;
-  }
-  for (struct sigma* sigma = fst->sigma; sigma != NULL; sigma = sigma->next) {
-    std::cerr << "Sigma " << sigma->number << ": " << sigma->symbol << std::endl;
-  }
 }
 
 bool common_apply_down_lrs(LeftRightSequential* lrs,
@@ -725,6 +687,44 @@ bool common_apply_down_lrs(LeftRightSequential* lrs,
 ///    std::cerr << result[i].number << " ";
 ///  }
   return true;
+}
+
+void print_fst2(struct fsm* fst) {
+  std::cerr << "Name: " << fst->name << std::endl;
+  std::cerr << "arity: " << fst->arity << std::endl;
+  std::cerr << "arccount: " << fst->arccount << std::endl;
+  std::cerr << "statecount: " << fst->statecount << std::endl;
+  std::cerr << "linecount: " << fst->linecount << std::endl;
+  std::cerr << "finalcount: " << fst->finalcount << std::endl;
+  std::cerr << "pathcount: " << fst->pathcount << std::endl;
+  std::cerr << "is_deterministic: " << fst->is_deterministic << std::endl;
+  std::cerr << "is_pruned: " << fst->is_pruned << std::endl;
+  std::cerr << "is_minimized: " << fst->is_minimized << std::endl;
+  std::cerr << "is_epsilon_free: " << fst->is_epsilon_free << std::endl;
+  std::cerr << "is_loop_free: " << fst->is_loop_free << std::endl;
+  std::cerr << "is_completed: " << fst->is_completed << std::endl;
+  std::cerr << "arcs_sorted_in: " << fst->arcs_sorted_in << std::endl;
+  std::cerr << "arcs_sorted_out: " << fst->arcs_sorted_out << std::endl;
+  std::map<short int, std::string> sigmas;
+  for (struct sigma* sigma = fst->sigma; sigma != NULL; sigma = sigma->next) {
+    sigmas[sigma->number] = sigma->symbol;
+  }
+  struct fsm_state* elem = fst->states;
+  for (int i = 0; ; i++) {
+    std::cerr << "Elem(" << i << "):" << std::endl;
+    std::cerr << "  state_no: " << (elem + i)->state_no << std::endl;
+    std::cerr << "  in: " << (elem + i)->in << " -- "
+              << sigmas[(elem + i)->in] << std::endl;
+    std::cerr << "  out: " << (elem + i)->out << " -- "
+              << sigmas[(elem + i)->out] << std::endl;
+    std::cerr << "  target: " << (elem + i)->target << std::endl;
+    std::cerr << "  final_state: " << (char)((elem + i)->final_state + 48) << std::endl;
+    std::cerr << "  start_state: " << (char)((elem + i)->start_state + 48) << std::endl;
+    if ((elem + i)->state_no == -1) break;
+  }
+  for (struct sigma* sigma = fst->sigma; sigma != NULL; sigma = sigma->next) {
+    std::cerr << "Sigma " << sigma->number << ": " << sigma->symbol << std::endl;
+  }
 }
 
 inline static void get_basic_transitions(struct apply_handle* h,

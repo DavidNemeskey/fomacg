@@ -127,10 +127,6 @@ bool common_apply_down_lrs(LeftRightSequential* lrs,
                            const std::vector<Symbol>& sentence,
                            std::vector<Symbol>& result);
 
-/** Sequential FST apply down -- without the handle; who needs that? :) */
-std::vector<Symbol> common_apply_down_lrs_inner(
-    struct fsm* fst, const std::vector<Symbol>& input);
-
 /**
  * Finds the integer offset of a transition from state @p state_no with input
  * label @p in, if any. The offset is counted from <tt>fst->states</tt>.
