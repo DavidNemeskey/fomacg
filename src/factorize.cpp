@@ -486,10 +486,10 @@ void collapse_intermediate_alphabet(const std::vector<Transition>& edges,
     merger[join(it->second, "; ")].insert(it->first);
   }
   /* Now print the merger. */
-  std::cout << std::endl << "Merger:" << std::endl;
+///  std::cout << std::endl << "Merger:" << std::endl;
   for (std::map<std::string, std::set<SigmaSymbol> >::const_iterator it =
        merger.begin(); it != merger.end(); ++it) {
-    std::cout << it->first << " ::: " << join(it->second) << std::endl;
+///    std::cout << it->first << " ::: " << join(it->second) << std::endl;
     const SigmaSymbol& representative = *(it->second.begin());
     representatives.insert(representative);
     for (std::set<SigmaSymbol>::const_iterator sym = it->second.begin();
@@ -581,16 +581,16 @@ void LeftRightSequential::compute_ts(const struct fsm* fst,
 //      edges.erase(edge);  // TODO: does this work?
 //    }
 //  }
-  std::cout << std::endl << "Edges2:" << std::endl << join(edges, "\n")
-            << std::endl << std::endl;
+///  std::cout << std::endl << "Edges2:" << std::endl << join(edges, "\n")
+///            << std::endl << std::endl;
   /* Rewrite the duplicates to their representative in T_1. */
   T_1_transitions = T_1->states;
   for (int i = 0; (T_1_transitions + i)->state_no != -1; i++) {
     if ((T_1_transitions + i)->in == -1) {
-      std::cout << "EOP: " << (T_1_transitions + i)->state_no << " -- "
-                << (T_1_transitions + i)->in << " : "
-                << (T_1_transitions + i)->out << " --> "
-                << (T_1_transitions + i)->target << std::endl;
+///      std::cout << "EOP: " << (T_1_transitions + i)->state_no << " -- "
+///                << (T_1_transitions + i)->in << " : "
+///                << (T_1_transitions + i)->out << " --> "
+///                << (T_1_transitions + i)->target << std::endl;
       continue;  // End-of-path state
     }
     (T_1_transitions + i)->out = duplicate_mapping[(T_1_transitions + i)->out];
