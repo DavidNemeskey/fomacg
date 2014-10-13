@@ -1239,10 +1239,6 @@ int save_rules_fsm(char *filename) {
   size_t num_rules;
   struct fsm** to_print = merger.serialize(trees, &num_rules);
   printf("num_rules: %zu\n", num_rules);
-  size_t i;
-  for (i = 0; i < num_rules; i++) {
-    printf("FSM %s\n", to_print[i]->name);
-  }
   struct fsm* allsigma = merge_sigma(to_print, num_rules);
 
   /* First the DELIMITERS... */
@@ -1254,6 +1250,7 @@ int save_rules_fsm(char *filename) {
   foma_net_print(allsigma, (gzFile*)outfile);
   fsm_destroy(allsigma);
 
+  size_t i;
   for (i = 0; i < num_rules; i++) {
     printf("Printing net %d...\n", i);
     foma_net_print(to_print[i], (gzFile*)outfile);
