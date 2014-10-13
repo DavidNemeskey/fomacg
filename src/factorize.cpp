@@ -1,6 +1,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
+#include <ctime>
 
 #include <string>
 #include <stdexcept>
@@ -102,7 +103,6 @@ std::vector<SigmaSymbol> fst_apply_down(struct fsm* fst,
                                         const std::vector<SigmaSymbol>& input) {
   std::vector<SigmaSymbol> output;
   State q = 0;
-  struct fsm_state* start = fst->states;
   for (std::vector<SigmaSymbol>::const_iterator symbol = input.begin();
        symbol != input.end(); ++symbol) {
     int trans_offset = find_transition(fst, q, *symbol);
@@ -277,7 +277,7 @@ std::vector<std::set<State> > BiMachine::compute_A_1(const struct fsm* fst) {
        it != d_A_1.end(); ++it) {
     eof_states.erase(it->first.source);
   }
-  printf("New finals: %s, EOPs: %s\n", join(new_finals).c_str(), join(eof_states).c_str());
+///  printf("New finals: %s, EOPs: %s\n", join(new_finals).c_str(), join(eof_states).c_str());
 
   A_1 = create_fsa("A_1", d_A_1, C_1, A_1_sigma, new_finals, eof_states, fst);
   return C_1;
@@ -292,7 +292,7 @@ std::vector<std::set<State> > BiMachine::compute_A_2(const struct fsm* fst) {
 
   for (State q = 0; q < static_cast<State>(C_2.size()); q++) {
     std::set<State> S = C_2[q];
-    printf("q: %d, S: (%s)\n", q, join(S).c_str());
+///    printf("q: %d, S: (%s)\n", q, join(S).c_str());
     /*
      * The algorithm loops by sigma, not source state, but that's not
      * convenient with struct fsm.
@@ -310,8 +310,8 @@ std::vector<std::set<State> > BiMachine::compute_A_2(const struct fsm* fst) {
          it != _S.end(); ++it) {
       State e = add_set(C_2, it->second);
       d_A_2[Trans(q, it->first)] = e;
-      printf("q: %d -- %d --> %d = set: (%s)\n", q, it->first,
-             e, join(it->second).c_str());
+///      printf("q: %d -- %d --> %d = set: (%s)\n", q, it->first,
+///             e, join(it->second).c_str());
     }
   }
 
@@ -429,14 +429,14 @@ void BiMachine::compute_delta(const struct fsm* fst,
     sigmas[sigma->number] = sigma->symbol;
   }
 
-  std::cout << std::endl << std::endl << "Delta:" << std::endl;
-  for (std::map<BiTrans, short int>::const_iterator it = delta.begin();
-       it != delta.end(); ++it) {
-    std::cout << "(" << it->first.q_1 << "(" << join(C_1[it->first.q_1])
-              << "), " << it->first.a << "[" << sigmas[it->first.a] << "], "
-              << it->first.q_2 << "(" << join(C_2[it->first.q_2]) << ")) -> "
-              << it->second << "[" << sigmas[it->second] << "]" << std::endl;
-  }
+///  std::cout << std::endl << std::endl << "Delta:" << std::endl;
+///  for (std::map<BiTrans, short int>::const_iterator it = delta.begin();
+///       it != delta.end(); ++it) {
+///    std::cout << "(" << it->first.q_1 << "(" << join(C_1[it->first.q_1])
+///              << "), " << it->first.a << "[" << sigmas[it->first.a] << "], "
+///              << it->first.q_2 << "(" << join(C_2[it->first.q_2]) << ")) -> "
+///              << it->second << "[" << sigmas[it->second] << "]" << std::endl;
+///  }
 }
 
 /**************************** LeftRightSequential *****************************/
@@ -527,12 +527,12 @@ void LeftRightSequential::compute_ts(const struct fsm* fst,
   }
 
   // XXX
-  std::cout << std::endl << "Alphabet:" << std::endl;
-  for (std::map<Trans, SigmaSymbol>::const_iterator it = alphabet.begin();
-       it != alphabet.end(); ++it) {
-    std::cout << "(" << it->first.source << ", " << it->first.in << ") -> "
-              << it->second << std::endl;
-  }
+///  std::cout << std::endl << "Alphabet:" << std::endl;
+///  for (std::map<Trans, SigmaSymbol>::const_iterator it = alphabet.begin();
+///       it != alphabet.end(); ++it) {
+///    std::cout << "(" << it->first.source << ", " << it->first.in << ") -> "
+///              << it->second << std::endl;
+///  }
 
   /*
    * And now we overwrite the input and output labels in T_2, based on delta.
@@ -558,8 +558,8 @@ void LeftRightSequential::compute_ts(const struct fsm* fst,
   }
 
   std::sort(edges.begin(), edges.end());
-  std::cout << std::endl << "Edges:" << std::endl << join(edges, "\n")
-            << std::endl << std::endl;
+///  std::cout << std::endl << "Edges:" << std::endl << join(edges, "\n")
+///            << std::endl << std::endl;
 
   /* Identify the duplicate input symbols. */
   std::set<SigmaSymbol> duplicate_representatives;
@@ -676,6 +676,7 @@ std::vector<SigmaSymbol> LeftRightSequential::ts_apply_down(
 }
 
 LeftRightSequential* fst_to_left_right(struct fsm* fst) {
+  std::cout << "Converting FST " << fst->name << "..." << std::endl;
   /* Sorting is needed because of the next step. */
   if (!fst->arcs_sorted_in) {
     fsm_sort_arcs(fst, 1);
@@ -686,9 +687,24 @@ LeftRightSequential* fst_to_left_right(struct fsm* fst) {
     curr_line->final_state = 0;
   }
 
+  // TODO check if it really is the case (i.e. the initial state was final)
   fst->finalcount--;
+
+  struct timespec start, middle, end;
+  clock_gettime(CLOCK_REALTIME, &start);
   BiMachine bi(fst);
+  clock_gettime(CLOCK_REALTIME, &middle);
+  double bi_elapsed = middle.tv_sec - start.tv_sec +
+                      (middle.tv_nsec - start.tv_nsec) / 1000000000.0;
+  std::cout << "  converted to bimachine in " << bi_elapsed << " seconds"
+            << std::endl;
   LeftRightSequential* lrs = new LeftRightSequential(fst, bi);
+  clock_gettime(CLOCK_REALTIME, &end);
+  double lrs_elapsed = end.tv_sec - middle.tv_sec +
+                       (end.tv_nsec - middle.tv_nsec) / 1000000000.0;
+  std::cout << "  converted to LRS in " << lrs_elapsed << " seconds"
+            << std::endl;
+  std::cout << "FST " << fst->name << " converted." << std::endl;
   fsm_destroy(fst);
   return lrs;
 }

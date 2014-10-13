@@ -30,7 +30,7 @@ struct FstPair {
    * Not computed automatically, as not always needed.
    *
    * @note Was a set before, but vector is much faster. Also, an unordered set
-   *       at this small element number is SLOWER than the regular set. 
+   *       at this small element number is SLOWER than the regular set.
    */
   std::vector<int> sigma;
 

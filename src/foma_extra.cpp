@@ -325,7 +325,7 @@ bool custom_detmin_fsa(struct apply_handle* h,
       struct fsm_state* tr = find_transition(
           h, (h->sigmatch_array + h->ipos)->signumber);
       if (tr == NULL) break;
-      
+
       h->ptr = tr->target;
 ///      h->ipos += (h->sigmatch_array + h->ipos)->consumes;
     }
@@ -359,7 +359,7 @@ bool common_detmin_fsa(FstPair& fst, const std::vector<Symbol>& sentence) {
     } else {
       struct fsm_state* tr = find_transition(h, signum);
       if (tr == NULL) break;
-      
+
       h->ptr = tr->target;
     }
     h->ipos++;
@@ -605,42 +605,88 @@ int find_transition_lrs(struct fsm *fst, State state_no, int signum) {
   return -1;
 }
 
-std::vector<Symbol> common_apply_down_lrs_left(
+static std::vector<Symbol> common_apply_down_lrs_left(
     LeftRightSequential* lrs, const std::vector<Symbol>& input) {
-  std::vector<Symbol> output;
+  std::vector<Symbol> output(input.size());
   State q = 0;
-  struct fsm_state* start = lrs->T_1->states;
-  for (std::vector<Symbol>::const_iterator symbol = input.begin();
-       symbol != input.end(); ++symbol) {
+//  for (std::vector<Symbol>::const_iterator symbol = input.begin();
+//       symbol != input.end(); ++symbol) {
+  for (size_t i = 0; i < input.size(); i++) {
+    const Symbol& symbol = input[i];
     /*
      * Symbols in the "universal" alphabet, but not in this machine's are
      * replaced by IDENTITY.
      */
-    int signum = lrs->sigma[symbol->number];
+    int signum = lrs->sigma[symbol.number];
     int trans_offset = find_transition_lrs(lrs->T_1, q, signum);
-    std::cerr << "trans_offset " << trans_offset << ", signum = " << signum
-              << ", q = " << q << ", out = "
-              << (lrs->T_1->states + trans_offset)->out << std::endl;
+///    std::cerr << "trans_offset " << trans_offset << ", signum = " << signum
+///              << ", q = " << q << ", out = "
+///              << (lrs->T_1->states + trans_offset)->out << std::endl;
     q = (lrs->T_1->states + trans_offset)->target;
-    output.push_back((lrs->T_1->states + trans_offset)->out);
+    output[i] = (lrs->T_1->states + trans_offset)->out;
   }
   return output;
 }
 
-std::vector<Symbol> common_apply_down_lrs_right(
+static std::vector<Symbol> common_apply_down_lrs_right(
     LeftRightSequential* lrs, const std::vector<Symbol>& input) {
-  std::vector<Symbol> output;
+  std::vector<Symbol> output(input.size());
   State q = 0;
-  struct fsm_state* start = lrs->T_2->states;
-  for (std::vector<Symbol>::const_iterator symbol = input.begin();
-       symbol != input.end(); ++symbol) {
-    int trans_offset = find_transition_lrs(lrs->T_2, q, symbol->number);
-    std::cerr << "trans_offset " << trans_offset << ", q = " << q
-              << ", out = " << (lrs->T_2->states + trans_offset)->out << std::endl;
+//  for (std::vector<Symbol>::const_iterator symbol = input.begin();
+//       symbol != input.end(); ++symbol) {
+  for (int i = input.size() - 1; i >= 0; i--) {
+    const Symbol& symbol = input[i];
+    int trans_offset = find_transition_lrs(lrs->T_2, q, symbol.number);
+///    std::cerr << "trans_offset " << trans_offset << ", q = " << q
+///              << ", out = " << (lrs->T_2->states + trans_offset)->out << std::endl;
     q = (lrs->T_2->states + trans_offset)->target;
-    output.push_back((lrs->T_2->states + trans_offset)->out);
+    output[i] = (lrs->T_2->states + trans_offset)->out;
   }
   return output;
+}
+
+bool common_apply_down_lrs(LeftRightSequential* lrs,
+                           const std::vector<Symbol>& sentence,
+                           std::vector<Symbol>& result) {
+///  std::cerr << std::endl << std::endl << "LRS T1:" << std::endl;
+///  print_fst2(lrs->T_1);
+///  std::cerr << "Sentence is(" << sentence.size() << "): " << std::endl;
+///  std::cerr << join(sentence, "\n") << std::endl;
+///  for (size_t i = 0; i < sentence.size(); i++) {
+///    std::cerr << sentence[i].number << " ";
+///  }
+///  std::cerr << std::endl << std::endl;
+  std::vector<Symbol> intermediate =
+      common_apply_down_lrs_left(lrs, sentence);
+///  std::cerr << std::endl << "Intermediate is(" << intermediate.size()
+///            << "): " << std::endl;
+//  std::cerr << join(intermediate, "\n") << std::endl;
+///  for (size_t i = 0; i < intermediate.size(); i++) {
+///    std::cerr << intermediate[i].number << " ";
+///  }
+///  std::cerr << std::endl << std::endl;
+//  std::reverse(intermediate.begin(), intermediate.end());
+  std::vector<Symbol> output =
+      common_apply_down_lrs_right(lrs, intermediate);
+//  std::reverse(output.begin(), output.end());
+
+  /* Copy the content of the identity symbols from input to output. */
+  assert(sentence.size() == output.size());
+  result.clear();
+  for (size_t i = 0; i < output.size(); i++) {
+    switch (output[i].number) {
+      case EPSILON: break;
+      case IDENTITY: result.push_back(sentence[i]);
+                     break;
+      default: result.push_back(output[i]);
+    }
+  }
+///  std::cerr << std::endl << "Output is(" << result.size() << "): " << std::endl;
+///  std::cerr << join(result, "\n") << std::endl << std::endl;
+///  for (size_t i = 0; i < result.size(); i++) {
+///    std::cerr << result[i].number << " ";
+///  }
+  return true;
 }
 
 void print_fst2(struct fsm* fst) {
@@ -681,50 +727,6 @@ void print_fst2(struct fsm* fst) {
   }
 }
 
-bool common_apply_down_lrs(LeftRightSequential* lrs,
-                           const std::vector<Symbol>& sentence,
-                           std::vector<Symbol>& result) {
-  std::cerr << std::endl << std::endl << "LRS T1:" << std::endl;
-  print_fst2(lrs->T_1);
-  std::cerr << "Sentence is(" << sentence.size() << "): " << std::endl;
-  std::cerr << join(sentence, "\n") << std::endl;
-  for (size_t i = 0; i < sentence.size(); i++) {
-    std::cerr << sentence[i].number << " ";
-  }
-  std::cerr << std::endl << std::endl;
-  std::vector<Symbol> intermediate =
-      common_apply_down_lrs_left(lrs, sentence);
-  std::cerr << std::endl << "Intermediate is(" << intermediate.size()
-            << "): " << std::endl;
-//  std::cerr << join(intermediate, "\n") << std::endl;
-  for (size_t i = 0; i < intermediate.size(); i++) {
-    std::cerr << intermediate[i].number << " ";
-  }
-  std::cerr << std::endl << std::endl;
-  std::reverse(intermediate.begin(), intermediate.end());
-  std::vector<Symbol> output =
-      common_apply_down_lrs_right(lrs, intermediate);
-  std::reverse(output.begin(), output.end());
-
-  /* Copy the content of the identity symbols from input to output. */
-  assert(sentence.size() == output.size());
-  result.clear();
-  for (size_t i = 0; i < output.size(); i++) {
-    switch (output[i].number) {
-      case EPSILON: break;
-      case IDENTITY: result.push_back(sentence[i]);
-                     break;
-      default: result.push_back(output[i]);
-    }
-  }
-  std::cerr << std::endl << "Output is(" << result.size() << "): " << std::endl;
-  std::cerr << join(result, "\n") << std::endl << std::endl;
-  for (size_t i = 0; i < result.size(); i++) {
-    std::cerr << result[i].number << " ";
-  }
-  return true;
-}
-
 inline static void get_basic_transitions(struct apply_handle* h,
                                          struct fsm_state** epsilon_move,
                                          struct fsm_state** unknown_move) {
@@ -760,9 +762,9 @@ std::vector<Symbol> common_create_sigmatch(
       }  // for i
 
       if (signum != IDENTITY) {
-        ret.push_back(Symbol(signum, pos, found - pos + 1, sentence.substr(pos, found - pos + 1)));
+        ret.push_back(Symbol(signum));
       } else {
-        ret.push_back(Symbol(IDENTITY, pos, found - pos + 1, sentence.substr(pos, found - pos + 1)));
+        ret.push_back(Symbol(IDENTITY, pos, found - pos + 1));
       }
 
       pos = found + 1;
@@ -852,10 +854,10 @@ struct fsm* merge_sigma(std::vector<struct fsm*> fsms) {
   int last_id = IDENTITY;
   for (std::vector<struct fsm*>::const_iterator it = fsms.begin();
        it != fsms.end(); ++it) {
-    std::cout << "FST" << std::endl;
+///    std::cout << "FST" << std::endl;
     struct fsm* fsm = *it;
     for (struct sigma* s = fsm->sigma; s != NULL; s = s->next) {
-      std::cout << "SIGMA " << s->symbol << ": " << s->number << std::endl;
+///      std::cout << "SIGMA " << s->symbol << ": " << s->number << std::endl;
       if (s->number > IDENTITY && sigmas.find(s->symbol) == sigmas.end()) {
         sigmas[s->symbol] = ++last_id;
         ret = fsm_concat(ret, fsm_symbol(s->symbol));
@@ -863,10 +865,10 @@ struct fsm* merge_sigma(std::vector<struct fsm*> fsms) {
     }
   }
 
-  for (std::map<std::string, int>::const_iterator it = sigmas.begin();
-       it != sigmas.end(); ++it) {
-    std::cout << it->first << ": " << it->second << std::endl;
-  }
+///  for (std::map<std::string, int>::const_iterator it = sigmas.begin();
+///       it != sigmas.end(); ++it) {
+///    std::cout << it->first << ": " << it->second << std::endl;
+///  }
 
   /* Then, we replace the sigmas. */
   for (std::vector<struct fsm*>::const_iterator it = fsms.begin();

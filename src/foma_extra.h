@@ -16,19 +16,16 @@ struct Symbol {
   size_t pos;
   /** The length of the symbol. */
   size_t len;
-  /** The string it represents. */
-  std::string str;
 
   Symbol() : number(0), pos(0), len(0) {}
-  Symbol(int number_, size_t pos_=0, size_t len_=0, std::string str_="")
-      : number(number_), pos(pos_), len(len_), str(str_) {}
+  Symbol(int number_, size_t pos_=0, size_t len_=0)
+      : number(number_), pos(pos_), len(len_) {}
 
   friend std::ostream& operator<<(std::ostream& os, const Symbol& s);
 };
 
 inline std::ostream& operator<<(std::ostream& os, const Symbol& s) {
-  os << "Symbol(" << s.number << ", "  << s.pos << ", " << s.len << ", "
-     << s.str << ")";
+  os << "Symbol(" << s.number << ", "  << s.pos << ", " << s.len << ")";
   return os;
 }
 
@@ -74,7 +71,7 @@ bool custom_detmin_fsa(struct apply_handle* h,
 /**
  * Works on an already segmented input, as does custom_detmin_fsa(). However,
  * there are two crucial differences:
- * 
+ *
  * 1. common_detmin_fsa() knows that the automaton represented by @p h does not
  *    know all of the "universal" sigma, so if it meets an unknown symbol, yet
  *    there is an IDENTITY edge from the current state, it follows the latter;
@@ -130,15 +127,11 @@ bool common_apply_down_lrs(LeftRightSequential* lrs,
                            const std::vector<Symbol>& sentence,
                            std::vector<Symbol>& result);
 
-/** Sequential FST apply down -- without the handle; who needs that? :) */
-std::vector<Symbol> common_apply_down_lrs_inner(
-    struct fsm* fst, const std::vector<Symbol>& input);
-
 /**
  * Finds the integer offset of a transition from state @p state_no with input
  * label @p in, if any. The offset is counted from <tt>fst->states</tt>.
  */
-int find_transition_lrs(struct fsm *fst, State state_no, Symbol in);
+int find_transition_lrs(struct fsm *fst, State state_no, int signum);
 
 /**
  * Compares @p trans to a virtual transition with source state @p state_no and
@@ -147,7 +140,7 @@ int find_transition_lrs(struct fsm *fst, State state_no, Symbol in);
  *
  * @note @p trans should be a valid transition, i.e. its state_no must not be -1.
  */
-int inline trans_cmp(struct fsm_state* trans, State state_no, Symbol in);
+int inline trans_cmp(struct fsm_state* trans, State state_no, int signum);
 
 /**
  * Merges the sigma of all fsms in @p fsms. Creates an fsm whose sigma is the

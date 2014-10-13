@@ -58,7 +58,7 @@ size_t RuleApplier::apply_rules(std::string& result,
    */
   result = begin_cohort + sentence.substr(0, sentence.length() - 8) + "<<<<> " +
            sentence.substr(sentence.length() - 8);
-  fprintf(stderr, "Input: \n%s\n", result.c_str());
+///  fprintf(stderr, "Input: \n%s\n", result.c_str());
 
   /* The sentence split into symbols. */
   std::vector<Symbol> split = common_create_sigmatch(allsigma.ah, result);
@@ -70,7 +70,7 @@ Continue:
 //      fprintf(stderr, "Trying rule %s...\n", rule->fsa.fst->name);
       LeftRightSequential* rule_pair = find_rule(rule, split);
       if (rule_pair != NULL) {
-        fprintf(stderr, "Rule found: %s\n", rule_pair->T_1->name);
+///        fprintf(stderr, "Rule found: %s\n", rule_pair->T_1->name);
         if (common_apply_down_lrs(rule_pair, split, res_split)) {
           split.swap(res_split);
         } else {
