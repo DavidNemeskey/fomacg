@@ -752,6 +752,32 @@ void cg_compile_rule() {
   cg_print_rule_info(rule);
   cg_add_rule_to_chain(rule, checker);
 
+  // TODO create filtering FSA
+  char* outfile_name = (char*)calloc(128, sizeof(char));
+  sprintf(outfile_name, "%d.fst", lineno_begin_rule);
+  gzFile outfile = gzopen(outfile_name, "wb");
+  free(outfile_name);
+  struct fsm* target =
+      fsm_minimize(
+        fsm_concat(
+          fsm_concat(
+            fsm_universal(),
+            fsm_concat(
+              fsm_symbol("#0# "),
+              fsm_concat(
+                fsm_kleene_star(fsm_term_negation(fsm_symbol("| "))),
+                fsm_concat(
+                  fsm_copy(cg_rule_complex->target),
+                  fsm_concat(
+                    fsm_kleene_star(fsm_term_negation(fsm_symbol("| "))),
+                    fsm_symbol("| ")))))),
+          fsm_universal()));
+  target = fsm_topsort(target);
+  fsm_sort_arcs(target, 1);
+  foma_net_print(target, (gzFile*)outfile);
+  fsm_destroy(target);
+  gzclose(outfile);
+
   /* Cleanup mem */
   fsm_destroy(constrain);
   fsm_destroy(rawrules);

@@ -46,6 +46,9 @@ struct Node {
   int section;
   /** The number of rules this tree covers. */
   size_t no_rules;
+  /** The target -- for filtering. */
+  // TODO: cg_mark_form_target() => takes the wordform into account as well
+  FstPair filter;
   /** The condition FSA. */
   FstPair fsa;
   /** The rule FST. */
