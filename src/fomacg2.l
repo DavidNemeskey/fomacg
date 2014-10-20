@@ -295,13 +295,16 @@ struct fsm *cg_create_checker(struct fsm* rawrule) {
   return result;
 }
 
-void cg_add_rule_to_chain(struct fsm *rule, struct fsm *conditions) {
+void cg_add_rule_to_chain(struct fsm *rule, struct fsm *conditions, struct fsm* filter) {
   struct cg_rules *newrule;
   char rulename[20];
   sprintf(rulename, "R_%d_%i", section_no, lineno_begin_rule);
   strcpy(rule->name, rulename);
   sprintf(rulename, "C_%d_%i", section_no, lineno_begin_rule);
   strcpy(conditions->name, rulename);
+  sprintf(rulename, "F_%d_%i", section_no, lineno_begin_rule);
+  strcpy(filter->name, rulename);
+
 
   if (rule->statecount == 1 || conditions->statecount == 1) {
     printf("Could not compile rule %s -- statecount == 1.\n", rule->name);
@@ -316,6 +319,7 @@ void cg_add_rule_to_chain(struct fsm *rule, struct fsm *conditions) {
     }
     cg_rules->rule = rule;
     cg_rules->conditions = conditions;
+    cg_rules->filter = filter;
     cg_rules->lineno = lineno_begin_rule;
     cg_rules->section_no = section_no;
     total_states += rule->statecount;
@@ -750,14 +754,9 @@ void cg_compile_rule() {
   rule = fsm_topsort(rule);
   checker = fsm_topsort(checker);
   cg_print_rule_info(rule);
-  cg_add_rule_to_chain(rule, checker);
 
-  // TODO create filtering FSA
-  char* outfile_name = (char*)calloc(128, sizeof(char));
-  sprintf(outfile_name, "%d.fst", lineno_begin_rule);
-  gzFile outfile = gzopen(outfile_name, "wb");
-  free(outfile_name);
-  struct fsm* target =
+  // TODO: separate function
+  struct fsm* filter =
       fsm_minimize(
         fsm_concat(
           fsm_concat(
@@ -772,11 +771,18 @@ void cg_compile_rule() {
                     fsm_kleene_star(fsm_term_negation(fsm_symbol("| "))),
                     fsm_symbol("| ")))))),
           fsm_universal()));
-  target = fsm_topsort(target);
-  fsm_sort_arcs(target, 1);
-  foma_net_print(target, (gzFile*)outfile);
-  fsm_destroy(target);
-  gzclose(outfile);
+  filter = fsm_topsort(filter);
+  fsm_sort_arcs(filter, 1);
+
+  cg_add_rule_to_chain(rule, checker, filter);
+
+//  char* outfile_name = (char*)calloc(128, sizeof(char));
+//  sprintf(outfile_name, "%d.fst", lineno_begin_rule);
+//  gzFile outfile = gzopen(outfile_name, "wb");
+//  free(outfile_name);
+//  foma_net_print(target, (gzFile*)outfile);
+//  fsm_destroy(target);
+//  gzclose(outfile);
 
   /* Cleanup mem */
   fsm_destroy(constrain);

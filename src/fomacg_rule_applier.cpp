@@ -63,10 +63,20 @@ size_t RuleApplier::apply_rules(std::string& result,
   /* The sentence split into symbols. */
   std::vector<Symbol> split = common_create_sigmatch(allsigma.ah, result);
   std::vector<Symbol> res_split;
+  int num_rules = 0;
+  int num_applicable = 0;
+  for (Node* rule = rules; rule != NULL; rule = rule->next) {
+    rule->applicable = common_detmin_fsa(rule->filter, split);
+    if (rule->applicable) num_applicable++;
+    num_rules++;
+  }
 
+  int rule_tests = 0;
   while (true) {
 Continue:
     for (Node* rule = rules; rule != NULL; rule = rule->next) {
+      if (!rule->applicable) continue;
+      rule_tests++;
 //      fprintf(stderr, "Trying rule %s...\n", rule->fsa.fst->name);
       FstPair* rule_pair = find_rule(rule, split);
       if (rule_pair != NULL) {
@@ -87,6 +97,9 @@ Continue:
     }  // for rule
     break;
   }
+  std::cerr << "Rule tests: " << rule_tests << std::endl;
+  std::cerr << "Num rules: " << num_rules << std::endl;
+  std::cerr << "Applicable: " << num_applicable << std::endl;
   /* Return the resulting string without the >>> cohort and <<< tags. */
   std::ostringstream ss;
   for (size_t i = 0; i < split.size(); i++) {

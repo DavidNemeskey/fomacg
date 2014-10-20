@@ -7,6 +7,7 @@
 
 void free_nodes(Node* node) {
   if (node->fsa.fst != NULL) node->fsa.cleanup();
+  if (node->filter.fst != NULL) node->filter.cleanup();
   if (node->fst.fst != NULL) node->fst.cleanup();
   if (node->left != NULL) free_nodes(node->left);
   if (node->right != NULL) free_nodes(node->right);
@@ -71,6 +72,7 @@ Node* SmallestFirstTreeMerger::build_section_tree(
     int rule = begin + i;
     trees[i] = new Node();
     trees[i]->fsa.fst = rules[rule]->conditions;
+    trees[i]->filter.fst = rules[rule]->filter;
     trees[i]->fst.fst = rules[rule]->rule;
     trees[i]->section = rules[rule]->section_no;
     trees[i]->no_rules = 1;
@@ -128,6 +130,7 @@ Node* FixLevelTreeMerger::build_section_tree(
     int rule = begin + i;
     trees[i] = new Node();
     trees[i]->fsa.fst = rules[rule]->conditions;
+    trees[i]->filter.fst = rules[rule]->filter;
     trees[i]->fst.fst = rules[rule]->rule;
     trees[i]->section = rules[rule]->section_no;
     trees[i]->no_rules = 1;
@@ -187,6 +190,7 @@ Node* SortedFixLevelTreeMerger::build_section_tree(
     int rule = begin + i;
     trees[i] = new Node();
     trees[i]->fsa.fst = rules[rule]->conditions;
+    trees[i]->filter.fst = rules[rule]->filter;
     trees[i]->fst.fst = rules[rule]->rule;
     trees[i]->section = rules[rule]->section_no;
     trees[i]->no_rules = 1;
@@ -311,6 +315,7 @@ struct fsm* ConditionMerger::union_trees(struct fsm* fst1, struct fsm* fst2) {
 
 size_t TreeConditionMerger::count_fsms(Node* tree, size_t count) {
   if (tree->fsa.fst != NULL) count++;
+  if (tree->filter.fst != NULL) count++;
   if (tree->fst.fst != NULL) count++;
   if (tree->left != NULL) count = count_fsms(tree->left, count);
   if (tree->right != NULL) count = count_fsms(tree->right, count);
@@ -321,6 +326,7 @@ size_t TreeConditionMerger::count_fsms(Node* tree, size_t count) {
 size_t TreeConditionMerger::fill_fsms(Node* tree, struct fsm** rules,
                                       size_t i) {
   if (tree->fsa.fst != NULL) rules[i++] = tree->fsa.fst;
+  if (tree->filter.fst != NULL) rules[i++] = tree->filter.fst;
   if (tree->fst.fst != NULL) rules[i++] = tree->fst.fst;
   if (tree->left != NULL) i = fill_fsms(tree->left, rules, i);
   if (tree->right != NULL) i = fill_fsms(tree->right, rules, i);
@@ -344,6 +350,7 @@ Node* TreeConditionMerger::array_to_tree(const FstVector& rules,
   if (!strncmp(rules[*index].fst->name, "C", 1)) {
     new_tree->no_rules = 1;
     new_tree->fsa = rules[(*index)++];
+    new_tree->filter = rules[(*index)++];
     new_tree->fst = rules[(*index)++];
   } else {
     new_tree->fsa = rules[(*index)++];

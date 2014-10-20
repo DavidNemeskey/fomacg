@@ -49,7 +49,7 @@ struct Node {
   /** The target -- for filtering. */
   // TODO: cg_mark_form_target() => takes the wordform into account as well
   FstPair filter;
-  /** The condition FSA. */
+  /** The target filter FSA. */
   FstPair fsa;
   /** The rule FST. */
   FstPair fst;
@@ -57,6 +57,8 @@ struct Node {
   Node* right;
   /** The next group of tests on the same level as this one. */
   Node* next;
+  // TODO: get rid of this, and all the C crap!!!!!
+  bool applicable;
 };
 
 /** Frees the memory associated with the specified Node forest. */

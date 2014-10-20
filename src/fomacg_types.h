@@ -29,6 +29,7 @@ struct cg_rules {
   int section_no;
   struct fsm *rule;
   struct fsm *conditions;  /* Automaton that checks rule applicability. */
+  struct fsm *filter;      /* Rule target filter. */
   struct cg_rules *next;
 };
 
