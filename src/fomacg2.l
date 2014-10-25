@@ -115,6 +115,9 @@
   /* We store each rule as a fsm + lineno combo */
   struct cg_rules *cg_rules = NULL;
 
+  /* We store the rule targets here for the trie. */
+  std::vector<struct fsm*> targets;
+
 void dprint(const char* format, ...) {
   va_list args;
   if (g_debug == 1) {
@@ -752,6 +755,22 @@ void cg_compile_rule() {
   cg_print_rule_info(rule);
   cg_add_rule_to_chain(rule, checker);
 
+//  char* outfile_name = (char*)calloc(128, sizeof(char));
+//  sprintf(outfile_name, "%d.fst", lineno_begin_rule);
+//  gzFile outfile = gzopen(outfile_name, "wb");
+//  free(outfile_name);
+//  foma_net_print(
+//    fsm_topsort(
+//      fsm_minimize(
+//        fsm_cross_product(
+//          fsm_copy(cg_rule_complex->target),
+//          fsm_symbol(lineno)))),
+//    (gzFile*)outfile);
+//  gzclose(outfile);
+  struct fsm* target = fsm_copy(cg_rule_complex->target);
+  strcpy(target->name, rule->name);
+  targets.push_back(target);
+
   /* Cleanup mem */
   fsm_destroy(constrain);
   fsm_destroy(rawrules);
@@ -1219,6 +1238,42 @@ void reverse_rule_order() {
   cg_rules = last;
 }
 
+/** Creates the target filtering trie. */
+struct fsm* create_trie() {
+  struct fsm* trie = NULL;
+  for (auto target = targets.begin(); target != targets.end(); ++target) {
+    gzFile outfile2 = gzopen((*target)->name, "wb");
+  
+    foma_net_print(
+        fsm_intersect(
+            *target,
+            fsm_kleene_star(
+                fsm_term_negation(
+                    fsm_symbol("| ")))),
+        (gzFile*)outfile2);
+    gzclose(outfile2);
+//    if (trie == NULL) {
+//      trie = fsm_ignore(*target, fsm_symbol("| "), OP_IGNORE_INTERNAL);
+//    } else {
+//      trie = fsm_union(trie, fsm_ignore(*target, fsm_symbol("| "), OP_IGNORE_INTERNAL));
+//    }
+  }
+  targets.clear();
+//  trie = fsm_concat(
+//             fsm_symbol("#0# "),
+//             fsm_concat(
+//                 trie,
+//                 fsm_symbol("| ")));
+//  trie = fsm_concat(
+//             fsm_universal(),
+//             fsm_concat(
+//                 trie,
+//                 fsm_universal()));
+//  trie = fsm_kleene_plus(trie);
+//  trie = fsm_topsort(fsm_minimize(trie));
+  return trie;
+}
+
 int save_rules_fsm(char *filename) {
   char prolog_name[30];
   struct cg_rules *rules;
@@ -1240,6 +1295,12 @@ int save_rules_fsm(char *filename) {
   struct fsm** to_print = merger.serialize(trees, &num_rules);
   printf("num_rules: %zu\n", num_rules);
   struct fsm* allsigma = merge_sigma(to_print, num_rules);
+
+  /* Create the trie... */
+  struct fsm* trie = create_trie();
+  //gzFile outfile2 = gzopen("trie.fst", "wb");
+  //foma_net_print(trie, (gzFile*)outfile2);
+  //gzclose(outfile2);
 
   /* First the DELIMITERS... */
   foma_net_print(delimiter_rule, (gzFile*)outfile);
