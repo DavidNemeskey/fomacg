@@ -3,7 +3,6 @@ CPP = g++
 CXX = g++
 LINKFOMA = -lfoma
 LINKALL  = $(LINKFOMA) -lz
-LEX = flex
 
 SUBDIRS = src
 
