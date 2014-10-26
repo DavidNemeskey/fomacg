@@ -61,6 +61,13 @@ size_t RuleApplier::apply_rules(std::string& result,
            sentence.substr(sentence.length() - 8);
 //  fprintf(stderr, "Input: \n%s\n", sentence.c_str());
 
+  std::set<std::string> rules_to_check;
+  char* rule_name = apply_down(trie.ah, result.c_str());
+  while (rule_name != NULL) {
+    rules_to_check.insert(rule_name);
+    rule_name = apply_down(trie.ah, NULL);
+  }
+
   /* The sentence split into symbols. */
   std::vector<Symbol> split = common_create_sigmatch(allsigma.ah, result);
   std::vector<Symbol> res_split;
@@ -68,6 +75,9 @@ size_t RuleApplier::apply_rules(std::string& result,
   while (true) {
 Continue:
     for (Node* rule = rules; rule != NULL; rule = rule->next) {
+      if (rules_to_check.count(rule->fst.fst->name) == 0) {
+        continue;
+      }
 //      fprintf(stderr, "Trying rule %s...\n", rule->fsa.fst->name);
       FstPair* rule_pair = find_rule(rule, split);
       if (rule_pair != NULL) {
