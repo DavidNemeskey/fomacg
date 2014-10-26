@@ -17,6 +17,7 @@ RuleApplier RuleApplier::get(const std::string& fst_file)
     throw (std::invalid_argument, std::length_error) {
   RuleApplier ra;
   ra.load_file_tree(fst_file);
+  ra.load_trie("trie.fst");
   return ra;
 }
 
@@ -99,6 +100,10 @@ Continue:
   result = result.erase(result.length() - 14, 6).substr(begin_cohort.length());
 //  fprintf(stderr, "Output: %s\n", result.c_str());
   return applied;
+}
+
+void RuleApplier::load_trie(const std::string& fst_file) {
+  trie = load_fst(fst_file);
 }
 
 void RuleApplier::load_file_tree(const std::string& fst_file) {

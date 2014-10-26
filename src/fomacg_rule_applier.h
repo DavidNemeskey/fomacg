@@ -64,6 +64,8 @@ private:
   RuleApplier();
   /** Loads the FSTs into trees. */
   void load_file_tree(const std::string& fst_file);
+  /** Loads the trie. */
+  void load_trie(const std::string& fst_file);
   /**
    * Finds a rule recursively that can be applied to @p sentence in @p rule.
    * @param match if @c true, we assume that the condition is fulfilled and the
@@ -82,6 +84,8 @@ private:
   FstPair delimiters;
   /** The FSA whose sigma includes all symbols in the grammar. */
   FstPair allsigma;
+  /** The trie used to filter rules. */
+  FstPair trie;
   /** ... and its sigma (the "universal" one). */
   std::vector<std::string> allsigma_sigma;
   /** The >>> cohort. */
