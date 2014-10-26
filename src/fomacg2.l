@@ -1241,36 +1241,35 @@ void reverse_rule_order() {
 /** Creates the target filtering trie. */
 struct fsm* create_trie() {
   struct fsm* trie = NULL;
+  gzFile outfile2 = gzopen("trie.fst", "wb");
   for (auto target = targets.begin(); target != targets.end(); ++target) {
-    gzFile outfile2 = gzopen((*target)->name, "wb");
-  
-    foma_net_print(
-        fsm_intersect(
-            *target,
-            fsm_kleene_star(
-                fsm_term_negation(
-                    fsm_symbol("| ")))),
-        (gzFile*)outfile2);
-    gzclose(outfile2);
-//    if (trie == NULL) {
-//      trie = fsm_ignore(*target, fsm_symbol("| "), OP_IGNORE_INTERNAL);
-//    } else {
-//      trie = fsm_union(trie, fsm_ignore(*target, fsm_symbol("| "), OP_IGNORE_INTERNAL));
-//    }
+    struct fsm* output = fsm_symbol((*target)->name);
+    struct fsm* trie_branch =
+        fsm_concat(
+            fsm_universal(),
+            fsm_concat(
+                fsm_symbol("#0# "),
+                fsm_concat(
+                    fsm_intersect(
+                        *target,
+                        fsm_kleene_star(
+                            fsm_term_negation(
+                                fsm_symbol("| ")))),
+                    fsm_concat(
+                        fsm_symbol("| "),
+                        fsm_universal()))));
+    trie_branch = fsm_cross_product(trie_branch, output);
+    if (trie == NULL) {
+      trie = trie_branch;
+    } else {
+      trie = fsm_union(trie, trie_branch);
+    }
   }
   targets.clear();
-//  trie = fsm_concat(
-//             fsm_symbol("#0# "),
-//             fsm_concat(
-//                 trie,
-//                 fsm_symbol("| ")));
-//  trie = fsm_concat(
-//             fsm_universal(),
-//             fsm_concat(
-//                 trie,
-//                 fsm_universal()));
-//  trie = fsm_kleene_plus(trie);
-//  trie = fsm_topsort(fsm_minimize(trie));
+  // fsm_minimize() takes ages..., as does fsm_kleen_plus()
+  trie = fsm_topsort(trie);
+  foma_net_print(trie, (gzFile*)outfile2);
+  gzclose(outfile2);
   return trie;
 }
 
