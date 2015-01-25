@@ -1,4 +1,4 @@
-CXXFLAGS = -g -ggdb -Wall -Wno-write-strings -Wno-uninitialized -O3
+CXXFLAGS = -g -ggdb -Wall -Wno-write-strings -Wno-uninitialized -O3 -std=c++11
 CXX = g++
 LINKFOMA = -lfoma
 LINKALL  = $(LINKFOMA) -lz
