@@ -8,7 +8,7 @@ SRCS = fomacg_common.cpp fomacg_converter.cpp fomacg_proc.cpp fomacg_rule_applie
 
 OBJS = $(SRCS:.cpp=.o)
 
-all: fomacg fomacg-proc
+all: fomacg fomacg-proc trie-test
 
 .cpp.o:
 	$(CXX) $(CXXFLAGS) -c $<  -o $@
@@ -18,6 +18,9 @@ fomacg:
 
 fomacg-proc: $(OBJS)
 	$(CXX) $(CXXFLAGS) $(OBJS) -o ../fomacg-proc $(LDFLAGS) $(LINKFOMA) -lrt 
+
+trie-test:
+	$(CXX) $(CXXFLAGS) -o ../trie-test trie_test.cpp $(LDFLAGS)
 
 clean: 
 	rm *.o *.yy.c
