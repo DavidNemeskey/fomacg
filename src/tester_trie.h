@@ -16,7 +16,7 @@ template <class Code, class Payload>
 class Trie;
 
 template <class Code, class Payload>
-int reduce_trie(Trie<Code, Payload> const* const trie);
+Payload reduce_trie(Trie<Code, Payload> const* const trie);
 
 /** Simple trie class that supports a payloading mechanism. */
 template <class Code, class Payload>
@@ -34,7 +34,8 @@ public:
   Trie* add_branch(InputIterator first, InputIterator last,
                    Payload* payload=nullptr);
 
-  friend int reduce_trie<Code, Payload>(Trie<Code, Payload> const* const trie);
+  friend Payload reduce_trie<Code, Payload>(
+      Trie<Code, Payload> const* const trie);
 
 private:
   /** Sets the payload; used by the constructor & add methods. */
@@ -45,9 +46,6 @@ private:
   std::unique_ptr<Payload> payload;
 };
 
-
-template <class Code, class Payload>
-int reduce_trie(Trie<Code, Payload> const* const trie);
 
 /**************************** Implementation part ****************************/
 

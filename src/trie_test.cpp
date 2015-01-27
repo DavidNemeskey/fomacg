@@ -2,12 +2,15 @@
 
 #include <array>
 #include <set>
+#include <iterator>
+#include <algorithm>
+#include <iostream>
 
 typedef Trie<int, std::set<int> > Tree;
 
 template <>
-int reduce_trie<int, std::set<int> >(Tree const* const trie) {
-  return (int)trie->branching;
+std::set<int> reduce_trie<int, std::set<int>>(Tree const* const trie) {
+  return std::set<int>{(int)trie->branching};
 }
 
 int main(int argc, char* argv[]) {
@@ -17,5 +20,6 @@ int main(int argc, char* argv[]) {
   std::array<size_t, 3> arr = {1, 2, 3};
   std::set<int>* pl = new std::set<int>{4, 5, 6};
   t.add_branch(begin(arr), end(arr), pl);
-  std::cout << reduce_trie(&t);
+  std::set<int> red = reduce_trie(&t);
+  std::copy(red.begin(), red.end(), std::ostream_iterator<int>(std::cout, " "));
 }
