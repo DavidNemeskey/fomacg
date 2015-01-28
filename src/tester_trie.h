@@ -18,7 +18,12 @@ class Trie;
 template <class Code, class Payload>
 Payload reduce_trie(Trie<Code, Payload> const* const trie);
 
-/** Simple trie class that supports a payloading mechanism. */
+/**
+ * Simple trie class that supports a payloading mechanism.
+ *
+ * @note The trie takes ownership of the payloads passed to it; the user must
+ *       not try to delete them.
+ */
 template <class Code, class Payload>
 class Trie {
 public:
@@ -33,6 +38,20 @@ public:
   template <class InputIterator>
   Trie* add_branch(InputIterator first, InputIterator last,
                    Payload* payload=nullptr);
+
+  /**
+   * Runs the @c Code sequence from @p first to @p last through the trie and
+   * returns the payload at the end of it.
+   */
+  template <class InputIterator>
+  Payload* match_all(InputIterator first, InputIterator last) const;
+
+  /**
+   * Runs the @c Code sequence in container @p c through the trie and
+   * returns the payload at the end of it.
+   */
+  template <class Container>
+  Payload* match_all(Container c) const;
 
   friend Payload reduce_trie<Code, Payload>(
       Trie<Code, Payload> const* const trie);
@@ -82,6 +101,24 @@ Trie<Code, Payload>* Trie<Code, Payload>::add_branch(
   }
   curr->set_payload(_payload);
   return curr;
+}
+
+template <class Code, class Payload>
+template <class InputIterator>
+Payload* Trie<Code, Payload>::match_all(
+    InputIterator first, InputIterator last) const {
+  const Trie* curr = this;
+  while (first != last && curr != nullptr) {
+    curr = curr->branches.get()[*first].get();
+    ++first;
+  }
+  return curr != nullptr ? curr->payload.get() : nullptr;
+}
+
+template <class Code, class Payload>
+template <class Container>
+Payload* Trie<Code, Payload>::match_all(Container c) const {
+  return match_all(begin(c), end(c));
 }
 
 template <class Code, class Payload>
