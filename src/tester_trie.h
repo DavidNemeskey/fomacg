@@ -4,6 +4,7 @@
 
 #include <memory>
 #include <set>
+#include <vector>
 #include <iostream>
 
 
@@ -39,6 +40,11 @@ public:
   template <class InputIterator>
   Trie* add_branch(InputIterator first, InputIterator last,
                    Payload* payload=nullptr);
+  
+  template <class Container>
+  inline Trie* add_branch(Container c, Payload* payload=nullptr);
+
+  inline Trie* get(const Code& code) const;
 
   /**
    * Runs the @c Code sequence from @p first to @p last through the trie and
@@ -52,13 +58,14 @@ public:
    * returns the payload at the end of it.
    */
   template <class Container>
-  Payload* match_all(Container c) const;
+  inline Payload* match_all(Container c) const;
 
   friend class TrieCollector<Code, Payload>;
 
 private:
   /** Sets the payload; used by the constructor & add methods. */
   void set_payload(Payload* payload=nullptr);
+  Payload* get_payload() { return payload.get(); }
 
   size_t branching;
   std::unique_ptr<std::unique_ptr<Trie>[]> branches;  /* Array of pointers. */
@@ -68,15 +75,24 @@ private:
 template <class Code, class Payload>
 class TrieCollector {
 public:
-  template <class OutputIterator>
+  template <class InputIterator, class OutputIterator>
   void collect(Trie<Code, Payload>* trie, InputIterator first,
                InputIterator last, OutputIterator out) {
-    std::set<Trie<Code, Payload>*> tries = {this};
-    while (first != last) {
+    std::set<Trie<Code, Payload>*> tries = {trie};
+    for (auto code = first; code != last; ++code) {
+      std::vector<Trie<Code, Payload>*> tries_to_add;
       for (auto t = begin(tries); t != end(tries); ++t) {
-
+        auto new_trie = (*t)->get(*code);
+        if (new_trie != nullptr) tries_to_add.push_back(new_trie);
       }
-      ++first;
+      tries.insert(begin(tries_to_add), end(tries_to_add));
+    }
+    for (auto t = begin(tries); t != end(tries); ++t) {
+      Payload* payload = (*t)->get_payload();
+      if (payload != nullptr) {
+        *out = payload;
+        ++out;
+      }
     }
   }
 };
@@ -96,9 +112,14 @@ Trie<Code, Payload>::~Trie() {
 }
 
 template <class Code, class Payload>
+inline Trie<Code, Payload>* Trie<Code, Payload>::get(const Code& code) const {
+  return branches.get()[code].get();
+}
+
+template <class Code, class Payload>
 Trie<Code, Payload>* Trie<Code, Payload>::add(
     const Code& _code, Payload* _payload) {
-  Trie* next = branches.get()[_code].get();
+  Trie* next = get(_code);
   if (next == nullptr) {
     next = new Trie(branching, _payload);
     branches.get()[_code].reset(next);
@@ -120,6 +141,13 @@ Trie<Code, Payload>* Trie<Code, Payload>::add_branch(
 }
 
 template <class Code, class Payload>
+template <class Container>
+inline Trie<Code, Payload>* Trie<Code, Payload>::add_branch(
+    Container c, Payload* payload) {
+  return add_branch(begin(c), end(c), payload);
+}
+
+template <class Code, class Payload>
 template <class InputIterator>
 Payload* Trie<Code, Payload>::match_all(
     InputIterator first, InputIterator last) const {
@@ -133,7 +161,7 @@ Payload* Trie<Code, Payload>::match_all(
 
 template <class Code, class Payload>
 template <class Container>
-Payload* Trie<Code, Payload>::match_all(Container c) const {
+inline Payload* Trie<Code, Payload>::match_all(Container c) const {
   return match_all(begin(c), end(c));
 }
 
