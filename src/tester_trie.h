@@ -3,6 +3,7 @@
 #include <cstdlib>
 
 #include <memory>
+#include <set>
 #include <iostream>
 
 
@@ -16,7 +17,7 @@ template <class Code, class Payload>
 class Trie;
 
 template <class Code, class Payload>
-Payload reduce_trie(Trie<Code, Payload> const* const trie);
+class TrieCollector;
 
 /**
  * Simple trie class that supports a payloading mechanism.
@@ -53,8 +54,7 @@ public:
   template <class Container>
   Payload* match_all(Container c) const;
 
-  friend Payload reduce_trie<Code, Payload>(
-      Trie<Code, Payload> const* const trie);
+  friend class TrieCollector<Code, Payload>;
 
 private:
   /** Sets the payload; used by the constructor & add methods. */
@@ -63,6 +63,22 @@ private:
   size_t branching;
   std::unique_ptr<std::unique_ptr<Trie>[]> branches;  /* Array of pointers. */
   std::unique_ptr<Payload> payload;
+};
+
+template <class Code, class Payload>
+class TrieCollector {
+public:
+  template <class OutputIterator>
+  void collect(Trie<Code, Payload>* trie, InputIterator first,
+               InputIterator last, OutputIterator out) {
+    std::set<Trie<Code, Payload>*> tries = {this};
+    while (first != last) {
+      for (auto t = begin(tries); t != end(tries); ++t) {
+
+      }
+      ++first;
+    }
+  }
 };
 
 
