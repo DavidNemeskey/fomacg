@@ -17,19 +17,8 @@
 template <class Code, class Payload>
 class Trie;
 
-/**
- * Used by TrieCollector to transform the payload before writing it to
- * the output iterator. Used for cases when e.g. the payload is a container
- * and we need to extract the elements.
- */
 template <class Payload>
-class PayloadTransformer;
-
-/**
- * Implements collecting strategies.
- */
-template <class Code, class Payload>
-class TrieCollector;
+struct NoOpPayloadTransformer;
 
 /**
  * Simple trie class that supports a payloading mechanism.
@@ -69,9 +58,39 @@ public:
    * returns the payload at the end of it.
    */
   template <class Container>
-  inline Payload* match_all(Container c) const;
+  inline Payload* match_all(Container c) const {
+    return match_all(begin(c), end(c));
+  }
 
-  friend class TrieCollector<Code, Payload>;
+  /**
+   * Runs a @c Code sequence through the trie; similar to match_all(), with
+   * three important differences:
+   * - the sequence does not have to match completely: if a subsequence is
+   *   not found in the trie, matching will resume at a later point in the
+   *   sequence. E.g. the input {1, 2, 3, 4} will match the branch {1, 4};
+   * - all such branches are considered, not just a single one;
+   * - all payloads are collected along the matching paths, not just those
+   *   at the endpoints of the paths.
+   *
+   * @tparam PayloadTransformer A class that transforms the payloads found
+   *                            and writes them to the output iterator. For
+   *                            an example, check out
+   *                            ElementPayloadTransformer.
+   */
+  template <class InputIterator, class OutputIterator,
+            class PayloadTransformer>
+  void collect(InputIterator first, InputIterator last, OutputIterator out,
+               const PayloadTransformer& transformer);
+
+  /**
+   * Same as the other collect() method, but defaults to
+   * NoOpPayloadTransformer.
+   */
+  template <class InputIterator, class OutputIterator>
+  inline void collect(InputIterator first, InputIterator last,
+                      OutputIterator out) {
+    collect(first, last, out, NoOpPayloadTransformer<Payload>());
+  }
 
 private:
   /** Sets the payload; used by the constructor & add methods. */
@@ -111,38 +130,6 @@ struct ElementPayloadTransformer {
       *out = *it;
       ++out;
     }
-  }
-};
-
-template <class Code, class Payload>
-class TrieCollector {
-public:
-  template <class PayloadTransformer, class InputIterator,
-            class OutputIterator>
-  void collect(Trie<Code, Payload>* trie,
-               InputIterator first, InputIterator last, OutputIterator out,
-               const PayloadTransformer& transformer) {
-    std::set<Trie<Code, Payload>*> tries = {trie};
-    for (auto code = first; code != last; ++code) {
-      std::vector<Trie<Code, Payload>*> tries_to_add;
-      for (auto t = begin(tries); t != end(tries); ++t) {
-        auto new_trie = (*t)->get(*code);
-        if (new_trie != nullptr) tries_to_add.push_back(new_trie);
-      }
-      tries.insert(begin(tries_to_add), end(tries_to_add));
-    }
-    for (auto t = begin(tries); t != end(tries); ++t) {
-      Payload* payload = (*t)->get_payload();
-      if (payload != nullptr) {
-        transformer.transform(payload, out);
-      }
-    }
-  }
-
-  template <class InputIterator, class OutputIterator>
-  inline void collect(Trie<Code, Payload>* trie,
-               InputIterator first, InputIterator last, OutputIterator out) {
-    collect(trie, first, last, out, NoOpPayloadTransformer<Payload>());
   }
 };
 
@@ -209,13 +196,28 @@ Payload* Trie<Code, Payload>::match_all(
 }
 
 template <class Code, class Payload>
-template <class Container>
-inline Payload* Trie<Code, Payload>::match_all(Container c) const {
-  return match_all(begin(c), end(c));
+template <class InputIterator, class OutputIterator, class PayloadTransformer>
+void Trie<Code, Payload>::collect(
+    InputIterator first, InputIterator last, OutputIterator out,
+    const PayloadTransformer& transformer) {
+  std::set<Trie<Code, Payload>*> tries = {this};
+  for (auto code = first; code != last; ++code) {
+    std::vector<Trie<Code, Payload>*> tries_to_add;
+    for (auto t = begin(tries); t != end(tries); ++t) {
+      auto new_trie = (*t)->get(*code);
+      if (new_trie != nullptr) tries_to_add.push_back(new_trie);
+    }
+    tries.insert(begin(tries_to_add), end(tries_to_add));
+  }
+  for (auto t = begin(tries); t != end(tries); ++t) {
+    Payload* payload = (*t)->get_payload();
+    if (payload != nullptr) {
+      transformer.transform(payload, out);
+    }
+  }
 }
 
 template <class Code, class Payload>
 void Trie<Code, Payload>::set_payload(Payload* _payload) {
   payload.reset(_payload);
 }
-

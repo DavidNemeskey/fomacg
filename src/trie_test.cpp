@@ -36,9 +36,8 @@ int main(int argc, char* argv[]) {
   print_set(res);
   res = t.match_all(arr);
   print_set(res);
-  auto set_collector = TrieCollector<int, std::set<int> >();
   std::set<int> collect_res;
-  set_collector.collect(&t, begin(arr), end(arr), std::inserter(collect_res, collect_res.begin()), ElementPayloadTransformer<std::set<int> >());
+  t.collect(begin(arr), end(arr), std::inserter(collect_res, collect_res.begin()), ElementPayloadTransformer<std::set<int> >());
   print_set(&collect_res);
 
   IntTree it(10);
@@ -47,9 +46,8 @@ int main(int argc, char* argv[]) {
   it.add_branch(std::array<int, 2> {2, 3}, new int{3});
   it.add_branch(std::array<int, 2> {3, 4}, new int{4});
   it.add_branch(std::array<int, 1> {1}, new int{1});
-  auto collector = TrieCollector<int, int>();
   std::set<int*> output;
-  collector.collect(&it, begin(arr), end(arr), std::inserter(output, output.begin()));
+  it.collect(begin(arr), end(arr), std::inserter(output, output.begin()));
   for (auto ip = begin(output); ip != end(output); ++ip) {
     std::cout << *(*ip) << std::endl;
   }
