@@ -17,6 +17,17 @@
 template <class Code, class Payload>
 class Trie;
 
+/**
+ * Used by TrieCollector to transform the payload before writing it to
+ * the output iterator. Used for cases when e.g. the payload is a container
+ * and we need to extract the elements.
+ */
+template <class Payload>
+class PayloadTransformer;
+
+/**
+ * Implements collecting strategies.
+ */
 template <class Code, class Payload>
 class TrieCollector;
 
@@ -72,12 +83,45 @@ private:
   std::unique_ptr<Payload> payload;
 };
 
+template <class Payload>
+class PayloadExtractor {
+  template <class OutputIterator>
+  void transform(const Payload* payload, OutputIterator output);
+};
+
+/** Payload transformer that simply puts the payload into the iterator.  */
+template <class Payload>
+struct NoOpPayloadTransformer {
+  template <class OutputIterator>
+  inline void transform(Payload* payload, OutputIterator out) const {
+    *out = payload;
+    ++out;
+  }
+};
+
+/**
+ * Payload transformer that writes all elements of the payload (which must
+ * be of a container type) to the output iterator.
+ */
+template <class Payload>
+struct ElementPayloadTransformer {
+  template <class OutputIterator>
+  inline void transform(Payload* payload, OutputIterator out) const {
+    for (auto it = begin(*payload); it != end(*payload); ++it) {
+      *out = *it;
+      ++out;
+    }
+  }
+};
+
 template <class Code, class Payload>
 class TrieCollector {
 public:
-  template <class InputIterator, class OutputIterator>
-  void collect(Trie<Code, Payload>* trie, InputIterator first,
-               InputIterator last, OutputIterator out) {
+  template <class PayloadTransformer, class InputIterator,
+            class OutputIterator>
+  void collect(Trie<Code, Payload>* trie,
+               InputIterator first, InputIterator last, OutputIterator out,
+               const PayloadTransformer& transformer) {
     std::set<Trie<Code, Payload>*> tries = {trie};
     for (auto code = first; code != last; ++code) {
       std::vector<Trie<Code, Payload>*> tries_to_add;
@@ -90,10 +134,15 @@ public:
     for (auto t = begin(tries); t != end(tries); ++t) {
       Payload* payload = (*t)->get_payload();
       if (payload != nullptr) {
-        *out = payload;
-        ++out;
+        transformer.transform(payload, out);
       }
     }
+  }
+
+  template <class InputIterator, class OutputIterator>
+  inline void collect(Trie<Code, Payload>* trie,
+               InputIterator first, InputIterator last, OutputIterator out) {
+    collect(trie, first, last, out, NoOpPayloadTransformer<Payload>());
   }
 };
 

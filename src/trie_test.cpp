@@ -30,10 +30,16 @@ int main(int argc, char* argv[]) {
   std::array<size_t, 3> arr = {1, 2, 3};
   std::set<int>* pl = new std::set<int>{4, 5, 6};
   t.add_branch(begin(arr), end(arr), pl);
+  t.add_branch(std::array<int, 2> {2, 3}, new std::set<int>{7, 8});
+  t.add_branch(std::array<int, 2> {1, 4}, new std::set<int>{9});
   std::set<int>* res = t.match_all(std::array<size_t, 2>{1,2});
   print_set(res);
   res = t.match_all(arr);
   print_set(res);
+  auto set_collector = TrieCollector<int, std::set<int> >();
+  std::set<int> collect_res;
+  set_collector.collect(&t, begin(arr), end(arr), std::inserter(collect_res, collect_res.begin()), ElementPayloadTransformer<std::set<int> >());
+  print_set(&collect_res);
 
   IntTree it(10);
   it.add_branch(std::array<int, 3> {1, 2, 3});
