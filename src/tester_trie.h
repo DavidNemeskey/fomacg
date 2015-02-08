@@ -5,8 +5,6 @@
 #include <memory>
 #include <set>
 #include <vector>
-#include <iostream>
-
 
 /******************************** Header part ********************************/
 
@@ -95,8 +93,8 @@ public:
     collect(first, last, out, NoOpPayloadTransformer<Payload>());
   }
 
-  inline TrieIterator begin() { return TrieIterator(this, 0); }
-  inline TrieIterator end() { return TrieIterator(this, branching + 1); }
+  inline TrieIterator begin() { return TrieIterator(this); }
+  inline TrieIterator end() { return TrieIterator(this, branching); }
 
 private:
   /** Sets the payload; used by the constructor & add methods. */
@@ -111,9 +109,13 @@ private:
   class TrieIterator : public std::iterator<std::input_iterator_tag, Trie> {
     Trie* trie;
     Code code;
+    bool next_called;
 
   public:
+    /** Iterator from a specific branch. */
     TrieIterator(Trie* trie, Code code);
+    /** Auto-initialized constructor. */
+    TrieIterator(Trie* trie);
     TrieIterator& operator++();
     TrieIterator operator++(int);
     inline bool operator==(const TrieIterator& other) {
@@ -161,9 +163,7 @@ Trie<Code, Payload>::Trie(size_t _branching, Payload* _payload) : branching{_bra
   set_payload(_payload);
 }
 template <class Code, class Payload>
-Trie<Code, Payload>::~Trie() {
-  std::cout << "Deleting Trie at " << this << "..." << std::endl;
-}
+Trie<Code, Payload>::~Trie() {}
 
 template <class Code, class Payload>
 inline Trie<Code, Payload>* Trie<Code, Payload>::get(const Code& code) const {
@@ -242,12 +242,20 @@ void Trie<Code, Payload>::set_payload(Payload* _payload) {
 
 template <class Code, class Payload>
 Trie<Code, Payload>::TrieIterator::TrieIterator(
-    Trie<Code, Payload>* _trie, Code _code) : trie(_trie), code(_code) {}
+    Trie<Code, Payload>* _trie, Code _code)
+  : trie(_trie), code(_code), next_called(true) {}
+
+template <class Code, class Payload>
+Trie<Code, Payload>::TrieIterator::TrieIterator(
+    Trie<Code, Payload>* _trie) : trie(_trie), code(0), next_called(false) {
+    operator++();  // Find the first existing branch
+}
 
 template <class Code, class Payload>
 typename Trie<Code, Payload>::TrieIterator& Trie<Code, Payload>::TrieIterator::operator++() {
-  // FIXME: add a boolean that checks if we have to start with code++
+  if (next_called) code++;  // Leave the last element found
   while (trie->get(code) == nullptr && code < trie->get_branching()) code++;
+  next_called = true;
   return *this;
 }
 
