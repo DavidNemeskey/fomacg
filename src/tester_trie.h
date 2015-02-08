@@ -28,6 +28,8 @@ struct NoOpPayloadTransformer;
  */
 template <class Code, class Payload>
 class Trie {
+  class TrieIterator;
+
 public:
   Trie(size_t branching, Payload* payload=nullptr);
   ~Trie();
@@ -45,6 +47,7 @@ public:
   inline Trie* add_branch(Container c, Payload* payload=nullptr);
 
   inline Trie* get(const Code& code) const;
+  inline size_t get_branching() const { return branching; }
 
   /**
    * Runs the @c Code sequence from @p first to @p last through the trie and
@@ -59,7 +62,7 @@ public:
    */
   template <class Container>
   inline Payload* match_all(Container c) const {
-    return match_all(begin(c), end(c));
+    return match_all(std::begin(c), std::end(c));
   }
 
   /**
@@ -92,6 +95,9 @@ public:
     collect(first, last, out, NoOpPayloadTransformer<Payload>());
   }
 
+  inline TrieIterator begin() { return TrieIterator(this, 0); }
+  inline TrieIterator end() { return TrieIterator(this, branching + 1); }
+
 private:
   /** Sets the payload; used by the constructor & add methods. */
   void set_payload(Payload* payload=nullptr);
@@ -111,7 +117,7 @@ private:
     TrieIterator& operator++();
     TrieIterator operator++(int);
     inline bool operator==(const TrieIterator& other) {
-      return trie == other.trie;
+      return trie == other.trie && code == other.code;
     }
     inline bool operator!=(const TrieIterator& other) {
       return !(*this == other);
@@ -138,7 +144,7 @@ template <class Payload>
 struct ElementPayloadTransformer {
   template <class OutputIterator>
   inline void transform(Payload* payload, OutputIterator out) const {
-    for (auto it = begin(*payload); it != end(*payload); ++it) {
+    for (auto it = std::begin(*payload); it != std::end(*payload); ++it) {
       *out = *it;
       ++out;
     }
@@ -192,7 +198,7 @@ template <class Code, class Payload>
 template <class Container>
 inline Trie<Code, Payload>* Trie<Code, Payload>::add_branch(
     Container c, Payload* payload) {
-  return add_branch(begin(c), end(c), payload);
+  return add_branch(std::begin(c), std::end(c), payload);
 }
 
 template <class Code, class Payload>
@@ -215,13 +221,13 @@ void Trie<Code, Payload>::collect(
   std::set<Trie<Code, Payload>*> tries = {this};
   for (auto code = first; code != last; ++code) {
     std::vector<Trie<Code, Payload>*> tries_to_add;
-    for (auto t = begin(tries); t != end(tries); ++t) {
+    for (auto t = std::begin(tries); t != std::end(tries); ++t) {
       auto new_trie = (*t)->get(*code);
       if (new_trie != nullptr) tries_to_add.push_back(new_trie);
     }
-    tries.insert(begin(tries_to_add), end(tries_to_add));
+    tries.insert(std::begin(tries_to_add), std::end(tries_to_add));
   }
-  for (auto t = begin(tries); t != end(tries); ++t) {
+  for (auto t = std::begin(tries); t != std::end(tries); ++t) {
     Payload* payload = (*t)->get_payload();
     if (payload != nullptr) {
       transformer.transform(payload, out);
@@ -240,7 +246,9 @@ Trie<Code, Payload>::TrieIterator::TrieIterator(
 
 template <class Code, class Payload>
 typename Trie<Code, Payload>::TrieIterator& Trie<Code, Payload>::TrieIterator::operator++() {
-  while (trie->get(code) == nullptr) code++;
+  // FIXME: add a boolean that checks if we have to start with code++
+  while (trie->get(code) == nullptr && code < trie->get_branching()) code++;
+  return *this;
 }
 
 template <class Code, class Payload>

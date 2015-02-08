@@ -105,4 +105,8 @@ int main(int argc, char* argv[]) {
   for (auto i : data) {
     std::cout << "Data: " << i << std::endl;
   }
+
+  for (auto it = t.begin(); it != t.end(); ++it) {
+    std::cout << "it " << *it << std::endl;
+  }
 }
