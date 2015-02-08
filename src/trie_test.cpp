@@ -6,8 +6,40 @@
 #include <algorithm>
 #include <iostream>
 
+#include "rapidjson/document.h"
+#include "rapidjson/writer.h"
+#include "rapidjson/stringbuffer.h"
+
 typedef Trie<int, std::set<int> > SetTree;
 typedef Trie<int, int> IntTree;
+
+using namespace rapidjson;
+
+template <class T>
+class Data {
+  class DataIterator;
+
+  T i;
+public:
+  Data(T _i) : i(_i) {}
+  DataIterator begin() { return DataIterator(0); }
+  DataIterator end() { return DataIterator(i); }
+
+private:
+  class DataIterator : public std::iterator<std::input_iterator_tag, T> {
+    T i;
+  public:
+    DataIterator(T i);
+    DataIterator& operator++() { ++i; return *this; }
+    DataIterator operator++(int) { DataIterator tmp(*this); operator++(); return tmp; }
+    bool operator==(const DataIterator& other) { return i == other.i; }
+    inline bool operator!=(const DataIterator& other) { return !(i == other.i); }
+    T& operator*() { return i; }
+  };
+};
+
+template <class T>
+Data<T>::DataIterator::DataIterator(T _i) : i(_i) {}
 
 //template <>
 //std::set<int> reduce_trie<int, std::set<int>>(Tree const* const trie) {
@@ -50,5 +82,27 @@ int main(int argc, char* argv[]) {
   it.collect(begin(arr), end(arr), std::inserter(output, output.begin()));
   for (auto ip = begin(output); ip != end(output); ++ip) {
     std::cout << *(*ip) << std::endl;
+  }
+
+  // 1. Parse a JSON string into DOM.
+  const char* json = "{\"project\":\"rapidjson\",\"stars\":10}";
+  Document d;
+  d.Parse(json);
+
+  // 2. Modify it by DOM.
+  Value& s = d["stars"];
+  s.SetInt(s.GetInt() + 1);
+
+  // 3. Stringify the DOM
+  StringBuffer buffer;
+  Writer<StringBuffer> writer(buffer);
+  d.Accept(writer);
+
+  // Output {"project":"rapidjson","stars":11}
+  std::cout << buffer.GetString() << std::endl;
+
+  Data<int> data(6);
+  for (auto i : data) {
+    std::cout << "Data: " << i << std::endl;
   }
 }

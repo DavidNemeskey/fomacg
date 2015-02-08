@@ -100,12 +100,24 @@ private:
   size_t branching;
   std::unique_ptr<std::unique_ptr<Trie>[]> branches;  /* Array of pointers. */
   std::unique_ptr<Payload> payload;
-};
 
-template <class Payload>
-class PayloadExtractor {
-  template <class OutputIterator>
-  void transform(const Payload* payload, OutputIterator output);
+  /** Iterates through all child nodes. */
+  class TrieIterator : public std::iterator<std::input_iterator_tag, Trie> {
+    Trie* trie;
+    Code code;
+
+  public:
+    TrieIterator(Trie* trie, Code code);
+    TrieIterator& operator++();
+    TrieIterator operator++(int);
+    inline bool operator==(const TrieIterator& other) {
+      return trie == other.trie;
+    }
+    inline bool operator!=(const TrieIterator& other) {
+      return !(*this == other);
+    }
+    inline Trie* operator*() { return trie->get(code); }
+  };
 };
 
 /** Payload transformer that simply puts the payload into the iterator.  */
@@ -220,4 +232,20 @@ void Trie<Code, Payload>::collect(
 template <class Code, class Payload>
 void Trie<Code, Payload>::set_payload(Payload* _payload) {
   payload.reset(_payload);
+}
+
+template <class Code, class Payload>
+Trie<Code, Payload>::TrieIterator::TrieIterator(
+    Trie<Code, Payload>* _trie, Code _code) : trie(_trie), code(_code) {}
+
+template <class Code, class Payload>
+typename Trie<Code, Payload>::TrieIterator& Trie<Code, Payload>::TrieIterator::operator++() {
+  while (trie->get(code) == nullptr) code++;
+}
+
+template <class Code, class Payload>
+typename Trie<Code, Payload>::TrieIterator Trie<Code, Payload>::TrieIterator::operator++(int) {
+  Trie<Code, Payload>::TrieIterator tmp(*this);
+  operator++();
+  return tmp;
 }
