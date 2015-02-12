@@ -5,6 +5,7 @@
 #include <memory>
 #include <set>
 #include <vector>
+#include <iostream>
 
 /******************************** Header part ********************************/
 
@@ -94,7 +95,7 @@ public:
   }
 
   inline TrieIterator begin() { return TrieIterator(this); }
-  inline TrieIterator end() { return TrieIterator(this, branching); }
+  inline TrieIterator end() { return TrieIterator(); }
 
 private:
   /** Sets the payload; used by the constructor & add methods. */
@@ -105,26 +106,28 @@ private:
   std::unique_ptr<std::unique_ptr<Trie>[]> branches;  /* Array of pointers. */
   std::unique_ptr<Payload> payload;
 
-  /** Iterates through all child nodes. */
-  class TrieIterator : public std::iterator<std::input_iterator_tag, Trie> {
+  /** Iterates through all paths in the trie. */
+  class TrieIterator : public std::iterator<std::input_iterator_tag,
+                                            std::vector<std::pair<Code, Trie*> >
+                                           > {
     Trie* trie;
     Code code;
+    std::vector<std::pair<Code, Trie*> > path;
     bool next_called;
 
   public:
-    /** Iterator from a specific branch. */
-    TrieIterator(Trie* trie, Code code);
     /** Auto-initialized constructor. */
-    TrieIterator(Trie* trie);
+    TrieIterator(Trie* trie=nullptr);
     TrieIterator& operator++();
     TrieIterator operator++(int);
-    inline bool operator==(const TrieIterator& other) {
-      return trie == other.trie && code == other.code;
-    }
+    bool operator==(const TrieIterator& other);
     inline bool operator!=(const TrieIterator& other) {
       return !(*this == other);
     }
-    inline Trie* operator*() { return trie->get(code); }
+    inline std::vector<std::pair<Code, Trie*> > operator*() {
+      // TODO: a copy of?
+      return path;
+    }
   };
 };
 
@@ -242,20 +245,70 @@ void Trie<Code, Payload>::set_payload(Payload* _payload) {
 
 template <class Code, class Payload>
 Trie<Code, Payload>::TrieIterator::TrieIterator(
-    Trie<Code, Payload>* _trie, Code _code)
-  : trie(_trie), code(_code), next_called(true) {}
+    Trie<Code, Payload>* _trie) : trie(_trie), code(0), next_called(false) {
+  if (_trie != nullptr) {
+    path.push_back(std::pair<Code, Trie*>(0, trie));
+    operator++();  // Find the first existing branch
+  }
+}
 
 template <class Code, class Payload>
-Trie<Code, Payload>::TrieIterator::TrieIterator(
-    Trie<Code, Payload>* _trie) : trie(_trie), code(0), next_called(false) {
-    operator++();  // Find the first existing branch
+bool Trie<Code, Payload>::TrieIterator::operator==(const TrieIterator& other) {
+  // TODO modify if the original trie is not in path
+  if (path.size() == 0) {
+    return other.path.size() == 0;
+  } else {
+    return path.size() == other.path.size()
+           && path[path.size() - 1] == other.path[other.path.size() - 1]
+           && code == other.code;
+  }
 }
 
 template <class Code, class Payload>
 typename Trie<Code, Payload>::TrieIterator& Trie<Code, Payload>::TrieIterator::operator++() {
+  /*
+   * This is ugly, because C++ doesn't have a yield keyword. :( What we do here
+   * is a simple DFS. The "interesting" part comes when we reach the end of a
+   * branch, because this is where we would yield the whole branch in Python
+   * before removing the last node from the branch and looking for other
+   * branches in the parent node.
+   *
+   * Since we cannot do that in C++, instead, we return from the funtion, and
+   * do the fallback to the parent node the next time we enter the function. 
+   * The only problem is how to differentiate between a normal fallback and one
+   * where we should "yield"? This is how: we save the code we were when we
+   * started searching in last_code, and if it is 0, we must "yield"; otherwise,
+   * just fall back to the last node in the path.
+   */
+  //std::cout << "1 " << path.size() << ", trie " << trie << ", code " << code << std::endl;
   if (next_called) code++;  // Leave the last element found
-  while (trie->get(code) == nullptr && code < trie->get_branching()) code++;
+  //std::cout << "2 " << path.size() << ", trie " << trie << ", code " << code << std::endl;
+  while (path.size() > 0) {
+    //Trie* trie = path[path.size() - 1].second;
+    Code last_code = code;
+    while (code < trie->get_branching() && trie->get(code) == nullptr) code++;
+    //std::cout << "3 " << path.size() << ", trie " << trie << ", code " << code << std::endl;
+    if (code < trie->get_branching()) {
+      //std::cout << "4a " << path.size() << ", trie " << trie << ", code " << code << std::endl;
+      Trie<Code, Payload>* new_trie = trie->get(code);
+      path.push_back(std::pair<Code, Trie*>(code, new_trie));
+      trie = new_trie;
+      code = 0;
+      //std::cout << "4b " << path.size() << ", trie " << trie << ", code " << code << std::endl;
+      //// Stop the trie has a payload; this is a valid iterator position
+      //if (code == 0 && trie->get_payload() != nullptr) break;
+    } else {
+      //std::cout << "5a " << path.size() << ", trie " << trie << ", code " << code << std::endl;
+      // We depleted this node
+      if (last_code == 0) break;
+      code = path.back().first + 1;
+      path.pop_back();
+      trie = path.back().second;
+      //std::cout << "5b " << path.size() << ", trie " << trie << ", code " << code << std::endl;
+    }
+  }
   next_called = true;
+  //std::cout << "6 " << path.size() << ", trie " << trie << ", code " << code << std::endl;
   return *this;
 }
 

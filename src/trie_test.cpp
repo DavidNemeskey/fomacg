@@ -6,14 +6,14 @@
 #include <algorithm>
 #include <iostream>
 
-#include "rapidjson/document.h"
-#include "rapidjson/writer.h"
-#include "rapidjson/stringbuffer.h"
+//#include "rapidjson/document.h"
+//#include "rapidjson/writer.h"
+//#include "rapidjson/stringbuffer.h"
 
 typedef Trie<int, std::set<int> > SetTree;
 typedef Trie<int, int> IntTree;
 
-using namespace rapidjson;
+//using namespace rapidjson;
 
 template <class T>
 class Data {
@@ -55,6 +55,15 @@ void print_set(std::set<int> const* const to_print) {
   std::cout << ")" << std::endl;
 }
 
+std::ostream& operator<<(std::ostream& os, std::vector<std::pair<int, Trie<int, std::set<int> >*> > v) {
+  os << "Vector: ";
+  for (auto it = v.begin(); it != v.end(); ++it) {
+    os << it->first << " ";
+  }
+  os << "." << std::endl;
+  return os;
+}
+
 int main(int argc, char* argv[]) {
   SetTree t(1024);
   SetTree* t2 = t.add(3, nullptr);
@@ -84,22 +93,22 @@ int main(int argc, char* argv[]) {
     std::cout << *(*ip) << std::endl;
   }
 
-  // 1. Parse a JSON string into DOM.
-  const char* json = "{\"project\":\"rapidjson\",\"stars\":10}";
-  Document d;
-  d.Parse(json);
-
-  // 2. Modify it by DOM.
-  Value& s = d["stars"];
-  s.SetInt(s.GetInt() + 1);
-
-  // 3. Stringify the DOM
-  StringBuffer buffer;
-  Writer<StringBuffer> writer(buffer);
-  d.Accept(writer);
-
-  // Output {"project":"rapidjson","stars":11}
-  std::cout << buffer.GetString() << std::endl;
+//  // 1. Parse a JSON string into DOM.
+//  const char* json = "{\"project\":\"rapidjson\",\"stars\":10}";
+//  Document d;
+//  d.Parse(json);
+//
+//  // 2. Modify it by DOM.
+//  Value& s = d["stars"];
+//  s.SetInt(s.GetInt() + 1);
+//
+//  // 3. Stringify the DOM
+//  StringBuffer buffer;
+//  Writer<StringBuffer> writer(buffer);
+//  d.Accept(writer);
+//
+//  // Output {"project":"rapidjson","stars":11}
+//  std::cout << buffer.GetString() << std::endl;
 
   Data<int> data(6);
   for (auto i : data) {
