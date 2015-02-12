@@ -5,7 +5,6 @@
 #include <memory>
 #include <set>
 #include <vector>
-#include <iostream>
 
 /******************************** Header part ********************************/
 
@@ -280,35 +279,24 @@ typename Trie<Code, Payload>::TrieIterator& Trie<Code, Payload>::TrieIterator::o
    * started searching in last_code, and if it is 0, we must "yield"; otherwise,
    * just fall back to the last node in the path.
    */
-  //std::cout << "1 " << path.size() << ", trie " << trie << ", code " << code << std::endl;
   if (next_called) code++;  // Leave the last element found
-  //std::cout << "2 " << path.size() << ", trie " << trie << ", code " << code << std::endl;
   while (path.size() > 0) {
-    //Trie* trie = path[path.size() - 1].second;
     Code last_code = code;
     while (code < trie->get_branching() && trie->get(code) == nullptr) code++;
-    //std::cout << "3 " << path.size() << ", trie " << trie << ", code " << code << std::endl;
     if (code < trie->get_branching()) {
-      //std::cout << "4a " << path.size() << ", trie " << trie << ", code " << code << std::endl;
       Trie<Code, Payload>* new_trie = trie->get(code);
       path.push_back(std::pair<Code, Trie*>(code, new_trie));
       trie = new_trie;
       code = 0;
-      //std::cout << "4b " << path.size() << ", trie " << trie << ", code " << code << std::endl;
-      //// Stop the trie has a payload; this is a valid iterator position
-      //if (code == 0 && trie->get_payload() != nullptr) break;
     } else {
-      //std::cout << "5a " << path.size() << ", trie " << trie << ", code " << code << std::endl;
       // We depleted this node
-      if (last_code == 0) break;
+      if (last_code == 0 && trie->get_payload() != nullptr) break;
       code = path.back().first + 1;
       path.pop_back();
       trie = path.back().second;
-      //std::cout << "5b " << path.size() << ", trie " << trie << ", code " << code << std::endl;
     }
   }
   next_called = true;
-  //std::cout << "6 " << path.size() << ", trie " << trie << ", code " << code << std::endl;
   return *this;
 }
 
